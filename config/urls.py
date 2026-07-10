@@ -12,6 +12,7 @@ from django.urls import include, path
 _app_index = lambda request, *a, **k: redirect("admin:index")
 
 urlpatterns = [
+    path("", lambda request: redirect("admin/")),
     path("admin/cardapio/", _app_index),
     path("admin/pedidos/", _app_index),
     path("admin/auth/", _app_index),

@@ -39,8 +39,8 @@ def D(c) -> Decimal:
 
 def criar_admin():
     if not User.objects.filter(username="admin").exists():
-        User.objects.create_superuser("admin", "admin@bigkilo.local", "admin123")
-        print("Superusuário -> admin / admin123")
+        User.objects.create_superuser("admin", "admin@bigkilo.local", "admin")
+        print("Superusuário -> admin / admin")
     else:
         print("Superusuário 'admin' já existe.")
 
