@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+
+# Virtualenv
+venv/
+.venv/
+env/
+
+# Django
+*.log
+db.sqlite3
+/staticfiles/
+/media/
+
+# Ambiente
+.env
+
+# Comandas geradas pelo agente de impressão (modo file)
+comandas/
+
+# Editores
+.vscode/
+.idea/

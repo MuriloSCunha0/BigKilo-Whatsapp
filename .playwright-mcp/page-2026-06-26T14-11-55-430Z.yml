@@ -1,0 +1,121 @@
+- generic [ref=e3]:
+  - generic [ref=e8]:
+    - generic [ref=e10] [cursor=pointer]: dock_to_right
+    - heading "Pedidos chevron_right Clientes" [level=1] [ref=e12]:
+      - link "Pedidos" [ref=e13] [cursor=pointer]:
+        - /url: /admin/pedidos/
+      - generic [ref=e14]: chevron_right
+      - link "Clientes" [ref=e15] [cursor=pointer]:
+        - /url: /admin/pedidos/cliente/
+  - list [ref=e18]:
+    - listitem [ref=e19]:
+      - generic [ref=e20]:
+        - text: O Cliente “
+        - link "Maria Souza - 5521988887777" [ref=e21] [cursor=pointer]:
+          - /url: /admin/pedidos/cliente/1/change/
+        - text: ” foi alterado com sucesso.
+  - generic [ref=e27]:
+    - search [ref=e30]:
+      - generic [ref=e31]:
+        - button "search" [ref=e32]:
+          - generic [ref=e33]: search
+        - textbox "Buscar" [ref=e34]
+        - generic [ref=e36]: /
+    - region "scrollable content" [ref=e42]:
+      - table [ref=e44]:
+        - rowgroup [ref=e45]:
+          - row "Selecione todos os objetos nessa página para uma ação Nome no WhatsApp Telefone (WhatsApp) Personalizado Criado em arrow_circle_up cancel" [ref=e46]:
+            - columnheader "Selecione todos os objetos nessa página para uma ação" [ref=e47]:
+              - checkbox "Selecione todos os objetos nessa página para uma ação" [ref=e51]: check_small
+            - columnheader "Nome no WhatsApp" [ref=e52]:
+              - link "Nome no WhatsApp" [ref=e55] [cursor=pointer]:
+                - /url: "?o=1.-4"
+            - columnheader "Telefone (WhatsApp)" [ref=e56]:
+              - link "Telefone (WhatsApp)" [ref=e59] [cursor=pointer]:
+                - /url: "?o=2.-4"
+            - columnheader "Personalizado" [ref=e60]:
+              - generic [ref=e62]: Personalizado
+            - columnheader "Criado em arrow_circle_up cancel" [ref=e63]:
+              - generic [ref=e64]:
+                - link "Criado em" [ref=e66] [cursor=pointer]:
+                  - /url: "?o=4"
+                - generic [ref=e67]:
+                  - link "arrow_circle_up" [ref=e68] [cursor=pointer]:
+                    - /url: "?o=4"
+                    - generic [ref=e69]: arrow_circle_up
+                  - link "cancel" [ref=e70] [cursor=pointer]:
+                    - /url: "?o="
+                    - generic [ref=e71]: cancel
+        - rowgroup [ref=e72]:
+          - row "Select record T 5521900224477 close_small 23 de Junho de 2026 às 15:48" [ref=e73] [cursor=pointer]:
+            - cell "Select record" [ref=e74]:
+              - checkbox "Select record" [ref=e75]: check_small
+            - rowheader "T" [ref=e76]:
+              - link "T" [ref=e77]:
+                - /url: /admin/pedidos/cliente/6/change/
+            - cell "5521900224477" [ref=e78]
+            - cell "close_small" [ref=e79]:
+              - generic "False" [ref=e80]:
+                - generic [ref=e81]: close_small
+            - cell "23 de Junho de 2026 às 15:48" [ref=e82]
+        - rowgroup [ref=e83]:
+          - row "Select record T 5521900224466 close_small 23 de Junho de 2026 às 15:46" [ref=e84] [cursor=pointer]:
+            - cell "Select record" [ref=e85]:
+              - checkbox "Select record" [ref=e86]: check_small
+            - rowheader "T" [ref=e87]:
+              - link "T" [ref=e88]:
+                - /url: /admin/pedidos/cliente/5/change/
+            - cell "5521900224466" [ref=e89]
+            - cell "close_small" [ref=e90]:
+              - generic "False" [ref=e91]:
+                - generic [ref=e92]: close_small
+            - cell "23 de Junho de 2026 às 15:46" [ref=e93]
+        - rowgroup [ref=e94]:
+          - row "Select record Cliente Teste 5521999990000 close_small 20 de Junho de 2026 às 17:47" [ref=e95] [cursor=pointer]:
+            - cell "Select record" [ref=e96]:
+              - checkbox "Select record" [ref=e97]: check_small
+            - rowheader "Cliente Teste" [ref=e98]:
+              - link "Cliente Teste" [ref=e99]:
+                - /url: /admin/pedidos/cliente/4/change/
+            - cell "5521999990000" [ref=e100]
+            - cell "close_small" [ref=e101]:
+              - generic "False" [ref=e102]:
+                - generic [ref=e103]: close_small
+            - cell "20 de Junho de 2026 às 17:47" [ref=e104]
+        - rowgroup [ref=e105]:
+          - row "Select record Ana Lima 5521966665555 close_small 20 de Junho de 2026 às 17:21" [ref=e106] [cursor=pointer]:
+            - cell "Select record" [ref=e107]:
+              - checkbox "Select record" [ref=e108]: check_small
+            - rowheader "Ana Lima" [ref=e109]:
+              - link "Ana Lima" [ref=e110]:
+                - /url: /admin/pedidos/cliente/3/change/
+            - cell "5521966665555" [ref=e111]
+            - cell "close_small" [ref=e112]:
+              - generic "False" [ref=e113]:
+                - generic [ref=e114]: close_small
+            - cell "20 de Junho de 2026 às 17:21" [ref=e115]
+        - rowgroup [ref=e116]:
+          - row "Select record João Pereira 5521977776666 close_small 20 de Junho de 2026 às 17:21" [ref=e117] [cursor=pointer]:
+            - cell "Select record" [ref=e118]:
+              - checkbox "Select record" [ref=e119]: check_small
+            - rowheader "João Pereira" [ref=e120]:
+              - link "João Pereira" [ref=e121]:
+                - /url: /admin/pedidos/cliente/2/change/
+            - cell "5521977776666" [ref=e122]
+            - cell "close_small" [ref=e123]:
+              - generic "False" [ref=e124]:
+                - generic [ref=e125]: close_small
+            - cell "20 de Junho de 2026 às 17:21" [ref=e126]
+        - rowgroup [ref=e127]:
+          - row "Select record Maria Souza 5521988887777 check_small 20 de Junho de 2026 às 17:21" [ref=e128] [cursor=pointer]:
+            - cell "Select record" [ref=e129]:
+              - checkbox "Select record" [ref=e130]: check_small
+            - rowheader "Maria Souza" [ref=e131]:
+              - link "Maria Souza" [ref=e132]:
+                - /url: /admin/pedidos/cliente/1/change/
+            - cell "5521988887777" [ref=e133]
+            - cell "check_small" [ref=e134]:
+              - generic "True" [ref=e135]:
+                - generic [ref=e136]: check_small
+            - cell "20 de Junho de 2026 às 17:21" [ref=e137]
+  - generic [ref=e140]: 6 Clientes

@@ -1,0 +1,114 @@
+- generic [ref=e3]:
+  - generic [ref=e8]:
+    - generic [ref=e10] [cursor=pointer]: dock_to_right
+    - heading "Pedidos chevron_right Clientes" [level=1] [ref=e12]:
+      - link "Pedidos" [ref=e13] [cursor=pointer]:
+        - /url: /admin/pedidos/
+      - generic [ref=e14]: chevron_right
+      - link "Clientes" [ref=e15] [cursor=pointer]:
+        - /url: /admin/pedidos/cliente/
+  - generic [ref=e21]:
+    - search [ref=e24]:
+      - generic [ref=e25]:
+        - button "search" [ref=e26]:
+          - generic [ref=e27]: search
+        - textbox "Type to search" [ref=e28]
+        - generic [ref=e30]: /
+    - region "scrollable content" [ref=e36]:
+      - table [ref=e38]:
+        - rowgroup [ref=e39]:
+          - row "Selecione todos os objetos nessa página para uma ação Nome no WhatsApp Telefone (WhatsApp) Personalizado Criado em arrow_circle_up cancel" [ref=e40]:
+            - columnheader "Selecione todos os objetos nessa página para uma ação" [ref=e41]:
+              - checkbox "Selecione todos os objetos nessa página para uma ação" [ref=e45]: check_small
+            - columnheader "Nome no WhatsApp" [ref=e46]:
+              - link "Nome no WhatsApp" [ref=e49] [cursor=pointer]:
+                - /url: "?o=1.-4"
+            - columnheader "Telefone (WhatsApp)" [ref=e50]:
+              - link "Telefone (WhatsApp)" [ref=e53] [cursor=pointer]:
+                - /url: "?o=2.-4"
+            - columnheader "Personalizado" [ref=e54]:
+              - generic [ref=e56]: Personalizado
+            - columnheader "Criado em arrow_circle_up cancel" [ref=e57]:
+              - generic [ref=e58]:
+                - link "Criado em" [ref=e60] [cursor=pointer]:
+                  - /url: "?o=4"
+                - generic [ref=e61]:
+                  - link "arrow_circle_up" [ref=e62] [cursor=pointer]:
+                    - /url: "?o=4"
+                    - generic [ref=e63]: arrow_circle_up
+                  - link "cancel" [ref=e64] [cursor=pointer]:
+                    - /url: "?o="
+                    - generic [ref=e65]: cancel
+        - rowgroup [ref=e66]:
+          - row "Select record T 5521900224477 close_small 23 de Junho de 2026 às 15:48" [ref=e67] [cursor=pointer]:
+            - cell "Select record" [ref=e68]:
+              - checkbox "Select record" [ref=e69]: check_small
+            - rowheader "T" [ref=e70]:
+              - link "T" [ref=e71]:
+                - /url: /admin/pedidos/cliente/6/change/
+            - cell "5521900224477" [ref=e72]
+            - cell "close_small" [ref=e73]:
+              - generic "False" [ref=e74]:
+                - generic [ref=e75]: close_small
+            - cell "23 de Junho de 2026 às 15:48" [ref=e76]
+        - rowgroup [ref=e77]:
+          - row "Select record T 5521900224466 close_small 23 de Junho de 2026 às 15:46" [ref=e78] [cursor=pointer]:
+            - cell "Select record" [ref=e79]:
+              - checkbox "Select record" [ref=e80]: check_small
+            - rowheader "T" [ref=e81]:
+              - link "T" [ref=e82]:
+                - /url: /admin/pedidos/cliente/5/change/
+            - cell "5521900224466" [ref=e83]
+            - cell "close_small" [ref=e84]:
+              - generic "False" [ref=e85]:
+                - generic [ref=e86]: close_small
+            - cell "23 de Junho de 2026 às 15:46" [ref=e87]
+        - rowgroup [ref=e88]:
+          - row "Select record Cliente Teste 5521999990000 close_small 20 de Junho de 2026 às 17:47" [ref=e89] [cursor=pointer]:
+            - cell "Select record" [ref=e90]:
+              - checkbox "Select record" [ref=e91]: check_small
+            - rowheader "Cliente Teste" [ref=e92]:
+              - link "Cliente Teste" [ref=e93]:
+                - /url: /admin/pedidos/cliente/4/change/
+            - cell "5521999990000" [ref=e94]
+            - cell "close_small" [ref=e95]:
+              - generic "False" [ref=e96]:
+                - generic [ref=e97]: close_small
+            - cell "20 de Junho de 2026 às 17:47" [ref=e98]
+        - rowgroup [ref=e99]:
+          - row "Select record Ana Lima 5521966665555 close_small 20 de Junho de 2026 às 17:21" [ref=e100] [cursor=pointer]:
+            - cell "Select record" [ref=e101]:
+              - checkbox "Select record" [ref=e102]: check_small
+            - rowheader "Ana Lima" [ref=e103]:
+              - link "Ana Lima" [ref=e104]:
+                - /url: /admin/pedidos/cliente/3/change/
+            - cell "5521966665555" [ref=e105]
+            - cell "close_small" [ref=e106]:
+              - generic "False" [ref=e107]:
+                - generic [ref=e108]: close_small
+            - cell "20 de Junho de 2026 às 17:21" [ref=e109]
+        - rowgroup [ref=e110]:
+          - row "Select record João Pereira 5521977776666 close_small 20 de Junho de 2026 às 17:21" [ref=e111] [cursor=pointer]:
+            - cell "Select record" [ref=e112]:
+              - checkbox "Select record" [ref=e113]: check_small
+            - rowheader "João Pereira" [ref=e114]:
+              - link "João Pereira" [ref=e115]:
+                - /url: /admin/pedidos/cliente/2/change/
+            - cell "5521977776666" [ref=e116]
+            - cell "close_small" [ref=e117]:
+              - generic "False" [ref=e118]:
+                - generic [ref=e119]: close_small
+            - cell "20 de Junho de 2026 às 17:21" [ref=e120]
+        - rowgroup [ref=e121]:
+          - row "Select record Maria Souza 5521988887777 check_small 20 de Junho de 2026 às 17:21" [ref=e122] [cursor=pointer]:
+            - cell "Select record" [ref=e123]:
+              - checkbox "Select record" [ref=e124]: check_small
+            - rowheader "Maria Souza" [ref=e125]:
+              - link "Maria Souza" [ref=e126]:
+                - /url: /admin/pedidos/cliente/1/change/
+            - cell "5521988887777" [ref=e127]
+            - cell "check_small" [ref=e128]:
+              - generic "True" [ref=e129]:
+                - generic [ref=e130]: check_small
+            - cell "20 de Junho de 2026 às 17:21" [ref=e131]
+  - generic [ref=e134]: 6 Clientes

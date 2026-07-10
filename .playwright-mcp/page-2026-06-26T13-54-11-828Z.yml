@@ -1,0 +1,74 @@
+- generic [ref=e3]:
+  - generic [ref=e8]:
+    - generic [ref=e10] [cursor=pointer]: dock_to_right
+    - heading "Mensagens de Maria Souza" [level=1] [ref=e12]:
+      - generic [ref=e13]: Mensagens de Maria Souza
+  - generic [ref=e15]:
+    - generic [ref=e17]:
+      - text: 👤 Maria Souza
+      - generic [ref=e18]: Personalize as mensagens só para este contato. Deixe igual ao padrão para não personalizar.
+    - generic [ref=e19]:
+      - heading "1 Boas-vindas / saudação" [level=3] [ref=e20]:
+        - generic [ref=e21]: "1"
+        - text: Boas-vindas / saudação
+      - paragraph [ref=e22]: No início, quando o cliente manda a 1ª mensagem.
+      - textbox [ref=e23]: Oi, Maria! 💛 Que bom te ver de novo no Big Kilo!
+      - generic [ref=e24]: "Padrão (o que os outros recebem): Olá! Que bom que você falou com o Big Kilo 🍽️"
+    - generic [ref=e25]:
+      - heading "2 Área de atendimento (resumo)" [level=3] [ref=e26]:
+        - generic [ref=e27]: "2"
+        - text: Área de atendimento (resumo)
+      - paragraph [ref=e28]: Texto curto da área de entrega, mostrado na saudação.
+      - textbox [ref=e29]: Novo Leblon e arredores (Barra da Tijuca)
+      - generic [ref=e30]: "Padrão (o que os outros recebem): Novo Leblon e arredores (Barra da Tijuca)"
+    - generic [ref=e31]:
+      - heading "3 Anúncio de promoção" [level=3] [ref=e32]:
+        - generic [ref=e33]: "3"
+        - text: Anúncio de promoção
+      - paragraph [ref=e34]: Logo no início, se houver promoção ativa.
+      - textbox [ref=e35]: 🎁 Temos promoções hoje! Confira no cardápio.
+      - generic [ref=e36]: "Padrão (o que os outros recebem): 🎁 Temos promoções hoje! Confira no cardápio."
+    - generic [ref=e37]:
+      - heading "4 Pedir bairro" [level=3] [ref=e38]:
+        - generic [ref=e39]: "4"
+        - text: Pedir bairro
+      - paragraph [ref=e40]: Ao pedir o bairro do cliente.
+      - textbox [ref=e41]: "Para começar, informe seu bairro:"
+      - generic [ref=e42]: "Padrão (o que os outros recebem): Para começar, informe seu bairro:"
+    - generic [ref=e43]:
+      - heading "5 Fora da área de entrega" [level=3] [ref=e44]:
+        - generic [ref=e45]: "5"
+        - text: Fora da área de entrega
+      - paragraph [ref=e46]: Quando o bairro está fora da área de entrega.
+      - textbox [ref=e47]: Poxa, ainda não atendemos a sua região. 😕 Obrigado pelo contato!
+      - generic [ref=e48]: "Padrão (o que os outros recebem): Poxa, ainda não atendemos a sua região. 😕 Obrigado pelo contato!"
+    - generic [ref=e49]:
+      - heading "6 Pedir rua/endereço" [level=3] [ref=e50]:
+        - generic [ref=e51]: "6"
+        - text: Pedir rua/endereço
+      - paragraph [ref=e52]: Depois do bairro, ao pedir a rua/endereço.
+      - textbox [ref=e53]: "Ótimo, atendemos {bairro}! Agora envie a *rua, número e complemento*."
+      - generic [ref=e55]:
+        - generic [ref=e56] [cursor=pointer]: "{bairro}"
+        - text: = o bairro que o cliente escolheu
+        - generic [ref=e57]: · obrigatória, não pode ser removida
+      - generic [ref=e58]: "Padrão (o que os outros recebem): Ótimo, atendemos {bairro}! Agora envie a *rua, número e complemento*."
+    - generic [ref=e59]:
+      - heading "7 Aguardando pagamento" [level=3] [ref=e60]:
+        - generic [ref=e61]: "7"
+        - text: Aguardando pagamento
+      - paragraph [ref=e62]: Enquanto aguarda o pagamento do Pix.
+      - textbox [ref=e63]: Estamos aguardando o pagamento. Para um novo pedido, digite *cancelar*.
+      - generic [ref=e64]: "Padrão (o que os outros recebem): Estamos aguardando o pagamento. Para um novo pedido, digite *cancelar*."
+    - generic [ref=e65]:
+      - heading "8 Pagamento confirmado" [level=3] [ref=e66]:
+        - generic [ref=e67]: "8"
+        - text: Pagamento confirmado
+      - paragraph [ref=e68]: Quando o pagamento é confirmado.
+      - textbox [ref=e69]: ✅ Pagamento confirmado! Seu pedido já está sendo preparado. A taxa de entrega é paga diretamente ao entregador. Já já chega aí! 🍽️
+      - generic [ref=e70]: "Padrão (o que os outros recebem): ✅ Pagamento confirmado! Seu pedido já está sendo preparado. A taxa de entrega é paga diretamente ao entregador. Já já chega aí! 🍽️"
+    - generic [ref=e71]:
+      - link "Voltar" [ref=e72] [cursor=pointer]:
+        - /url: /admin/pedidos/cliente/1/change/
+      - button "🧪 Salvar e testar" [ref=e73] [cursor=pointer]
+      - button "✓ Salvar mensagens" [ref=e74] [cursor=pointer]

@@ -1,0 +1,233 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}{{ block.super }}
+<style>
+  #wzOverlay{ position:fixed; inset:0; background:rgba(17,24,39,.55); z-index:9999;
+              display:none; align-items:flex-start; justify-content:center; padding:2.5rem 1rem; overflow-y:auto; }
+  #wzOverlay.open{ display:flex; }
+  #wzCard{ width:100%; max-width:620px; background:#fff; color:#111827; border-radius:14px;
+           box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden; }
+  #wzCard .h{ background:#d97706; color:#fff; padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; }
+  #wzCard .h h1{ font-size:1.1rem; margin:0; } #wzCard .h button{ background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer; }
+  #wzCard .dots{ display:flex; gap:.5rem; padding:1rem 1.25rem 0; }
+  #wzCard .dot{ flex:1; height:6px; border-radius:4px; background:#e5e7eb; }
+  #wzCard .dot.on{ background:#d97706; }
+  #wzCard .bd{ padding:1.25rem; }
+  #wzCard .st{ font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:#b45309; font-weight:700; }
+  #wzCard h2{ font-size:1.15rem; margin:.1rem 0 1rem; }
+  #wzCard label{ display:block; font-weight:600; font-size:.85rem; margin:.7rem 0 .25rem; color:#111827; }
+  #wzCard .hint{ font-size:.78rem; color:#6b7280; margin-top:.2rem; }
+  #wzCard input,#wzCard select,#wzCard textarea{ width:100%; padding:.6rem .7rem; border:1px solid #e5e7eb;
+           border-radius:8px; font-size:.95rem; background:#fff; color:#111827; }
+  #wzCard textarea{ min-height:60px; resize:vertical; }
+  #wzCard .opt{ border:1px solid #e5e7eb; border-radius:10px; padding:.7rem .8rem; margin-bottom:.5rem; cursor:pointer; }
+  #wzCard .opt.sel{ border-color:#d97706; background:#fef3c7; }
+  #wzCard .opt b{ display:block; font-size:.92rem; } #wzCard .opt span{ font-size:.78rem; color:#6b7280; }
+  #wzCard .faixa{ display:flex; gap:.5rem; margin-bottom:.5rem; } #wzCard .faixa input:first-child{ flex:1; }
+  #wzCard .grid{ display:grid; grid-template-columns:1fr auto auto; gap:.4rem .8rem; align-items:center; margin-top:.5rem; }
+  #wzCard .grid .gh{ font-size:.75rem; color:#6b7280; text-align:center; font-weight:700; }
+  #wzCard .chk{ display:flex; justify-content:center; } #wzCard .chk input{ width:auto; }
+  #wzCard .review{ background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:.8rem 1rem; font-size:.9rem; line-height:1.7; }
+  #wzCard .muted{ background:#fef3c7; color:#92400e; border-radius:8px; padding:.6rem .8rem; font-size:.85rem; }
+  #wzCard .ft{ display:flex; justify-content:space-between; gap:.5rem; padding:1rem 1.25rem; border-top:1px solid #e5e7eb; }
+  #wzCard .btn{ border:none; border-radius:9px; padding:.6rem 1.1rem; font-size:.92rem; font-weight:600; cursor:pointer; }
+  #wzCard .prim{ background:#d97706; color:#fff; } #wzCard .sec{ background:#f3f4f6; color:#374151; }
+  #wzCard .err{ color:#b91c1c; font-size:.85rem; margin-top:.5rem; min-height:1rem; }
+  #wzCard .add{ background:none; color:#b45309; padding:.2rem 0; font-size:.85rem; cursor:pointer; border:none; }
+
+  /* ===== Tema escuro (acompanha o Unfold: classe .dark no <html>) ===== */
+  html.dark #wzCard{ background:#1f2937; color:#e5e7eb; }
+  html.dark #wzCard h2{ color:#f9fafb; }
+  html.dark #wzCard label{ color:#f3f4f6; }
+  html.dark #wzCard input, html.dark #wzCard select, html.dark #wzCard textarea{
+    background:#111827; color:#e5e7eb; border-color:#374151; }
+  html.dark #wzCard input::placeholder, html.dark #wzCard textarea::placeholder{ color:#6b7280; }
+  html.dark #wzCard .hint, html.dark #wzCard .opt span, html.dark #wzCard .grid .gh{ color:#9ca3af; }
+  html.dark #wzCard .opt{ border-color:#374151; }
+  html.dark #wzCard .opt.sel{ background:rgba(217,119,6,.18); border-color:#d97706; }
+  html.dark #wzCard .review{ background:#111827; border-color:#374151; }
+  html.dark #wzCard .muted{ background:rgba(217,119,6,.18); color:#fcd34d; }
+  html.dark #wzCard .sec{ background:#374151; color:#e5e7eb; }
+  html.dark #wzCard .ft{ border-color:#374151; }
+  html.dark #wzCard .dot{ background:#374151; }
+  html.dark #wzCard .add{ color:#fcd34d; }
+</style>
+{% endblock %}
+
+{% block content %}{{ block.super }}
+{% csrf_token %}
+<div id="wzOverlay" onclick="if(event.target===this)wzClose()">
+  <div id="wzCard">
+    <div class="h"><h1>➕ Novo produto</h1><button type="button" onclick="wzClose()">✕</button></div>
+    <div class="dots"><div class="dot on" data-d="1"></div><div class="dot" data-d="2"></div><div class="dot" data-d="3"></div><div class="dot" data-d="4"></div></div>
+    <div class="bd">
+      <section data-step="1">
+        <div class="st">Passo 1 de 4</div><h2>Informações básicas</h2>
+        <label>Categoria *</label>
+        <select id="wzCat"><option value="">— escolha —</option>
+          {% for c in wizard_categorias %}<option value="{{ c.id }}" data-tipo="{{ c.tipo }}">{{ c.nome }} ({{ c.get_tipo_display }})</option>{% endfor %}
+        </select>
+        <div class="hint">ℹ️ A que grupo do cardápio o item pertence.</div>
+        <label>Nome *</label><input id="wzNome" placeholder="Ex.: Carne Assada">
+        <label>Descrição</label><textarea id="wzDesc" placeholder="Ingredientes/detalhes que o cliente vê (opcional)"></textarea>
+        <label>Como é vendido? *</label>
+        <div id="wzModos">
+          <div class="opt" data-modo="MONTAGEM"><b>Entra no prato montado</b><span>Proteína ou acompanhamento (preço por peso, da tabela da loja)</span></div>
+          <div class="opt" data-modo="FAIXA"><b>Tem tamanhos com preços</b><span>Ex.: sopa 300/500ml, grelhado 100/200/300g</span></div>
+          <div class="opt" data-modo="UNIDADE"><b>Item avulso (preço fixo)</b><span>Ex.: sanduíche, bebida, espetinho</span></div>
+          <div class="opt" data-modo="ADICIONAL"><b>Adicional / extra</b><span>Ex.: queijo, bacon, batata palha</span></div>
+        </div>
+      </section>
+      <section data-step="2" style="display:none">
+        <div class="st">Passo 2 de 4</div><h2>Preço</h2>
+        <div id="wzMont" style="display:none">
+          <div class="muted">Usa a <b>tabela de preços da loja</b> (Dados da loja). Nada a preencher aqui.</div>
+          <div id="wzKgWrap" style="display:none"><label>Preço por kg — só proteína (opcional)</label>
+            <input id="wzKg" inputmode="decimal" placeholder="Ex.: 159,90">
+            <div class="hint">ℹ️ Só para carnes com preço diferenciado. Vazio = tabela padrão.</div></div>
+        </div>
+        <div id="wzFixo" style="display:none"><label>Preço (R$) *</label>
+          <input id="wzPreco" inputmode="decimal" placeholder="Ex.: 22,00"><div class="hint">ℹ️ Preço por unidade.</div></div>
+        <div id="wzFaixa" style="display:none"><label>Tamanhos e preços *</label>
+          <div class="hint">ℹ️ Ex.: 300ml → 18,00.</div><div id="wzFaixas"></div>
+          <button type="button" class="add" onclick="wzAddFaixa()">+ adicionar tamanho</button></div>
+      </section>
+      <section data-step="3" style="display:none">
+        <div class="st">Passo 3 de 4</div><h2>Quando fica disponível?</h2>
+        <label style="display:flex;gap:.5rem;align-items:center;"><input type="checkbox" id="wzSempre" checked style="width:auto"> Sempre disponível (item fixo, enquanto a loja estiver aberta)</label>
+        <div id="wzCards" style="display:none">
+          <div class="hint">Escolha em quais cardápios este item aparece:</div>
+          {% for cd in wizard_cardapios %}
+          <label style="display:flex;gap:.5rem;align-items:center;font-weight:400;margin-top:.45rem;"><input type="checkbox" class="wzCardChk" value="{{ cd.id }}" style="width:auto"> {{ cd.nome }} <span style="color:#6b7280;font-size:.78rem">({{ cd.agenda_label }})</span></label>
+          {% empty %}
+          <div class="muted">Nenhum cardápio cadastrado ainda. Crie em <b>Cardápios</b> ou deixe como "sempre disponível".</div>
+          {% endfor %}
+        </div>
+      </section>
+      <section data-step="4" style="display:none">
+        <div class="st">Passo 4 de 4</div><h2>Revisão</h2><div class="review" id="wzReview"></div>
+      </section>
+      <div class="err" id="wzErr"></div>
+    </div>
+    <div class="ft">
+      <button class="btn sec" id="wzBack" onclick="wzBackStep()" style="visibility:hidden">← Voltar</button>
+      <button class="btn prim" id="wzNext" onclick="wzNext()">Avançar →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const DIAS=[[0,'Segunda'],[1,'Terça'],[2,'Quarta'],[3,'Quinta'],[4,'Sexta'],[5,'Sábado']];
+  let step=1, modo='', editId=null;
+  const $=id=>document.getElementById(id);
+  const csrf=()=>document.querySelector('#wzOverlay ~ * [name=csrfmiddlewaretoken]')?.value
+              || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+  const err=m=>$('wzErr').textContent=m||'';
+
+  document.querySelectorAll('#wzModos .opt').forEach(o=>o.onclick=()=>{
+    document.querySelectorAll('#wzModos .opt').forEach(x=>x.classList.remove('sel')); o.classList.add('sel'); modo=o.dataset.modo;});
+  $('wzSempre').onchange=()=>$('wzCards').style.display=$('wzSempre').checked?'none':'block';
+
+  window.wzAddFaixa=(r='',p='')=>$('wzFaixas').insertAdjacentHTML('beforeend',
+    `<div class="faixa"><input placeholder="Tamanho (ex.: 500ml)" value="${r}"><input inputmode="decimal" placeholder="Preço" value="${p}" style="max-width:120px"><button type="button" class="btn sec" onclick="this.parentNode.remove()">✕</button></div>`);
+
+  function prep2(){
+    const tipo=$('wzCat').selectedOptions[0]?.dataset.tipo;
+    $('wzMont').style.display=modo==='MONTAGEM'?'block':'none';
+    $('wzKgWrap').style.display=(modo==='MONTAGEM'&&tipo==='PROTEINA')?'block':'none';
+    $('wzFixo').style.display=(modo==='UNIDADE'||modo==='ADICIONAL')?'block':'none';
+    $('wzFaixa').style.display=modo==='FAIXA'?'block':'none';
+    if(modo==='FAIXA'&&!$('wzFaixas').children.length) wzAddFaixa();
+  }
+  function coleta(){
+    const cards=[...document.querySelectorAll('.wzCardChk:checked')].map(c=>c.value);
+    return {produto_id:editId, categoria_id:$('wzCat').value, nome:$('wzNome').value.trim(), descricao:$('wzDesc').value.trim(),
+      modo_venda:modo, preco:$('wzPreco').value, preco_kg:$('wzKg').value,
+      faixas:[...$('wzFaixas').querySelectorAll('.faixa')].map(f=>({rotulo:f.children[0].value,preco:f.children[1].value})),
+      sempre_disponivel:$('wzSempre').checked, cardapios:cards};
+  }
+  function valida(){
+    if(step===1){ if(!$('wzCat').value)return'Escolha a categoria.'; if(!$('wzNome').value.trim())return'Informe o nome.'; if(!modo)return'Escolha como o item é vendido.'; }
+    if(step===2){ if((modo==='UNIDADE'||modo==='ADICIONAL')&&!$('wzPreco').value.trim())return'Informe o preço.';
+      if(modo==='FAIXA'&&![...$('wzFaixas').querySelectorAll('.faixa')].some(f=>f.children[0].value.trim()))return'Adicione ao menos um tamanho.'; }
+    return'';
+  }
+  function review(){
+    const d=coleta(), tipo=$('wzCat').selectedOptions[0]?.textContent||'';
+    const nm={MONTAGEM:'Prato montado',FAIXA:'Tamanhos',UNIDADE:'Avulso',ADICIONAL:'Adicional'};
+    let preco='—';
+    if(modo==='FAIXA')preco=d.faixas.filter(f=>f.rotulo).map(f=>`${f.rotulo}: R$ ${f.preco}`).join(', ');
+    else if(modo==='UNIDADE'||modo==='ADICIONAL')preco='R$ '+d.preco;
+    else preco='Tabela da loja'+(d.preco_kg?` (kg: R$ ${d.preco_kg})`:'');
+    let ag='Sempre (loja aberta)';
+    if(!d.sempre_disponivel){
+      const nomes=[...document.querySelectorAll('.wzCardChk:checked')].map(c=>c.parentNode.textContent.trim().split(' (')[0]);
+      ag = nomes.length ? ('Cardápios: '+nomes.join(', ')) : '⚠️ nenhum cardápio selecionado';
+    }
+    $('wzReview').innerHTML=`<b>${d.nome}</b><br>Categoria: ${tipo}<br>Tipo: ${nm[modo]}<br>Preço: ${preco}<br>Disponível: ${ag}`;
+  }
+  function show(){
+    document.querySelectorAll('#wzCard section[data-step]').forEach(s=>s.style.display=(+s.dataset.step===step)?'block':'none');
+    document.querySelectorAll('#wzCard .dot').forEach(x=>x.classList.toggle('on',+x.dataset.d<=step));
+    $('wzBack').style.visibility=step>1?'visible':'hidden';
+    $('wzNext').textContent=step===4?(editId?'✓ Salvar alterações':'✓ Salvar produto'):'Avançar →';
+    if(step===2)prep2(); if(step===4)review();
+  }
+  window.wzBackStep=()=>{ if(step>1){step--;err('');show();} };
+  window.wzNext=async()=>{
+    const e=valida(); if(e){err(e);return;} err('');
+    if(step<4){step++;show();return;}
+    $('wzNext').disabled=true; $('wzNext').textContent='Salvando...';
+    try{
+      const r=await fetch('/cardapio/produto/assistente/salvar/',{method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(coleta())});
+      const data=await r.json();
+      if(data.ok){ window.location.reload(); }
+      else{ err(data.erro||'Erro ao salvar.'); $('wzNext').disabled=false; $('wzNext').textContent='✓ Salvar produto'; }
+    }catch(ex){ err('Falha de conexão.'); $('wzNext').disabled=false; $('wzNext').textContent='✓ Salvar produto'; }
+  };
+  window.wzClose=()=>{ editId=null; document.querySelector('#wzCard .h h1').textContent='➕ Novo produto'; $('wzOverlay').classList.remove('open'); };
+  window.wzOpen=()=>{ editId=null; document.querySelector('#wzCard .h h1').textContent='➕ Novo produto'; step=1; modo=''; err('');
+    $('wzCat').value=''; $('wzNome').value=''; $('wzDesc').value=''; $('wzPreco').value=''; $('wzKg').value='';
+    $('wzFaixas').innerHTML=''; $('wzSempre').checked=true; $('wzCards').style.display='none';
+    document.querySelectorAll('.wzCardChk:checked').forEach(c=>c.checked=false);
+    document.querySelectorAll('#wzModos .opt').forEach(x=>x.classList.remove('sel'));
+    $('wzNext').disabled=false; show(); $('wzOverlay').classList.add('open'); };
+
+  window.wzOpenEdit=async(id)=>{
+    editId=id; step=1; err('');
+    document.querySelector('#wzCard .h h1').textContent='✏️ Editar produto';
+    try{
+      const r=await fetch('/cardapio/produto/assistente/'+id+'/');
+      const d=await r.json();
+      if(!d.ok){ alert(d.erro||'Erro ao carregar.'); return; }
+      const p=d.produto;
+      $('wzCat').value=p.categoria_id; $('wzNome').value=p.nome; $('wzDesc').value=p.descricao||'';
+      modo=p.modo_venda;
+      document.querySelectorAll('#wzModos .opt').forEach(o=>o.classList.toggle('sel',o.dataset.modo===modo));
+      $('wzPreco').value=p.preco||''; $('wzKg').value=p.preco_kg||'';
+      $('wzFaixas').innerHTML='';
+      (p.faixas||[]).forEach(f=>wzAddFaixa(f.rotulo,f.preco));
+      $('wzSempre').checked=!!p.sempre_disponivel;
+      $('wzCards').style.display=p.sempre_disponivel?'none':'block';
+      document.querySelectorAll('.wzCardChk').forEach(c=>{
+        c.checked=(p.cardapios||[]).includes(parseInt(c.value,10));
+      });
+      $('wzNext').disabled=false; show(); $('wzOverlay').classList.add('open');
+    }catch(e){ alert('Falha ao carregar produto.'); }
+  };
+
+  // Religa o botão "+" (e qualquer link de adicionar) para abrir o modal
+  function hijack(){
+    document.querySelectorAll('a[href$="/produto/add/"]').forEach(a=>{
+      a.addEventListener('click', ev=>{ ev.preventDefault(); ev.stopPropagation(); wzOpen(); }, true);
+    });
+  }
+  if(document.readyState!=='loading') hijack(); else document.addEventListener('DOMContentLoaded', hijack);
+  const params=new URLSearchParams(window.location.search);
+  const aid=params.get('assistente');
+  if(aid){ params.delete('assistente'); history.replaceState({},'',window.location.pathname+(params.toString()?'?'+params:'')); wzOpenEdit(aid); }
+})();
+</script>
+{% endblock %}

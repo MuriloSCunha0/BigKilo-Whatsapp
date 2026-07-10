@@ -1,0 +1,111 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - heading "Cardápio chevron_right Promoções" [level=1] [ref=e12]:
+        - link "Cardápio" [ref=e13] [cursor=pointer]:
+          - /url: /admin/cardapio/
+        - generic [ref=e14]: chevron_right
+        - link "Promoções" [ref=e15] [cursor=pointer]:
+          - /url: /admin/cardapio/promocao/
+    - link "add" [active] [ref=e18] [cursor=pointer]:
+      - /url: /admin/cardapio/promocao/add/
+      - generic [ref=e19]: add
+  - generic [ref=e21]:
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - search [ref=e28]:
+          - generic [ref=e29]:
+            - button "search" [ref=e30]:
+              - generic [ref=e31]: search
+            - textbox "Type to search" [ref=e32]
+            - generic [ref=e34]: /
+        - generic [ref=e35] [cursor=pointer]:
+          - text: Filters
+          - generic [ref=e36]: filter_list
+      - generic [ref=e38]:
+        - generic [ref=e40]: inbox
+        - heading "No results found" [level=2] [ref=e41]
+        - paragraph [ref=e42]: This page yielded into no results. Create a new item or reset your filters.
+        - generic [ref=e43]:
+          - link "add Adicionar Promoção" [ref=e44] [cursor=pointer]:
+            - /url: /admin/cardapio/promocao/add/
+            - generic [ref=e45]: add
+            - text: Adicionar Promoção
+          - link "filter_list_off Reset filters" [ref=e46] [cursor=pointer]:
+            - /url: "?"
+            - generic [ref=e47]: filter_list_off
+            - text: Reset filters
+    - generic [ref=e52]:
+      - generic [ref=e53]:
+        - heading "➕ Nova promoção" [level=1] [ref=e54]
+        - button "✕" [ref=e55] [cursor=pointer]
+      - generic [ref=e56]:
+        - generic [ref=e57]: Produto *
+        - combobox [ref=e58]:
+          - option "— escolha o produto —" [selected]
+          - option "Bobó de Camarão"
+          - option "Carne Assada"
+          - option "Dobradinha com Feijão Branco"
+          - option "Filé de Peixe à Milanesa"
+          - option "Frango Ensopado \"Caipira\""
+          - option "Frango com Quiabo"
+          - option "Isca de Fígado"
+          - option "Lombo Suíno ao molho madeira"
+          - option "Língua ao molho Madeira"
+          - option "Mocotó com Feijão Branco"
+          - option "Angu (Polenta Mole)"
+          - option "Arroz Branco"
+          - option "Arroz Integral"
+          - option "Batata Frita"
+          - option "Couve Mineira"
+          - option "Farofa Crocante"
+          - option "Feijão Preto (sem carne)"
+          - option "Legumes Sortidos"
+          - option "Macarrão ao alho e óleo"
+          - option "Molho Branco"
+          - option "Molho Vermelho"
+          - option "Purê de Abóbora"
+          - option "Purê de Batata"
+          - option "Purê de Batata Doce"
+          - option "Quiabo ao molho Caipira"
+          - option "Salada Verde (Alface Crespa)"
+          - option "Salada de Maionese"
+          - option "Tomate"
+          - option "Bife Acebolado (Coração da Alcatra)"
+          - option "Espetinho de Coração"
+          - option "Sanduíche de Carne Assada no Pão Brioche"
+          - option "Sanduíche de Carne Assada no Pão Francês"
+          - option "Sanduíche de Frango Desfiado no Pão Brioche"
+          - option "Sanduíche de Frango Desfiado no Pão Francês"
+          - option "Caldo Verde"
+          - option "Caldo de Abóbora"
+          - option "Feijão Amigo"
+          - option "Sopa de Ervilha"
+          - option "Sopa de Legumes com Carne"
+          - option "Sopa de Legumes com Frango"
+          - option "Alface e Tomate"
+          - option "Bacon (sopa)"
+          - option "Batata Palha"
+          - option "Calabresa (sopa)"
+          - option "Cheddar"
+          - option "Molho Barbecue"
+          - option "Mussarela"
+          - option "Torradas (sopa)"
+        - generic [ref=e59]: ℹ️ A promoção aplica um desconto sobre o preço deste produto.
+        - generic [ref=e60]: Desconto (%) *
+        - spinbutton [ref=e61]
+        - generic [ref=e62]: "ℹ️ Ex.: 10 = 10% de desconto."
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - generic [ref=e65]: Início (opcional)
+            - textbox [ref=e66]
+            - generic [ref=e67]: Vazio = já.
+          - generic [ref=e68]:
+            - generic [ref=e69]: Fim (opcional)
+            - textbox [ref=e70]
+            - generic [ref=e71]: Vazio = sem fim.
+      - generic [ref=e73]:
+        - button "Cancelar" [ref=e74] [cursor=pointer]
+        - button "✓ Salvar promoção" [ref=e75] [cursor=pointer]
+  - generic [ref=e50]: 0 Promoções

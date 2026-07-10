@@ -1,0 +1,154 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - link "arrow_back" [ref=e12] [cursor=pointer]:
+        - /url: /admin/pedidos/configuracaoloja/
+        - generic [ref=e13]: arrow_back
+      - heading "Pedidos chevron_right Configuração da loja chevron_right Big Kilo" [level=1] [ref=e14]:
+        - link "Pedidos" [ref=e15] [cursor=pointer]:
+          - /url: /admin/pedidos/
+        - generic [ref=e16]: chevron_right
+        - link "Configuração da loja" [ref=e17] [cursor=pointer]:
+          - /url: /admin/pedidos/configuracaoloja/
+        - generic [ref=e18]: chevron_right
+        - link "Big Kilo" [ref=e19] [cursor=pointer]:
+          - /url: /admin/pedidos/configuracaoloja/1/change/
+    - list [ref=e22]:
+      - listitem [ref=e23]:
+        - link "history Histórico" [ref=e24] [cursor=pointer]:
+          - /url: /admin/pedidos/configuracaoloja/1/history/
+          - generic [ref=e25]: history
+          - text: Histórico
+  - generic [ref=e30]:
+    - group [ref=e31]:
+      - heading "Identidade" [level=2] [ref=e32]
+      - generic [ref=e33]:
+        - generic [ref=e35]:
+          - generic [ref=e37]: Nome da loja*
+          - textbox "Nome da loja*" [ref=e40]: Big Kilo
+        - generic [ref=e42]:
+          - generic [ref=e44]: Slogan*
+          - textbox "Slogan*" [ref=e47]: Comida Caseira
+    - group [ref=e48]:
+      - heading "Preços — Refeição completa" [level=2] [ref=e49]
+      - generic [ref=e50]: Preço do prato montado por tamanho e quantos acompanhamentos/proteínas cada tamanho permite. Vale para todas as proteínas.
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53]:
+            - generic [ref=e55]: Completa 300g*
+            - spinbutton "Completa 300g*" [ref=e57]: "31.97"
+          - generic [ref=e58]:
+            - generic [ref=e60]: Máx. acomp. 300g*
+            - spinbutton "Máx. acomp. 300g*" [ref=e62]: "2"
+          - generic [ref=e63]:
+            - generic [ref=e65]: Máx. proteína 300g*
+            - spinbutton "Máx. proteína 300g*" [ref=e67]: "1"
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - generic [ref=e71]: Completa 500g*
+            - spinbutton "Completa 500g*" [ref=e73]: "50.95"
+          - generic [ref=e74]:
+            - generic [ref=e76]: Máx. acomp. 500g*
+            - spinbutton "Máx. acomp. 500g*" [ref=e78]: "3"
+          - generic [ref=e79]:
+            - generic [ref=e81]: Máx. proteína 500g*
+            - spinbutton "Máx. proteína 500g*" [ref=e83]: "1"
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - generic [ref=e87]: Completa 700g*
+            - spinbutton "Completa 700g*" [ref=e89]: "69.93"
+          - generic [ref=e90]:
+            - generic [ref=e92]: Máx. acomp. 700g*
+            - spinbutton "Máx. acomp. 700g*" [ref=e94]: "4"
+          - generic [ref=e95]:
+            - generic [ref=e97]: Máx. proteína 700g*
+            - spinbutton "Máx. proteína 700g*" [ref=e99]: "2"
+    - group [ref=e100]:
+      - heading "Preços — Só proteína" [level=2] [ref=e101]
+      - generic [ref=e102]: Preço padrão da proteína sozinha por tamanho. Uma carne específica pode ter preço próprio em Produtos (campo 'Preço por kg').
+      - generic [ref=e103]:
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - generic [ref=e107]: Só proteína 300g*
+            - spinbutton "Só proteína 300g*" [ref=e109]: "42.47"
+          - generic [ref=e110]:
+            - generic [ref=e112]: Só proteína 500g*
+            - spinbutton "Só proteína 500g*" [ref=e114]: "68.45"
+        - generic [ref=e115]:
+          - generic [ref=e116]:
+            - generic [ref=e118]: Só proteína 700g*
+            - spinbutton "Só proteína 700g*" [ref=e120]: "94.43"
+          - generic [ref=e121]:
+            - generic [ref=e123]: Só proteína 1kg*
+            - spinbutton "Só proteína 1kg*" [ref=e125]: "133.40"
+    - group [ref=e126]:
+      - heading "Entrega e pagamento" [level=2] [ref=e127]
+      - generic [ref=e128]:
+        - generic [ref=e130]:
+          - generic [ref=e132]: Taxa de entrega (informativa)*
+          - generic [ref=e133]:
+            - spinbutton "Taxa de entrega (informativa)*" [ref=e134]: "5.00"
+            - generic [ref=e135]: Paga diretamente ao entregador. Apenas informada ao cliente.
+        - generic [ref=e137]:
+          - generic [ref=e139]: Chave Pix
+          - generic [ref=e140]:
+            - textbox "Chave Pix" [ref=e142]: bigkilo@exemplo.com.br
+            - generic [ref=e143]: ℹ️ Sua chave Pix (usada na cobrança quando integrar o Asaas).
+    - group [ref=e144]:
+      - heading "Funcionamento" [level=2] [ref=e145]
+      - generic [ref=e146]:
+        - generic [ref=e148]:
+          - generic [ref=e150]: Dias de funcionamento
+          - generic [ref=e151]:
+            - generic [ref=e152]:
+              - generic [ref=e154]:
+                - checkbox "Segunda-feira" [checked] [ref=e155]
+                - text: Segunda-feira
+              - generic [ref=e157]:
+                - checkbox "Terça-feira" [checked] [ref=e158]
+                - text: Terça-feira
+              - generic [ref=e160]:
+                - checkbox "Quarta-feira" [checked] [ref=e161]
+                - text: Quarta-feira
+              - generic [ref=e163]:
+                - checkbox "Quinta-feira" [checked] [ref=e164]
+                - text: Quinta-feira
+              - generic [ref=e166]:
+                - checkbox "Sexta-feira" [checked] [ref=e167]
+                - text: Sexta-feira
+              - generic [ref=e169]:
+                - checkbox "Sábado" [checked] [ref=e170]
+                - text: Sábado
+              - generic [ref=e172]:
+                - checkbox "Domingo" [ref=e173]
+                - text: Domingo
+            - generic [ref=e174]: Nenhum marcado = todos os dias.
+        - generic [ref=e176]:
+          - generic [ref=e178]: Abre às*
+          - generic [ref=e179]:
+            - generic [ref=e180]:
+              - textbox "Abre às*" [ref=e181]: 11:00:00
+              - generic [ref=e182]:
+                - text: update |
+                - link "schedule" [ref=e183] [cursor=pointer]:
+                  - /url: "#"
+                  - generic "Escolha um horário" [ref=e184]: schedule
+            - generic [ref=e185]: ℹ️ Fora do horário o bot avisa que está fechado.
+        - generic [ref=e187]:
+          - generic [ref=e189]: Fecha às*
+          - generic [ref=e191]:
+            - textbox "Fecha às*" [ref=e192]: 19:30:00
+            - generic [ref=e193]:
+              - text: update |
+              - link "schedule" [ref=e194] [cursor=pointer]:
+                - /url: "#"
+                - generic "Escolha um horário" [ref=e195]: schedule
+        - generic [ref=e198]:
+          - generic [ref=e200]: Forçar aberto (ignora horário)
+          - generic [ref=e202]:
+            - checkbox "Forçar aberto (ignora horário)" [ref=e203] [cursor=pointer]
+            - generic [ref=e205]: Use em casos excepcionais para aceitar pedidos fora do horário.
+  - generic [ref=e208]:
+    - button "Salvar" [ref=e209] [cursor=pointer]
+    - button "Salvar e continuar editando" [ref=e210] [cursor=pointer]

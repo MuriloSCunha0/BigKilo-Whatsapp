@@ -1,0 +1,163 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Simulador · Big Kilo{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<style>
+  #simWrap{ display:flex; flex-direction:column; align-items:center; gap:.75rem; padding:.5rem 0 1.5rem; }
+  #simWrap .lead{ color:#6b7280; font-size:.85rem; text-align:center; max-width:460px; }
+  html.dark #simWrap .lead{ color:#9ca3af; }
+  #sim{ width:100%; max-width:440px; height:min(640px, calc(100vh - 230px)); display:flex; flex-direction:column;
+        background:#ece5dd; border-radius:16px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.25); border:1px solid rgba(0,0,0,.15); }
+  #sim .top{ background:#d97706; color:#fff; padding:.7rem 1rem; display:flex; align-items:center; gap:.6rem; }
+  #sim .top .av{ width:34px; height:34px; border-radius:50%; background:#fff; color:#d97706; display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
+  #sim .top b{ font-size:.95rem; } #sim .top small{ opacity:.9; font-size:.7rem; display:block; }
+  #sim .cfg{ background:#fff8ef; padding:.4rem .8rem; font-size:.78rem; display:flex; gap:.4rem; align-items:center; border-bottom:1px solid #eee; }
+  #sim .cfg input{ flex:1; padding:.25rem .4rem; border:1px solid #ddd; border-radius:6px; font-size:.78rem; }
+  #simChat{ flex:1; overflow-y:auto; padding:.8rem; display:flex; flex-direction:column; gap:.4rem; }
+  .sm{ max-width:82%; padding:.45rem .65rem; border-radius:10px; font-size:.85rem; white-space:pre-wrap; line-height:1.35; box-shadow:0 1px 1px rgba(0,0,0,.08); }
+  .sm.bot{ background:#fff; align-self:flex-start; border-top-left-radius:2px; color:#111; }
+  .sm.user{ background:#dcf8c6; align-self:flex-end; border-top-right-radius:2px; color:#111; }
+  .sm.sys{ align-self:center; background:#fde9c8; color:#92400e; font-size:.72rem; border-radius:20px; padding:.25rem .7rem; }
+  #sim .acts{ display:flex; gap:.4rem; padding:0 .6rem .5rem; }
+  #sim .acts button{ flex:1; border:none; padding:.45rem; border-radius:8px; cursor:pointer; font-size:.76rem; }
+  #sim .pay{ background:#16a34a; color:#fff; } #sim .reset{ background:#e5e7eb; color:#333; }
+  #sim .foot{ display:flex; gap:.4rem; padding:.5rem; background:#f0f0f0; }
+  #sim .foot input{ flex:1; padding:.5rem .7rem; border:1px solid #ddd; border-radius:20px; font-size:.85rem; }
+  
+  .sm.bot{ display:flex; flex-direction:column; gap:.35rem; max-width:92%; }
+  .sim-list{ display:flex; flex-direction:column; gap:.25rem; margin-top:.2rem; }
+  .sim-list-btn{ font-size:.72rem; color:#6b7280; font-weight:600; }
+  .sim-row,.sim-btns button{ text-align:left; border:1px solid #e5e7eb; background:#f9fafb; border-radius:8px; padding:.4rem .55rem; cursor:pointer; font-size:.78rem; color:#111; }
+  .sim-row strong{ display:block; font-size:.82rem; }
+  .sim-row small{ display:block; color:#6b7280; font-size:.72rem; margin-top:.1rem; }
+  .sim-btns{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.25rem; }
+  .sim-btns button{ flex:1; min-width:40%; text-align:center; background:#fff7ed; border-color:#fdba74; }
+
+  #sim .foot button{ border:none; background:#d97706; color:#fff; width:40px; border-radius:50%; font-size:1rem; cursor:pointer; }
+
+  .sim-multi{ display:flex; flex-direction:column; gap:.25rem; margin-top:.25rem; }
+  .sim-multi label{ display:flex; align-items:flex-start; gap:.4rem; font-size:.78rem; padding:.35rem .45rem; border:1px solid #e5e7eb; border-radius:8px; background:#f9fafb; cursor:pointer; }
+  .sim-multi label input{ margin-top:.15rem; }
+  .sim-multi-ok{ margin-top:.35rem; border:none; background:#d97706; color:#fff; border-radius:8px; padding:.45rem .7rem; cursor:pointer; font-size:.78rem; }
+
+  .sim-pix{ margin-top:.35rem; padding:.55rem; border:1px solid #bbf7d0; background:#f0fdf4; border-radius:10px; font-size:.78rem; }
+  .sim-pix .valor{ font-weight:700; color:#166534; margin:.25rem 0; }
+  .sim-pix textarea{ width:100%; min-height:52px; font-size:.7rem; margin:.35rem 0; border:1px solid #ddd; border-radius:6px; padding:.3rem; }
+  .sim-pix button{ border:none; background:#16a34a; color:#fff; border-radius:8px; padding:.35rem .6rem; cursor:pointer; font-size:.75rem; margin-right:.35rem; }
+  .sim-pix small{ color:#6b7280; display:block; margin-top:.25rem; }
+</style>
+
+<div id="simWrap">
+  <div class="lead" style="background:#dbeafe;color:#1e40af;border-radius:8px;padding:.55rem .85rem;font-weight:600;max-width:460px;text-align:center;">
+    Ambiente de teste — mensagens aqui não vão para o WhatsApp real e não aparecem em Conversas.
+  </div>
+  {% if perfil_preview_nome %}
+  <div class="lead" style="background:#fde9c8;color:#92400e;border-radius:8px;padding:.5rem .8rem;font-weight:600;max-width:460px;">
+    🧪 Testando o fluxo <b>{{ perfil_preview_nome }}</b> (pré-visualização, sem precisar ativar).
+  </div>
+  {% endif %}
+  <div class="lead">Converse como se fosse um cliente no WhatsApp e veja o bot respondendo. Use “💸 Simular pagamento” para testar o ciclo até a cozinha.</div>
+  <div id="sim">
+    <div class="top">
+      <div class="av">🍽️</div>
+      <div><b>Big Kilo</b><small>simulador de atendimento (teste)</small></div>
+    </div>
+    <div class="cfg">📱 <input id="simTel" value="{{ sim_tel|default:'5521999990000' }}" title="Telefone de teste"></div>
+    <div id="simChat"></div>
+    <div class="acts">
+      <button class="pay" onclick="simPagar()">💸 Simular pagamento PIX</button>
+      <button class="reset" onclick="simReset()">↺ Reiniciar</button>
+    </div>
+    <div class="foot">
+      <input id="simInp" placeholder="Digite só quando pedir CEP ou endereço…" onkeydown="if(event.key==='Enter')simEnviar()">
+      <button onclick="simEnviar()">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const chat=document.getElementById('simChat');
+  const tel=()=>document.getElementById('simTel').value.trim();
+  const csrf=document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const PERFIL_ID="{{ perfil_preview_id }}";
+  function fmtWa(t){ return (t||'').replace(/\*([^*]+)\*/g,'$1'); }
+  function add(t,c){ const d=document.createElement('div'); d.className='sm '+c; d.textContent=fmtWa(t); chat.appendChild(d); chat.scrollTop=chat.scrollHeight; }
+  function addBot(m){
+    if(typeof m==='string') m={tipo:'texto',corpo:m};
+    const wrap=document.createElement('div'); wrap.className='sm bot';
+    const body=document.createElement('div');
+    body.innerHTML=(m.corpo||'').replace(/\*([^*]+)\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
+    wrap.appendChild(body);
+    if(m.tipo==='lista'){
+      const lbl=document.createElement('div'); lbl.className='sim-list-btn'; lbl.textContent='📋 '+(m.botao||'Opções'); wrap.appendChild(lbl);
+      const ul=document.createElement('div'); ul.className='sim-list';
+      (m.linhas||[]).forEach(row=>{
+        const b=document.createElement('button'); b.type='button'; b.className='sim-row';
+        b.innerHTML='<strong>'+row.titulo+'</strong>'+(row.descricao?'<small>'+row.descricao+'</small>':'');
+        b.onclick=()=>simEscolher(row.id, row.titulo);
+        ul.appendChild(b);
+      });
+      wrap.appendChild(ul);
+    }
+
+
+    if(m.tipo==='pix_order'){
+      const box=document.createElement('div'); box.className='sim-pix';
+      const sub=(m.subtotal_centavos||0)/100; const tax=(m.taxa_centavos||0)/100;
+      box.innerHTML='<div class="valor">Pix pedido #'+m.pedido_id+' — R$ '+sub.toFixed(2).replace('.',',')+'</div>'
+        +'<div>Taxa entregador (na entrega): R$ '+tax.toFixed(2).replace('.',',')+'</div>';
+      if(m.nativo) box.innerHTML+='<div>📱 No WhatsApp: botão <b>Revisar e pagar</b></div>';
+      const ta=document.createElement('textarea'); ta.readOnly=true; ta.value=m.pix_copia_cola||'';
+      const cp=document.createElement('button'); cp.type='button'; cp.textContent='Copiar Pix';
+      cp.onclick=()=>{ ta.select(); document.execCommand('copy'); cp.textContent='Copiado!'; };
+      const sm=document.createElement('small'); sm.textContent='Use o botão "Simular pagamento PIX" abaixo para testar.';
+      box.appendChild(ta); box.appendChild(cp); box.appendChild(sm); wrap.appendChild(box);
+    }
+
+    if(m.tipo==='multi_select'){
+      const box=document.createElement('div'); box.className='sim-multi';
+      const picked=new Set();
+      (m.opcoes||[]).forEach(op=>{
+        const lb=document.createElement('label');
+        const cb=document.createElement('input'); cb.type='checkbox'; cb.value=op.id;
+        cb.onchange=()=>{ if(cb.checked){ if(picked.size>=(m.maximo||99)){ cb.checked=false; return; } picked.add(op.id);} else picked.delete(op.id); };
+        lb.appendChild(cb);
+        const sp=document.createElement('span'); sp.textContent=op.titulo+(op.descricao?(' — '+op.descricao):''); lb.appendChild(sp);
+        box.appendChild(lb);
+      });
+      const ok=document.createElement('button'); ok.type='button'; ok.className='sim-multi-ok'; ok.textContent=m.botao||'Confirmar';
+      ok.onclick=()=>{
+        const min=m.minimo||1; if(picked.size<min){ alert('Escolha pelo menos '+min+' opção(ões).'); return; }
+        simEscolher(Array.from(picked).join(','), (m.botao||'Confirmar')+' ('+picked.size+')', true);
+      };
+      box.appendChild(ok); wrap.appendChild(box);
+    }
+
+    if(m.tipo==='botoes'){
+      const bar=document.createElement('div'); bar.className='sim-btns';
+      (m.opcoes||[]).forEach(op=>{
+        const b=document.createElement('button'); b.type='button'; b.textContent=op.titulo;
+        b.onclick=()=>simEscolher(op.id, op.titulo);
+        bar.appendChild(b);
+      });
+      wrap.appendChild(bar);
+    }
+    chat.appendChild(wrap); chat.scrollTop=chat.scrollHeight;
+  }
+  async function post(u,b){ b.perfil_id=PERFIL_ID; const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf},body:JSON.stringify(b)}); return r.json(); }
+  window.simEscolher=async(id,label,multi)=>{ add(label||id,'user'); const txt=multi?('multi:'+id):String(id); const d=await post('/simulador/msg/',{telefone:tel(),texto:txt}); (d.mensagens||[]).forEach(m=>addBot(m)); };
+  window.simEnviar=async()=>{ const i=document.getElementById('simInp'); const t=i.value.trim(); if(!t)return; add(t,'user'); i.value='';
+    const d=await post('/simulador/msg/',{telefone:tel(),texto:t}); (d.mensagens||[]).forEach(m=>addBot(m)); };
+  window.simPagar=async()=>{ const d=await post('/simulador/pagar/',{telefone:tel()});
+    if(d.ok){ add('💸 Pagamento PIX simulado (pedido #'+d.pedido+')','sys'); addBot({tipo:'texto',corpo:d.mensagem}); add('🖨️ Comanda impressa na cozinha','sys'); }
+    else add(d.erro||'Nada para pagar.','sys'); };
+  window.simReset=async()=>{ const d=await post('/simulador/reset/',{telefone:tel()}); chat.innerHTML=''; add('Conversa reiniciada','sys'); (d.mensagens||[]).forEach(m=>addBot(m)); };
+  (async()=>{ const d=await post('/simulador/reset/',{telefone:tel()}); (d.mensagens||[]).forEach(m=>addBot(m)); })();
+})();
+
+</script>
+
+{% endblock %}

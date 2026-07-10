@@ -1,0 +1,946 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - heading "Cardápio chevron_right Produtos" [level=1] [ref=e12]:
+        - link "Cardápio" [ref=e13] [cursor=pointer]:
+          - /url: /admin/cardapio/
+        - generic [ref=e14]: chevron_right
+        - link "Produtos" [ref=e15] [cursor=pointer]:
+          - /url: /admin/cardapio/produto/
+    - link "add" [ref=e18] [cursor=pointer]:
+      - /url: /admin/cardapio/produto/add/
+      - generic [ref=e19]: add
+  - generic [ref=e25]:
+    - generic [ref=e26]:
+      - search [ref=e28]:
+        - generic [ref=e29]:
+          - button "search" [ref=e30]:
+            - generic [ref=e31]: search
+          - textbox "Buscar" [ref=e32]
+          - generic [ref=e34]: /
+      - generic [ref=e35] [cursor=pointer]:
+        - text: Filtros
+        - generic [ref=e36]: filter_list
+    - region "scrollable content" [ref=e42]:
+      - table [ref=e44]:
+        - rowgroup [ref=e45]:
+          - row "Selecione todos os objetos nessa página para uma ação Nome arrow_circle_down cancel Categoria Como é vendido Preço Disponível em Agora Esgotado Ativo" [ref=e46]:
+            - columnheader "Selecione todos os objetos nessa página para uma ação" [ref=e47]:
+              - checkbox "Selecione todos os objetos nessa página para uma ação" [ref=e51]: check_small
+            - columnheader "Nome arrow_circle_down cancel" [ref=e52]:
+              - generic [ref=e53]:
+                - link "Nome" [ref=e55] [cursor=pointer]:
+                  - /url: "?o=-1"
+                - generic [ref=e56]:
+                  - link "arrow_circle_down" [ref=e57] [cursor=pointer]:
+                    - /url: "?o=-1"
+                    - generic [ref=e58]: arrow_circle_down
+                  - link "cancel" [ref=e59] [cursor=pointer]:
+                    - /url: "?o="
+                    - generic [ref=e60]: cancel
+            - columnheader "Categoria" [ref=e61]:
+              - link "Categoria" [ref=e64] [cursor=pointer]:
+                - /url: "?o=2.1"
+            - columnheader "Como é vendido" [ref=e65]:
+              - link "Como é vendido" [ref=e68] [cursor=pointer]:
+                - /url: "?o=3.1"
+            - columnheader "Preço" [ref=e69]:
+              - generic [ref=e71]: Preço
+            - columnheader "Disponível em" [ref=e72]:
+              - generic [ref=e74]: Disponível em
+            - columnheader "Agora" [ref=e75]:
+              - generic [ref=e77]: Agora
+            - columnheader "Esgotado" [ref=e78]:
+              - link "Esgotado" [ref=e81] [cursor=pointer]:
+                - /url: "?o=7.1"
+            - columnheader "Ativo" [ref=e82]:
+              - link "Ativo" [ref=e85] [cursor=pointer]:
+                - /url: "?o=8.1"
+        - rowgroup [ref=e86]:
+          - row "Select record Bobó de Camarão Proteínas Montagem (por peso) Por peso (tabela da loja) Dia das Mães; Sexta - Almoço; Sexta - Jantar No ar" [ref=e87] [cursor=pointer]:
+            - cell "Select record" [ref=e88]:
+              - checkbox "Select record" [ref=e89]: check_small
+            - rowheader "Bobó de Camarão" [ref=e90]:
+              - link "Bobó de Camarão" [ref=e91]:
+                - /url: /admin/cardapio/produto/29/change/
+            - cell "Proteínas" [ref=e92]
+            - cell "Montagem (por peso)" [ref=e93]
+            - cell "Por peso (tabela da loja)" [ref=e94]
+            - cell "Dia das Mães; Sexta - Almoço; Sexta - Jantar" [ref=e95]
+            - cell "No ar" [ref=e96]:
+              - generic [ref=e97]: No ar
+            - cell [ref=e98]:
+              - checkbox [ref=e99]
+            - cell [ref=e100]:
+              - checkbox [checked] [ref=e101]
+        - rowgroup [ref=e102]:
+          - row "Select record Carne Assada Proteínas Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e103] [cursor=pointer]:
+            - cell "Select record" [ref=e104]:
+              - checkbox "Select record" [ref=e105]: check_small
+            - rowheader "Carne Assada" [ref=e106]:
+              - link "Carne Assada" [ref=e107]:
+                - /url: /admin/cardapio/produto/10/change/
+            - cell "Proteínas" [ref=e108]
+            - cell "Montagem (por peso)" [ref=e109]
+            - cell "Por peso (tabela da loja)" [ref=e110]
+            - cell "Sempre (loja aberta)" [ref=e111]
+            - cell "No ar" [ref=e112]:
+              - generic [ref=e113]: No ar
+            - cell [ref=e114]:
+              - checkbox [ref=e115]
+            - cell [ref=e116]:
+              - checkbox [checked] [ref=e117]
+        - rowgroup [ref=e118]:
+          - row "Select record Dobradinha com Feijão Branco Proteínas Montagem (por peso) Por peso (tabela da loja) Segunda - Almoço; Segunda - Jantar Fora" [ref=e119] [cursor=pointer]:
+            - cell "Select record" [ref=e120]:
+              - checkbox "Select record" [ref=e121]: check_small
+            - rowheader "Dobradinha com Feijão Branco" [ref=e122]:
+              - link "Dobradinha com Feijão Branco" [ref=e123]:
+                - /url: /admin/cardapio/produto/23/change/
+            - cell "Proteínas" [ref=e124]
+            - cell "Montagem (por peso)" [ref=e125]
+            - cell "Por peso (tabela da loja)" [ref=e126]
+            - cell "Segunda - Almoço; Segunda - Jantar" [ref=e127]
+            - cell "Fora" [ref=e128]:
+              - generic [ref=e129]: Fora
+            - cell [ref=e130]:
+              - checkbox [ref=e131]
+            - cell [ref=e132]:
+              - checkbox [checked] [ref=e133]
+        - rowgroup [ref=e134]:
+          - row "Select record Filé de Peixe à Milanesa Proteínas Montagem (por peso) Por peso (tabela da loja) Sexta - Almoço No ar" [ref=e135] [cursor=pointer]:
+            - cell "Select record" [ref=e136]:
+              - checkbox "Select record" [ref=e137]: check_small
+            - rowheader "Filé de Peixe à Milanesa" [ref=e138]:
+              - link "Filé de Peixe à Milanesa" [ref=e139]:
+                - /url: /admin/cardapio/produto/28/change/
+            - cell "Proteínas" [ref=e140]
+            - cell "Montagem (por peso)" [ref=e141]
+            - cell "Por peso (tabela da loja)" [ref=e142]
+            - cell "Sexta - Almoço" [ref=e143]
+            - cell "No ar" [ref=e144]:
+              - generic [ref=e145]: No ar
+            - cell [ref=e146]:
+              - checkbox [ref=e147]
+            - cell [ref=e148]:
+              - checkbox [checked] [ref=e149]
+        - rowgroup [ref=e150]:
+          - row "Select record Frango Ensopado \"Caipira\" Proteínas Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e151] [cursor=pointer]:
+            - cell "Select record" [ref=e152]:
+              - checkbox "Select record" [ref=e153]: check_small
+            - rowheader "Frango Ensopado \"Caipira\"" [ref=e154]:
+              - link "Frango Ensopado \"Caipira\"" [ref=e155]:
+                - /url: /admin/cardapio/produto/11/change/
+            - cell "Proteínas" [ref=e156]
+            - cell "Montagem (por peso)" [ref=e157]
+            - cell "Por peso (tabela da loja)" [ref=e158]
+            - cell "Sempre (loja aberta)" [ref=e159]
+            - cell "No ar" [ref=e160]:
+              - generic [ref=e161]: No ar
+            - cell [ref=e162]:
+              - checkbox [ref=e163]
+            - cell [ref=e164]:
+              - checkbox [checked] [ref=e165]
+        - rowgroup [ref=e166]:
+          - row "Select record Frango Grelhado Proteínas Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e167] [cursor=pointer]:
+            - cell "Select record" [ref=e168]:
+              - checkbox "Select record" [ref=e169]: check_small
+            - rowheader "Frango Grelhado" [ref=e170]:
+              - link "Frango Grelhado" [ref=e171]:
+                - /url: /admin/cardapio/produto/50/change/
+            - cell "Proteínas" [ref=e172]
+            - cell "Montagem (por peso)" [ref=e173]
+            - cell "Por peso (tabela da loja)" [ref=e174]
+            - cell "Sempre (loja aberta)" [ref=e175]
+            - cell "No ar" [ref=e176]:
+              - generic [ref=e177]: No ar
+            - cell [ref=e178]:
+              - checkbox [ref=e179]
+            - cell [ref=e180]:
+              - checkbox [checked] [ref=e181]
+        - rowgroup [ref=e182]:
+          - row "Select record Frango com Quiabo Proteínas Montagem (por peso) Por peso (tabela da loja) Quinta - Almoço; Quinta - Jantar Fora" [ref=e183] [cursor=pointer]:
+            - cell "Select record" [ref=e184]:
+              - checkbox "Select record" [ref=e185]: check_small
+            - rowheader "Frango com Quiabo" [ref=e186]:
+              - link "Frango com Quiabo" [ref=e187]:
+                - /url: /admin/cardapio/produto/27/change/
+            - cell "Proteínas" [ref=e188]
+            - cell "Montagem (por peso)" [ref=e189]
+            - cell "Por peso (tabela da loja)" [ref=e190]
+            - cell "Quinta - Almoço; Quinta - Jantar" [ref=e191]
+            - cell "Fora" [ref=e192]:
+              - generic [ref=e193]: Fora
+            - cell [ref=e194]:
+              - checkbox [ref=e195]
+            - cell [ref=e196]:
+              - checkbox [checked] [ref=e197]
+        - rowgroup [ref=e198]:
+          - row "Select record Isca de Fígado Proteínas Montagem (por peso) Por peso (tabela da loja) Terça - Almoço Fora" [ref=e199] [cursor=pointer]:
+            - cell "Select record" [ref=e200]:
+              - checkbox "Select record" [ref=e201]: check_small
+            - rowheader "Isca de Fígado" [ref=e202]:
+              - link "Isca de Fígado" [ref=e203]:
+                - /url: /admin/cardapio/produto/24/change/
+            - cell "Proteínas" [ref=e204]
+            - cell "Montagem (por peso)" [ref=e205]
+            - cell "Por peso (tabela da loja)" [ref=e206]
+            - cell "Terça - Almoço" [ref=e207]
+            - cell "Fora" [ref=e208]:
+              - generic [ref=e209]: Fora
+            - cell [ref=e210]:
+              - checkbox [ref=e211]
+            - cell [ref=e212]:
+              - checkbox [checked] [ref=e213]
+        - rowgroup [ref=e214]:
+          - row "Select record Lombo Suíno ao molho madeira Proteínas Montagem (por peso) Por peso (tabela da loja) Quarta - Almoço; Sábado - Almoço Fora" [ref=e215] [cursor=pointer]:
+            - cell "Select record" [ref=e216]:
+              - checkbox "Select record" [ref=e217]: check_small
+            - rowheader "Lombo Suíno ao molho madeira" [ref=e218]:
+              - link "Lombo Suíno ao molho madeira" [ref=e219]:
+                - /url: /admin/cardapio/produto/25/change/
+            - cell "Proteínas" [ref=e220]
+            - cell "Montagem (por peso)" [ref=e221]
+            - cell "Por peso (tabela da loja)" [ref=e222]
+            - cell "Quarta - Almoço; Sábado - Almoço" [ref=e223]
+            - cell "Fora" [ref=e224]:
+              - generic [ref=e225]: Fora
+            - cell [ref=e226]:
+              - checkbox [ref=e227]
+            - cell [ref=e228]:
+              - checkbox [checked] [ref=e229]
+        - rowgroup [ref=e230]:
+          - row "Select record Língua ao molho Madeira Proteínas Montagem (por peso) Por peso (tabela da loja) Quinta - Almoço Fora" [ref=e231] [cursor=pointer]:
+            - cell "Select record" [ref=e232]:
+              - checkbox "Select record" [ref=e233]: check_small
+            - rowheader "Língua ao molho Madeira" [ref=e234]:
+              - link "Língua ao molho Madeira" [ref=e235]:
+                - /url: /admin/cardapio/produto/26/change/
+            - cell "Proteínas" [ref=e236]
+            - cell "Montagem (por peso)" [ref=e237]
+            - cell "Por peso (tabela da loja)" [ref=e238]
+            - cell "Quinta - Almoço" [ref=e239]
+            - cell "Fora" [ref=e240]:
+              - generic [ref=e241]: Fora
+            - cell [ref=e242]:
+              - checkbox [ref=e243]
+            - cell [ref=e244]:
+              - checkbox [checked] [ref=e245]
+        - rowgroup [ref=e246]:
+          - row "Select record Mocotó com Feijão Branco Proteínas Montagem (por peso) Por peso (tabela da loja) Dia das Mães; Sábado - Almoço; Sábado - Jantar Fora" [ref=e247] [cursor=pointer]:
+            - cell "Select record" [ref=e248]:
+              - checkbox "Select record" [ref=e249]: check_small
+            - rowheader "Mocotó com Feijão Branco" [ref=e250]:
+              - link "Mocotó com Feijão Branco" [ref=e251]:
+                - /url: /admin/cardapio/produto/30/change/
+            - cell "Proteínas" [ref=e252]
+            - cell "Montagem (por peso)" [ref=e253]
+            - cell "Por peso (tabela da loja)" [ref=e254]
+            - cell "Dia das Mães; Sábado - Almoço; Sábado - Jantar" [ref=e255]
+            - cell "Fora" [ref=e256]:
+              - generic [ref=e257]: Fora
+            - cell [ref=e258]:
+              - checkbox [ref=e259]
+            - cell [ref=e260]:
+              - checkbox [checked] [ref=e261]
+        - rowgroup [ref=e262]:
+          - row "Select record Angu (Polenta Mole) Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Sexta - Almoço; Sexta - Jantar No ar" [ref=e263] [cursor=pointer]:
+            - cell "Select record" [ref=e264]:
+              - checkbox "Select record" [ref=e265]: check_small
+            - rowheader "Angu (Polenta Mole)" [ref=e266]:
+              - link "Angu (Polenta Mole)" [ref=e267]:
+                - /url: /admin/cardapio/produto/21/change/
+            - cell "Acompanhamentos" [ref=e268]
+            - cell "Montagem (por peso)" [ref=e269]
+            - cell "Por peso (tabela da loja)" [ref=e270]
+            - cell "Sexta - Almoço; Sexta - Jantar" [ref=e271]
+            - cell "No ar" [ref=e272]:
+              - generic [ref=e273]: No ar
+            - cell [ref=e274]:
+              - checkbox [ref=e275]
+            - cell [ref=e276]:
+              - checkbox [checked] [ref=e277]
+        - rowgroup [ref=e278]:
+          - row "Select record Arroz Branco Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e279] [cursor=pointer]:
+            - cell "Select record" [ref=e280]:
+              - checkbox "Select record" [ref=e281]: check_small
+            - rowheader "Arroz Branco" [ref=e282]:
+              - link "Arroz Branco" [ref=e283]:
+                - /url: /admin/cardapio/produto/2/change/
+            - cell "Acompanhamentos" [ref=e284]
+            - cell "Montagem (por peso)" [ref=e285]
+            - cell "Por peso (tabela da loja)" [ref=e286]
+            - cell "Sempre (loja aberta)" [ref=e287]
+            - cell "No ar" [ref=e288]:
+              - generic [ref=e289]: No ar
+            - cell [ref=e290]:
+              - checkbox [ref=e291]
+            - cell [ref=e292]:
+              - checkbox [checked] [ref=e293]
+        - rowgroup [ref=e294]:
+          - row "Select record Arroz Integral Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e295] [cursor=pointer]:
+            - cell "Select record" [ref=e296]:
+              - checkbox "Select record" [ref=e297]: check_small
+            - rowheader "Arroz Integral" [ref=e298]:
+              - link "Arroz Integral" [ref=e299]:
+                - /url: /admin/cardapio/produto/3/change/
+            - cell "Acompanhamentos" [ref=e300]
+            - cell "Montagem (por peso)" [ref=e301]
+            - cell "Por peso (tabela da loja)" [ref=e302]
+            - cell "Sempre (loja aberta)" [ref=e303]
+            - cell "No ar" [ref=e304]:
+              - generic [ref=e305]: No ar
+            - cell [ref=e306]:
+              - checkbox [ref=e307]
+            - cell [ref=e308]:
+              - checkbox [checked] [ref=e309]
+        - rowgroup [ref=e310]:
+          - row "Select record Batata Frita Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e311] [cursor=pointer]:
+            - cell "Select record" [ref=e312]:
+              - checkbox "Select record" [ref=e313]: check_small
+            - rowheader "Batata Frita" [ref=e314]:
+              - link "Batata Frita" [ref=e315]:
+                - /url: /admin/cardapio/produto/9/change/
+            - cell "Acompanhamentos" [ref=e316]
+            - cell "Montagem (por peso)" [ref=e317]
+            - cell "Por peso (tabela da loja)" [ref=e318]
+            - cell "Sempre (loja aberta)" [ref=e319]
+            - cell "No ar" [ref=e320]:
+              - generic [ref=e321]: No ar
+            - cell [ref=e322]:
+              - checkbox [ref=e323]
+            - cell [ref=e324]:
+              - checkbox [checked] [ref=e325]
+        - rowgroup [ref=e326]:
+          - row "Select record Couve Mineira Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Quarta - Almoço Fora" [ref=e327] [cursor=pointer]:
+            - cell "Select record" [ref=e328]:
+              - checkbox "Select record" [ref=e329]: check_small
+            - rowheader "Couve Mineira" [ref=e330]:
+              - link "Couve Mineira" [ref=e331]:
+                - /url: /admin/cardapio/produto/20/change/
+            - cell "Acompanhamentos" [ref=e332]
+            - cell "Montagem (por peso)" [ref=e333]
+            - cell "Por peso (tabela da loja)" [ref=e334]
+            - cell "Quarta - Almoço" [ref=e335]
+            - cell "Fora" [ref=e336]:
+              - generic [ref=e337]: Fora
+            - cell [ref=e338]:
+              - checkbox [ref=e339]
+            - cell [ref=e340]:
+              - checkbox [checked] [ref=e341]
+        - rowgroup [ref=e342]:
+          - row "Select record Farofa Crocante Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e343] [cursor=pointer]:
+            - cell "Select record" [ref=e344]:
+              - checkbox "Select record" [ref=e345]: check_small
+            - rowheader "Farofa Crocante" [ref=e346]:
+              - link "Farofa Crocante" [ref=e347]:
+                - /url: /admin/cardapio/produto/4/change/
+            - cell "Acompanhamentos" [ref=e348]
+            - cell "Montagem (por peso)" [ref=e349]
+            - cell "Por peso (tabela da loja)" [ref=e350]
+            - cell "Sempre (loja aberta)" [ref=e351]
+            - cell "No ar" [ref=e352]:
+              - generic [ref=e353]: No ar
+            - cell [ref=e354]:
+              - checkbox [ref=e355]
+            - cell [ref=e356]:
+              - checkbox [checked] [ref=e357]
+        - rowgroup [ref=e358]:
+          - row "Select record Farofa da Casa Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e359] [cursor=pointer]:
+            - cell "Select record" [ref=e360]:
+              - checkbox "Select record" [ref=e361]: check_small
+            - rowheader "Farofa da Casa" [ref=e362]:
+              - link "Farofa da Casa" [ref=e363]:
+                - /url: /admin/cardapio/produto/51/change/
+            - cell "Acompanhamentos" [ref=e364]
+            - cell "Montagem (por peso)" [ref=e365]
+            - cell "Por peso (tabela da loja)" [ref=e366]
+            - cell "Sempre (loja aberta)" [ref=e367]
+            - cell "No ar" [ref=e368]:
+              - generic [ref=e369]: No ar
+            - cell [ref=e370]:
+              - checkbox [ref=e371]
+            - cell [ref=e372]:
+              - checkbox [checked] [ref=e373]
+        - rowgroup [ref=e374]:
+          - row "Select record Feijão Preto (sem carne) Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e375] [cursor=pointer]:
+            - cell "Select record" [ref=e376]:
+              - checkbox "Select record" [ref=e377]: check_small
+            - rowheader "Feijão Preto (sem carne)" [ref=e378]:
+              - link "Feijão Preto (sem carne)" [ref=e379]:
+                - /url: /admin/cardapio/produto/1/change/
+            - cell "Acompanhamentos" [ref=e380]
+            - cell "Montagem (por peso)" [ref=e381]
+            - cell "Por peso (tabela da loja)" [ref=e382]
+            - cell "Sempre (loja aberta)" [ref=e383]
+            - cell "No ar" [ref=e384]:
+              - generic [ref=e385]: No ar
+            - cell [ref=e386]:
+              - checkbox [ref=e387]
+            - cell [ref=e388]:
+              - checkbox [checked] [ref=e389]
+        - rowgroup [ref=e390]:
+          - row "Select record Legumes Sortidos Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e391] [cursor=pointer]:
+            - cell "Select record" [ref=e392]:
+              - checkbox "Select record" [ref=e393]: check_small
+            - rowheader "Legumes Sortidos" [ref=e394]:
+              - link "Legumes Sortidos" [ref=e395]:
+                - /url: /admin/cardapio/produto/8/change/
+            - cell "Acompanhamentos" [ref=e396]
+            - cell "Montagem (por peso)" [ref=e397]
+            - cell "Por peso (tabela da loja)" [ref=e398]
+            - cell "Sempre (loja aberta)" [ref=e399]
+            - cell "No ar" [ref=e400]:
+              - generic [ref=e401]: No ar
+            - cell [ref=e402]:
+              - checkbox [ref=e403]
+            - cell [ref=e404]:
+              - checkbox [checked] [ref=e405]
+        - rowgroup [ref=e406]:
+          - row "Select record Macarrão ao alho e óleo Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Almoço diário No ar" [ref=e407] [cursor=pointer]:
+            - cell "Select record" [ref=e408]:
+              - checkbox "Select record" [ref=e409]: check_small
+            - rowheader "Macarrão ao alho e óleo" [ref=e410]:
+              - link "Macarrão ao alho e óleo" [ref=e411]:
+                - /url: /admin/cardapio/produto/14/change/
+            - cell "Acompanhamentos" [ref=e412]
+            - cell "Montagem (por peso)" [ref=e413]
+            - cell "Por peso (tabela da loja)" [ref=e414]
+            - cell "Almoço diário" [ref=e415]
+            - cell "No ar" [ref=e416]:
+              - generic [ref=e417]: No ar
+            - cell [ref=e418]:
+              - checkbox [ref=e419]
+            - cell [ref=e420]:
+              - checkbox [checked] [ref=e421]
+        - rowgroup [ref=e422]:
+          - row "Select record Molho Branco Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Almoço diário No ar" [ref=e423] [cursor=pointer]:
+            - cell "Select record" [ref=e424]:
+              - checkbox "Select record" [ref=e425]: check_small
+            - rowheader "Molho Branco" [ref=e426]:
+              - link "Molho Branco" [ref=e427]:
+                - /url: /admin/cardapio/produto/16/change/
+            - cell "Acompanhamentos" [ref=e428]
+            - cell "Montagem (por peso)" [ref=e429]
+            - cell "Por peso (tabela da loja)" [ref=e430]
+            - cell "Almoço diário" [ref=e431]
+            - cell "No ar" [ref=e432]:
+              - generic [ref=e433]: No ar
+            - cell [ref=e434]:
+              - checkbox [ref=e435]
+            - cell [ref=e436]:
+              - checkbox [checked] [ref=e437]
+        - rowgroup [ref=e438]:
+          - row "Select record Molho Vermelho Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Almoço diário No ar" [ref=e439] [cursor=pointer]:
+            - cell "Select record" [ref=e440]:
+              - checkbox "Select record" [ref=e441]: check_small
+            - rowheader "Molho Vermelho" [ref=e442]:
+              - link "Molho Vermelho" [ref=e443]:
+                - /url: /admin/cardapio/produto/15/change/
+            - cell "Acompanhamentos" [ref=e444]
+            - cell "Montagem (por peso)" [ref=e445]
+            - cell "Por peso (tabela da loja)" [ref=e446]
+            - cell "Almoço diário" [ref=e447]
+            - cell "No ar" [ref=e448]:
+              - generic [ref=e449]: No ar
+            - cell [ref=e450]:
+              - checkbox [ref=e451]
+            - cell [ref=e452]:
+              - checkbox [checked] [ref=e453]
+        - rowgroup [ref=e454]:
+          - row "Select record Purê de Abóbora Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Quarta - Almoço Fora" [ref=e455] [cursor=pointer]:
+            - cell "Select record" [ref=e456]:
+              - checkbox "Select record" [ref=e457]: check_small
+            - rowheader "Purê de Abóbora" [ref=e458]:
+              - link "Purê de Abóbora" [ref=e459]:
+                - /url: /admin/cardapio/produto/19/change/
+            - cell "Acompanhamentos" [ref=e460]
+            - cell "Montagem (por peso)" [ref=e461]
+            - cell "Por peso (tabela da loja)" [ref=e462]
+            - cell "Quarta - Almoço" [ref=e463]
+            - cell "Fora" [ref=e464]:
+              - generic [ref=e465]: Fora
+            - cell [ref=e466]:
+              - checkbox [ref=e467]
+            - cell [ref=e468]:
+              - checkbox [checked] [ref=e469]
+        - rowgroup [ref=e470]:
+          - row "Select record Purê de Batata Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Quinta - Almoço; Terça - Almoço Fora" [ref=e471] [cursor=pointer]:
+            - cell "Select record" [ref=e472]:
+              - checkbox "Select record" [ref=e473]: check_small
+            - rowheader "Purê de Batata" [ref=e474]:
+              - link "Purê de Batata" [ref=e475]:
+                - /url: /admin/cardapio/produto/18/change/
+            - cell "Acompanhamentos" [ref=e476]
+            - cell "Montagem (por peso)" [ref=e477]
+            - cell "Por peso (tabela da loja)" [ref=e478]
+            - cell "Quinta - Almoço; Terça - Almoço" [ref=e479]
+            - cell "Fora" [ref=e480]:
+              - generic [ref=e481]: Fora
+            - cell [ref=e482]:
+              - checkbox [ref=e483]
+            - cell [ref=e484]:
+              - checkbox [checked] [ref=e485]
+        - rowgroup [ref=e486]:
+          - row "Select record Purê de Batata Doce Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Segunda - Almoço Fora" [ref=e487] [cursor=pointer]:
+            - cell "Select record" [ref=e488]:
+              - checkbox "Select record" [ref=e489]: check_small
+            - rowheader "Purê de Batata Doce" [ref=e490]:
+              - link "Purê de Batata Doce" [ref=e491]:
+                - /url: /admin/cardapio/produto/17/change/
+            - cell "Acompanhamentos" [ref=e492]
+            - cell "Montagem (por peso)" [ref=e493]
+            - cell "Por peso (tabela da loja)" [ref=e494]
+            - cell "Segunda - Almoço" [ref=e495]
+            - cell "Fora" [ref=e496]:
+              - generic [ref=e497]: Fora
+            - cell [ref=e498]:
+              - checkbox [ref=e499]
+            - cell [ref=e500]:
+              - checkbox [checked] [ref=e501]
+        - rowgroup [ref=e502]:
+          - row "Select record Quiabo ao molho Caipira Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Quinta - Almoço; Quinta - Jantar Fora" [ref=e503] [cursor=pointer]:
+            - cell "Select record" [ref=e504]:
+              - checkbox "Select record" [ref=e505]: check_small
+            - rowheader "Quiabo ao molho Caipira" [ref=e506]:
+              - link "Quiabo ao molho Caipira" [ref=e507]:
+                - /url: /admin/cardapio/produto/22/change/
+            - cell "Acompanhamentos" [ref=e508]
+            - cell "Montagem (por peso)" [ref=e509]
+            - cell "Por peso (tabela da loja)" [ref=e510]
+            - cell "Quinta - Almoço; Quinta - Jantar" [ref=e511]
+            - cell "Fora" [ref=e512]:
+              - generic [ref=e513]: Fora
+            - cell [ref=e514]:
+              - checkbox [ref=e515]
+            - cell [ref=e516]:
+              - checkbox [checked] [ref=e517]
+        - rowgroup [ref=e518]:
+          - row "Select record Salada Verde (Alface Crespa) Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e519] [cursor=pointer]:
+            - cell "Select record" [ref=e520]:
+              - checkbox "Select record" [ref=e521]: check_small
+            - rowheader "Salada Verde (Alface Crespa)" [ref=e522]:
+              - link "Salada Verde (Alface Crespa)" [ref=e523]:
+                - /url: /admin/cardapio/produto/6/change/
+            - cell "Acompanhamentos" [ref=e524]
+            - cell "Montagem (por peso)" [ref=e525]
+            - cell "Por peso (tabela da loja)" [ref=e526]
+            - cell "Sempre (loja aberta)" [ref=e527]
+            - cell "No ar" [ref=e528]:
+              - generic [ref=e529]: No ar
+            - cell [ref=e530]:
+              - checkbox [ref=e531]
+            - cell [ref=e532]:
+              - checkbox [checked] [ref=e533]
+        - rowgroup [ref=e534]:
+          - row "Select record Salada de Maionese Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e535] [cursor=pointer]:
+            - cell "Select record" [ref=e536]:
+              - checkbox "Select record" [ref=e537]: check_small
+            - rowheader "Salada de Maionese" [ref=e538]:
+              - link "Salada de Maionese" [ref=e539]:
+                - /url: /admin/cardapio/produto/5/change/
+            - cell "Acompanhamentos" [ref=e540]
+            - cell "Montagem (por peso)" [ref=e541]
+            - cell "Por peso (tabela da loja)" [ref=e542]
+            - cell "Sempre (loja aberta)" [ref=e543]
+            - cell "No ar" [ref=e544]:
+              - generic [ref=e545]: No ar
+            - cell [ref=e546]:
+              - checkbox [ref=e547]
+            - cell [ref=e548]:
+              - checkbox [checked] [ref=e549]
+        - rowgroup [ref=e550]:
+          - row "Select record Tomate Acompanhamentos Montagem (por peso) Por peso (tabela da loja) Sempre (loja aberta) No ar" [ref=e551] [cursor=pointer]:
+            - cell "Select record" [ref=e552]:
+              - checkbox "Select record" [ref=e553]: check_small
+            - rowheader "Tomate" [ref=e554]:
+              - link "Tomate" [ref=e555]:
+                - /url: /admin/cardapio/produto/7/change/
+            - cell "Acompanhamentos" [ref=e556]
+            - cell "Montagem (por peso)" [ref=e557]
+            - cell "Por peso (tabela da loja)" [ref=e558]
+            - cell "Sempre (loja aberta)" [ref=e559]
+            - cell "No ar" [ref=e560]:
+              - generic [ref=e561]: No ar
+            - cell [ref=e562]:
+              - checkbox [ref=e563]
+            - cell [ref=e564]:
+              - checkbox [checked] [ref=e565]
+        - rowgroup [ref=e566]:
+          - row "Select record Bife Acebolado (Coração da Alcatra) Grelhados Faixas de preço 100g R$ 16,49 / 200g R$ 36,48 / 300g R$ 52,97 Sempre (loja aberta) No ar" [ref=e567] [cursor=pointer]:
+            - cell "Select record" [ref=e568]:
+              - checkbox "Select record" [ref=e569]: check_small
+            - rowheader "Bife Acebolado (Coração da Alcatra)" [ref=e570]:
+              - link "Bife Acebolado (Coração da Alcatra)" [ref=e571]:
+                - /url: /admin/cardapio/produto/12/change/
+            - cell "Grelhados" [ref=e572]
+            - cell "Faixas de preço" [ref=e573]
+            - cell "100g R$ 16,49 / 200g R$ 36,48 / 300g R$ 52,97" [ref=e574]
+            - cell "Sempre (loja aberta)" [ref=e575]
+            - cell "No ar" [ref=e576]:
+              - generic [ref=e577]: No ar
+            - cell [ref=e578]:
+              - checkbox [ref=e579]
+            - cell [ref=e580]:
+              - checkbox [checked] [ref=e581]
+        - rowgroup [ref=e582]:
+          - row "Select record Espetinho de Coração Espetinhos Unidade (preço fixo) R$ 17,49 Sempre (loja aberta) No ar" [ref=e583] [cursor=pointer]:
+            - cell "Select record" [ref=e584]:
+              - checkbox "Select record" [ref=e585]: check_small
+            - rowheader "Espetinho de Coração" [ref=e586]:
+              - link "Espetinho de Coração" [ref=e587]:
+                - /url: /admin/cardapio/produto/13/change/
+            - cell "Espetinhos" [ref=e588]
+            - cell "Unidade (preço fixo)" [ref=e589]
+            - cell "R$ 17,49" [ref=e590]
+            - cell "Sempre (loja aberta)" [ref=e591]
+            - cell "No ar" [ref=e592]:
+              - generic [ref=e593]: No ar
+            - cell [ref=e594]:
+              - checkbox [ref=e595]
+            - cell [ref=e596]:
+              - checkbox [checked] [ref=e597]
+        - rowgroup [ref=e598]:
+          - row "Select record Espetinho de Frango Espetinhos Unidade (preço fixo) R$ 8,00 Sempre (loja aberta) No ar" [ref=e599] [cursor=pointer]:
+            - cell "Select record" [ref=e600]:
+              - checkbox "Select record" [ref=e601]: check_small
+            - rowheader "Espetinho de Frango" [ref=e602]:
+              - link "Espetinho de Frango" [ref=e603]:
+                - /url: /admin/cardapio/produto/52/change/
+            - cell "Espetinhos" [ref=e604]
+            - cell "Unidade (preço fixo)" [ref=e605]
+            - cell "R$ 8,00" [ref=e606]
+            - cell "Sempre (loja aberta)" [ref=e607]
+            - cell "No ar" [ref=e608]:
+              - generic [ref=e609]: No ar
+            - cell [ref=e610]:
+              - checkbox [ref=e611]
+            - cell [ref=e612]:
+              - checkbox [checked] [ref=e613]
+        - rowgroup [ref=e614]:
+          - row "Select record Sanduíche de Carne Assada no Pão Brioche Sanduíches Unidade (preço fixo) R$ 24,30 Jantar diário Fora" [ref=e615] [cursor=pointer]:
+            - cell "Select record" [ref=e616]:
+              - checkbox "Select record" [ref=e617]: check_small
+            - rowheader "Sanduíche de Carne Assada no Pão Brioche" [ref=e618]:
+              - link "Sanduíche de Carne Assada no Pão Brioche" [ref=e619]:
+                - /url: /admin/cardapio/produto/32/change/
+            - cell "Sanduíches" [ref=e620]
+            - cell "Unidade (preço fixo)" [ref=e621]
+            - cell "R$ 24,30" [ref=e622]
+            - cell "Jantar diário" [ref=e623]
+            - cell "Fora" [ref=e624]:
+              - generic [ref=e625]: Fora
+            - cell [ref=e626]:
+              - checkbox [ref=e627]
+            - cell [ref=e628]:
+              - checkbox [checked] [ref=e629]
+        - rowgroup [ref=e630]:
+          - row "Select record Sanduíche de Carne Assada no Pão Francês Sanduíches Unidade (preço fixo) R$ 20,30 Jantar diário Fora" [ref=e631] [cursor=pointer]:
+            - cell "Select record" [ref=e632]:
+              - checkbox "Select record" [ref=e633]: check_small
+            - rowheader "Sanduíche de Carne Assada no Pão Francês" [ref=e634]:
+              - link "Sanduíche de Carne Assada no Pão Francês" [ref=e635]:
+                - /url: /admin/cardapio/produto/31/change/
+            - cell "Sanduíches" [ref=e636]
+            - cell "Unidade (preço fixo)" [ref=e637]
+            - cell "R$ 20,30" [ref=e638]
+            - cell "Jantar diário" [ref=e639]
+            - cell "Fora" [ref=e640]:
+              - generic [ref=e641]: Fora
+            - cell [ref=e642]:
+              - checkbox [ref=e643]
+            - cell [ref=e644]:
+              - checkbox [checked] [ref=e645]
+        - rowgroup [ref=e646]:
+          - row "Select record Sanduíche de Frango Desfiado no Pão Brioche Sanduíches Unidade (preço fixo) R$ 17,30 Jantar diário Fora" [ref=e647] [cursor=pointer]:
+            - cell "Select record" [ref=e648]:
+              - checkbox "Select record" [ref=e649]: check_small
+            - rowheader "Sanduíche de Frango Desfiado no Pão Brioche" [ref=e650]:
+              - link "Sanduíche de Frango Desfiado no Pão Brioche" [ref=e651]:
+                - /url: /admin/cardapio/produto/34/change/
+            - cell "Sanduíches" [ref=e652]
+            - cell "Unidade (preço fixo)" [ref=e653]
+            - cell "R$ 17,30" [ref=e654]
+            - cell "Jantar diário" [ref=e655]
+            - cell "Fora" [ref=e656]:
+              - generic [ref=e657]: Fora
+            - cell [ref=e658]:
+              - checkbox [ref=e659]
+            - cell [ref=e660]:
+              - checkbox [checked] [ref=e661]
+        - rowgroup [ref=e662]:
+          - row "Select record Sanduíche de Frango Desfiado no Pão Francês Sanduíches Unidade (preço fixo) R$ 13,30 Jantar diário Fora" [ref=e663] [cursor=pointer]:
+            - cell "Select record" [ref=e664]:
+              - checkbox "Select record" [ref=e665]: check_small
+            - rowheader "Sanduíche de Frango Desfiado no Pão Francês" [ref=e666]:
+              - link "Sanduíche de Frango Desfiado no Pão Francês" [ref=e667]:
+                - /url: /admin/cardapio/produto/33/change/
+            - cell "Sanduíches" [ref=e668]
+            - cell "Unidade (preço fixo)" [ref=e669]
+            - cell "R$ 13,30" [ref=e670]
+            - cell "Jantar diário" [ref=e671]
+            - cell "Fora" [ref=e672]:
+              - generic [ref=e673]: Fora
+            - cell [ref=e674]:
+              - checkbox [ref=e675]
+            - cell [ref=e676]:
+              - checkbox [checked] [ref=e677]
+        - rowgroup [ref=e678]:
+          - row "Select record Caldo Verde Sopas Faixas de preço 300ml R$ 18,00 / 500ml R$ 25,00 Jantar diário Fora" [ref=e679] [cursor=pointer]:
+            - cell "Select record" [ref=e680]:
+              - checkbox "Select record" [ref=e681]: check_small
+            - rowheader "Caldo Verde" [ref=e682]:
+              - link "Caldo Verde" [ref=e683]:
+                - /url: /admin/cardapio/produto/35/change/
+            - cell "Sopas" [ref=e684]
+            - cell "Faixas de preço" [ref=e685]
+            - cell "300ml R$ 18,00 / 500ml R$ 25,00" [ref=e686]
+            - cell "Jantar diário" [ref=e687]
+            - cell "Fora" [ref=e688]:
+              - generic [ref=e689]: Fora
+            - cell [ref=e690]:
+              - checkbox [ref=e691]
+            - cell [ref=e692]:
+              - checkbox [checked] [ref=e693]
+        - rowgroup [ref=e694]:
+          - row "Select record Caldo de Abóbora Sopas Faixas de preço 300ml R$ 18,00 / 500ml R$ 25,00 Jantar diário Fora" [ref=e695] [cursor=pointer]:
+            - cell "Select record" [ref=e696]:
+              - checkbox "Select record" [ref=e697]: check_small
+            - rowheader "Caldo de Abóbora" [ref=e698]:
+              - link "Caldo de Abóbora" [ref=e699]:
+                - /url: /admin/cardapio/produto/37/change/
+            - cell "Sopas" [ref=e700]
+            - cell "Faixas de preço" [ref=e701]
+            - cell "300ml R$ 18,00 / 500ml R$ 25,00" [ref=e702]
+            - cell "Jantar diário" [ref=e703]
+            - cell "Fora" [ref=e704]:
+              - generic [ref=e705]: Fora
+            - cell [ref=e706]:
+              - checkbox [ref=e707]
+            - cell [ref=e708]:
+              - checkbox [checked] [ref=e709]
+        - rowgroup [ref=e710]:
+          - row "Select record Feijão Amigo Sopas Faixas de preço 300ml R$ 18,00 / 500ml R$ 25,00 Jantar diário Fora" [ref=e711] [cursor=pointer]:
+            - cell "Select record" [ref=e712]:
+              - checkbox "Select record" [ref=e713]: check_small
+            - rowheader "Feijão Amigo" [ref=e714]:
+              - link "Feijão Amigo" [ref=e715]:
+                - /url: /admin/cardapio/produto/38/change/
+            - cell "Sopas" [ref=e716]
+            - cell "Faixas de preço" [ref=e717]
+            - cell "300ml R$ 18,00 / 500ml R$ 25,00" [ref=e718]
+            - cell "Jantar diário" [ref=e719]
+            - cell "Fora" [ref=e720]:
+              - generic [ref=e721]: Fora
+            - cell [ref=e722]:
+              - checkbox [ref=e723]
+            - cell [ref=e724]:
+              - checkbox [checked] [ref=e725]
+        - rowgroup [ref=e726]:
+          - row "Select record Sopa de Ervilha Sopas Faixas de preço 300ml R$ 18,00 / 500ml R$ 25,00 Jantar diário Fora" [ref=e727] [cursor=pointer]:
+            - cell "Select record" [ref=e728]:
+              - checkbox "Select record" [ref=e729]: check_small
+            - rowheader "Sopa de Ervilha" [ref=e730]:
+              - link "Sopa de Ervilha" [ref=e731]:
+                - /url: /admin/cardapio/produto/36/change/
+            - cell "Sopas" [ref=e732]
+            - cell "Faixas de preço" [ref=e733]
+            - cell "300ml R$ 18,00 / 500ml R$ 25,00" [ref=e734]
+            - cell "Jantar diário" [ref=e735]
+            - cell "Fora" [ref=e736]:
+              - generic [ref=e737]: Fora
+            - cell [ref=e738]:
+              - checkbox [ref=e739]
+            - cell [ref=e740]:
+              - checkbox [checked] [ref=e741]
+        - rowgroup [ref=e742]:
+          - row "Select record Sopa de Legumes com Carne Sopas Faixas de preço 300ml R$ 18,00 / 500ml R$ 25,00 Jantar diário Fora" [ref=e743] [cursor=pointer]:
+            - cell "Select record" [ref=e744]:
+              - checkbox "Select record" [ref=e745]: check_small
+            - rowheader "Sopa de Legumes com Carne" [ref=e746]:
+              - link "Sopa de Legumes com Carne" [ref=e747]:
+                - /url: /admin/cardapio/produto/39/change/
+            - cell "Sopas" [ref=e748]
+            - cell "Faixas de preço" [ref=e749]
+            - cell "300ml R$ 18,00 / 500ml R$ 25,00" [ref=e750]
+            - cell "Jantar diário" [ref=e751]
+            - cell "Fora" [ref=e752]:
+              - generic [ref=e753]: Fora
+            - cell [ref=e754]:
+              - checkbox [ref=e755]
+            - cell [ref=e756]:
+              - checkbox [checked] [ref=e757]
+        - rowgroup [ref=e758]:
+          - row "Select record Sopa de Legumes com Frango Sopas Faixas de preço 300ml R$ 18,00 / 500ml R$ 25,00 Jantar diário Fora" [ref=e759] [cursor=pointer]:
+            - cell "Select record" [ref=e760]:
+              - checkbox "Select record" [ref=e761]: check_small
+            - rowheader "Sopa de Legumes com Frango" [ref=e762]:
+              - link "Sopa de Legumes com Frango" [ref=e763]:
+                - /url: /admin/cardapio/produto/40/change/
+            - cell "Sopas" [ref=e764]
+            - cell "Faixas de preço" [ref=e765]
+            - cell "300ml R$ 18,00 / 500ml R$ 25,00" [ref=e766]
+            - cell "Jantar diário" [ref=e767]
+            - cell "Fora" [ref=e768]:
+              - generic [ref=e769]: Fora
+            - cell [ref=e770]:
+              - checkbox [ref=e771]
+            - cell [ref=e772]:
+              - checkbox [checked] [ref=e773]
+        - rowgroup [ref=e774]:
+          - row "Select record Alface e Tomate Adicionais Adicional R$ 3,00 Jantar diário Fora" [ref=e775] [cursor=pointer]:
+            - cell "Select record" [ref=e776]:
+              - checkbox "Select record" [ref=e777]: check_small
+            - rowheader "Alface e Tomate" [ref=e778]:
+              - link "Alface e Tomate" [ref=e779]:
+                - /url: /admin/cardapio/produto/43/change/
+            - cell "Adicionais" [ref=e780]
+            - cell "Adicional" [ref=e781]
+            - cell "R$ 3,00" [ref=e782]
+            - cell "Jantar diário" [ref=e783]
+            - cell "Fora" [ref=e784]:
+              - generic [ref=e785]: Fora
+            - cell [ref=e786]:
+              - checkbox [ref=e787]
+            - cell [ref=e788]:
+              - checkbox [checked] [ref=e789]
+        - rowgroup [ref=e790]:
+          - row "Select record Bacon (sopa) Adicionais Adicional R$ 2,00 Jantar diário Fora" [ref=e791] [cursor=pointer]:
+            - cell "Select record" [ref=e792]:
+              - checkbox "Select record" [ref=e793]: check_small
+            - rowheader "Bacon (sopa)" [ref=e794]:
+              - link "Bacon (sopa)" [ref=e795]:
+                - /url: /admin/cardapio/produto/47/change/
+            - cell "Adicionais" [ref=e796]
+            - cell "Adicional" [ref=e797]
+            - cell "R$ 2,00" [ref=e798]
+            - cell "Jantar diário" [ref=e799]
+            - cell "Fora" [ref=e800]:
+              - generic [ref=e801]: Fora
+            - cell [ref=e802]:
+              - checkbox [ref=e803]
+            - cell [ref=e804]:
+              - checkbox [checked] [ref=e805]
+        - rowgroup [ref=e806]:
+          - row "Select record Batata Palha Adicionais Adicional R$ 2,00 Jantar diário Fora" [ref=e807] [cursor=pointer]:
+            - cell "Select record" [ref=e808]:
+              - checkbox "Select record" [ref=e809]: check_small
+            - rowheader "Batata Palha" [ref=e810]:
+              - link "Batata Palha" [ref=e811]:
+                - /url: /admin/cardapio/produto/44/change/
+            - cell "Adicionais" [ref=e812]
+            - cell "Adicional" [ref=e813]
+            - cell "R$ 2,00" [ref=e814]
+            - cell "Jantar diário" [ref=e815]
+            - cell "Fora" [ref=e816]:
+              - generic [ref=e817]: Fora
+            - cell [ref=e818]:
+              - checkbox [ref=e819]
+            - cell [ref=e820]:
+              - checkbox [checked] [ref=e821]
+        - rowgroup [ref=e822]:
+          - row "Select record Calabresa (sopa) Adicionais Adicional R$ 2,00 Jantar diário Fora" [ref=e823] [cursor=pointer]:
+            - cell "Select record" [ref=e824]:
+              - checkbox "Select record" [ref=e825]: check_small
+            - rowheader "Calabresa (sopa)" [ref=e826]:
+              - link "Calabresa (sopa)" [ref=e827]:
+                - /url: /admin/cardapio/produto/46/change/
+            - cell "Adicionais" [ref=e828]
+            - cell "Adicional" [ref=e829]
+            - cell "R$ 2,00" [ref=e830]
+            - cell "Jantar diário" [ref=e831]
+            - cell "Fora" [ref=e832]:
+              - generic [ref=e833]: Fora
+            - cell [ref=e834]:
+              - checkbox [ref=e835]
+            - cell [ref=e836]:
+              - checkbox [checked] [ref=e837]
+        - rowgroup [ref=e838]:
+          - row "Select record Cheddar Adicionais Adicional R$ 3,00 Jantar diário Fora" [ref=e839] [cursor=pointer]:
+            - cell "Select record" [ref=e840]:
+              - checkbox "Select record" [ref=e841]: check_small
+            - rowheader "Cheddar" [ref=e842]:
+              - link "Cheddar" [ref=e843]:
+                - /url: /admin/cardapio/produto/41/change/
+            - cell "Adicionais" [ref=e844]
+            - cell "Adicional" [ref=e845]
+            - cell "R$ 3,00" [ref=e846]
+            - cell "Jantar diário" [ref=e847]
+            - cell "Fora" [ref=e848]:
+              - generic [ref=e849]: Fora
+            - cell [ref=e850]:
+              - checkbox [ref=e851]
+            - cell [ref=e852]:
+              - checkbox [checked] [ref=e853]
+        - rowgroup [ref=e854]:
+          - row "Select record Molho Barbecue Adicionais Adicional R$ 2,00 Jantar diário Fora" [ref=e855] [cursor=pointer]:
+            - cell "Select record" [ref=e856]:
+              - checkbox "Select record" [ref=e857]: check_small
+            - rowheader "Molho Barbecue" [ref=e858]:
+              - link "Molho Barbecue" [ref=e859]:
+                - /url: /admin/cardapio/produto/45/change/
+            - cell "Adicionais" [ref=e860]
+            - cell "Adicional" [ref=e861]
+            - cell "R$ 2,00" [ref=e862]
+            - cell "Jantar diário" [ref=e863]
+            - cell "Fora" [ref=e864]:
+              - generic [ref=e865]: Fora
+            - cell [ref=e866]:
+              - checkbox [ref=e867]
+            - cell [ref=e868]:
+              - checkbox [checked] [ref=e869]
+        - rowgroup [ref=e870]:
+          - row "Select record Mussarela Adicionais Adicional R$ 3,00 Jantar diário Fora" [ref=e871] [cursor=pointer]:
+            - cell "Select record" [ref=e872]:
+              - checkbox "Select record" [ref=e873]: check_small
+            - rowheader "Mussarela" [ref=e874]:
+              - link "Mussarela" [ref=e875]:
+                - /url: /admin/cardapio/produto/42/change/
+            - cell "Adicionais" [ref=e876]
+            - cell "Adicional" [ref=e877]
+            - cell "R$ 3,00" [ref=e878]
+            - cell "Jantar diário" [ref=e879]
+            - cell "Fora" [ref=e880]:
+              - generic [ref=e881]: Fora
+            - cell [ref=e882]:
+              - checkbox [ref=e883]
+            - cell [ref=e884]:
+              - checkbox [checked] [ref=e885]
+        - rowgroup [ref=e886]:
+          - row "Select record Torradas (sopa) Adicionais Adicional R$ 4,00 Jantar diário Fora" [ref=e887] [cursor=pointer]:
+            - cell "Select record" [ref=e888]:
+              - checkbox "Select record" [ref=e889]: check_small
+            - rowheader "Torradas (sopa)" [ref=e890]:
+              - link "Torradas (sopa)" [ref=e891]:
+                - /url: /admin/cardapio/produto/48/change/
+            - cell "Adicionais" [ref=e892]
+            - cell "Adicional" [ref=e893]
+            - cell "R$ 4,00" [ref=e894]
+            - cell "Jantar diário" [ref=e895]
+            - cell "Fora" [ref=e896]:
+              - generic [ref=e897]: Fora
+            - cell [ref=e898]:
+              - checkbox [ref=e899]
+            - cell [ref=e900]:
+              - checkbox [checked] [ref=e901]
+        - rowgroup [ref=e902]:
+          - row "Select record Suco de Laranja Bebidas Unidade (preço fixo) R$ 7,50 Fora de cardápio Fora" [ref=e903] [cursor=pointer]:
+            - cell "Select record" [ref=e904]:
+              - checkbox "Select record" [ref=e905]: check_small
+            - rowheader "Suco de Laranja" [ref=e906]:
+              - link "Suco de Laranja" [ref=e907]:
+                - /url: /admin/cardapio/produto/53/change/
+            - cell "Bebidas" [ref=e908]
+            - cell "Unidade (preço fixo)" [ref=e909]
+            - cell "R$ 7,50" [ref=e910]
+            - cell "Fora de cardápio" [ref=e911]
+            - cell "Fora" [ref=e912]:
+              - generic [ref=e913]: Fora
+            - cell [ref=e914]:
+              - checkbox [ref=e915]
+            - cell [ref=e916]:
+              - checkbox [checked] [ref=e917]
+  - generic [ref=e919]:
+    - generic [ref=e920]: 52 Produtos
+    - button "Salvar" [ref=e922] [cursor=pointer]

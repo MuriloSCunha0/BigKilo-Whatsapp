@@ -1,0 +1,72 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - heading "Pedidos chevron_right Fluxos de mensagem" [level=1] [ref=e12]:
+        - link "Pedidos" [ref=e13] [cursor=pointer]:
+          - /url: /admin/pedidos/
+        - generic [ref=e14]: chevron_right
+        - link "Fluxos de mensagem" [ref=e15] [cursor=pointer]:
+          - /url: /admin/pedidos/perfilfluxo/
+    - link "add" [ref=e18] [cursor=pointer]:
+      - /url: /admin/pedidos/perfilfluxo/add/
+      - generic [ref=e19]: add
+  - generic [ref=e25]:
+    - search [ref=e28]:
+      - generic [ref=e29]:
+        - button "search" [ref=e30]:
+          - generic [ref=e31]: search
+        - textbox "Buscar" [ref=e32]
+        - generic [ref=e34]: /
+    - region "scrollable content" [ref=e40]:
+      - table [ref=e42]:
+        - rowgroup [ref=e43]:
+          - row "Selecione todos os objetos nessa página para uma ação Nome arrow_circle_down cancel 2 Ativo arrow_circle_up cancel 1 Mensagens Ações" [ref=e44]:
+            - columnheader "Selecione todos os objetos nessa página para uma ação" [ref=e45]:
+              - checkbox "Selecione todos os objetos nessa página para uma ação" [ref=e49]: check_small
+            - columnheader "Nome arrow_circle_down cancel 2" [ref=e50]:
+              - generic [ref=e51]:
+                - link "Nome" [ref=e53] [cursor=pointer]:
+                  - /url: "?o=-1.-2"
+                - generic [ref=e54]:
+                  - link "arrow_circle_down" [ref=e55] [cursor=pointer]:
+                    - /url: "?o=-2.-1"
+                    - generic [ref=e56]: arrow_circle_down
+                  - link "cancel" [ref=e57] [cursor=pointer]:
+                    - /url: "?o=-2"
+                    - generic [ref=e58]: cancel
+                - 'generic "Prioridade da ordenação: 2" [ref=e59]': "2"
+            - columnheader "Ativo arrow_circle_up cancel 1" [ref=e60]:
+              - generic [ref=e61]:
+                - link "Ativo" [ref=e63] [cursor=pointer]:
+                  - /url: "?o=2.1"
+                - generic [ref=e64]:
+                  - link "arrow_circle_up" [ref=e65] [cursor=pointer]:
+                    - /url: "?o=2.1"
+                    - generic [ref=e66]: arrow_circle_up
+                  - link "cancel" [ref=e67] [cursor=pointer]:
+                    - /url: "?o=1"
+                    - generic [ref=e68]: cancel
+                - 'generic "Prioridade da ordenação: 1" [ref=e69]': "1"
+            - columnheader "Mensagens" [ref=e70]:
+              - generic [ref=e72]: Mensagens
+            - columnheader "Ações" [ref=e73]:
+              - generic [ref=e75]: Ações
+        - rowgroup [ref=e76]:
+          - row "Select record Padrão 8 ✏️ Editar 🧪 Testar" [ref=e77] [cursor=pointer]:
+            - cell "Select record" [ref=e78]:
+              - checkbox "Select record" [ref=e79]: check_small
+            - rowheader "Padrão" [ref=e80]:
+              - link "Padrão" [ref=e81]:
+                - /url: /admin/pedidos/perfilfluxo/1/change/
+            - cell [ref=e82]:
+              - checkbox [checked] [ref=e83]
+            - cell "8" [ref=e84]
+            - cell "✏️ Editar 🧪 Testar" [ref=e85]:
+              - link "✏️ Editar" [ref=e86]:
+                - /url: /pedidos/fluxo/1/editar/
+              - link "🧪 Testar" [ref=e87]:
+                - /url: /simulador/?perfil=1
+  - generic [ref=e89]:
+    - generic [ref=e90]: 1 Fluxo de mensagens
+    - button "Salvar" [ref=e92] [cursor=pointer]

@@ -1,0 +1,82 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10] [cursor=pointer]: dock_to_right
+        - link "arrow_back" [ref=e12] [cursor=pointer]:
+          - /url: /admin/cardapio/promocao/
+          - generic [ref=e13]: arrow_back
+        - heading "Cardápio chevron_right Promoções" [level=1] [ref=e14]:
+          - link "Cardápio" [ref=e15] [cursor=pointer]:
+            - /url: /admin/cardapio/
+          - generic [ref=e16]: chevron_right
+          - link "Promoções" [ref=e17] [cursor=pointer]:
+            - /url: /admin/cardapio/promocao/
+      - link "add" [ref=e20] [cursor=pointer]:
+        - /url: /admin/cardapio/promocao/add/
+        - generic [ref=e21]: add
+    - group [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e30]:
+          - generic [ref=e32]: Nome
+          - generic [ref=e33]:
+            - generic [ref=e34]: "-"
+            - generic [ref=e35]: "ℹ️ Nome que o cliente vê no WhatsApp. Ex.: Carne Assada."
+        - generic [ref=e37]:
+          - generic [ref=e39]: Categoria
+          - generic [ref=e40]:
+            - generic [ref=e41]: "-"
+            - generic [ref=e42]: ℹ️ A qual grupo do cardápio o item pertence (Proteínas, Acompanhamentos, Bebidas…).
+        - generic [ref=e44]:
+          - generic [ref=e46]: Preço fixo (R$)
+          - generic [ref=e47]:
+            - generic [ref=e48]: 0,00
+            - generic [ref=e49]: ℹ️ Só para itens vendidos por Unidade/Adicional. Deixe 0 para Montagem ou Faixa.
+        - generic [ref=e51]:
+          - generic [ref=e53]: Desconto (%)*
+          - generic [ref=e54]:
+            - spinbutton "Desconto (%)*" [active] [ref=e55]: "0.00"
+            - generic [ref=e56]: "ℹ️ Desconto em porcentagem. Ex.: 10 = 10%. Deixe 0 para sem promoção."
+        - generic [ref=e58]:
+          - generic [ref=e60]: Início da promoção
+          - generic [ref=e61]:
+            - generic [ref=e62]:
+              - generic [ref=e65]:
+                - textbox "Date" [ref=e66]
+                - generic [ref=e67]:
+                  - text: update |
+                  - link "calendar_today" [ref=e68] [cursor=pointer]:
+                    - /url: "#"
+                    - generic "Escolha uma data" [ref=e69]: calendar_today
+              - generic [ref=e72]:
+                - textbox "Hora" [ref=e73]
+                - generic [ref=e74]:
+                  - text: update |
+                  - link "schedule" [ref=e75] [cursor=pointer]:
+                    - /url: "#"
+                    - generic "Escolha um horário" [ref=e76]: schedule
+            - generic [ref=e77]: ℹ️ Opcional. Em branco = começa já.
+        - generic [ref=e79]:
+          - generic [ref=e81]: Fim da promoção
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - generic [ref=e86]:
+                - textbox "Date" [ref=e87]
+                - generic [ref=e88]:
+                  - text: update |
+                  - link "calendar_today" [ref=e89] [cursor=pointer]:
+                    - /url: "#"
+                    - generic "Escolha uma data" [ref=e90]: calendar_today
+              - generic [ref=e93]:
+                - textbox "Hora" [ref=e94]
+                - generic [ref=e95]:
+                  - text: update |
+                  - link "schedule" [ref=e96] [cursor=pointer]:
+                    - /url: "#"
+                    - generic "Escolha um horário" [ref=e97]: schedule
+            - generic [ref=e98]: ℹ️ Opcional. Em branco = sem término.
+    - generic [ref=e101]:
+      - button "Salvar" [ref=e102] [cursor=pointer]
+      - button "Salvar e continuar editando" [ref=e103] [cursor=pointer]
+      - button "Salvar e adicionar outro(a)" [ref=e104] [cursor=pointer]
+  - text: navigate_before navigate_next navigate_before navigate_next

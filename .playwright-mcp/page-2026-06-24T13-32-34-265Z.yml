@@ -1,0 +1,97 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - link "arrow_back" [ref=e12] [cursor=pointer]:
+        - /url: /admin/pedidos/pedido/
+        - generic [ref=e13]: arrow_back
+      - 'heading "Pedidos chevron_right Pedidos chevron_right Pedido #3 - 5521966665555 - Concluído" [level=1] [ref=e14]':
+        - link "Pedidos" [ref=e15] [cursor=pointer]:
+          - /url: /admin/pedidos/
+        - generic [ref=e16]: chevron_right
+        - link "Pedidos" [ref=e17] [cursor=pointer]:
+          - /url: /admin/pedidos/pedido/
+        - generic [ref=e18]: chevron_right
+        - 'link "Pedido #3 - 5521966665555 - Concluído" [ref=e19] [cursor=pointer]':
+          - /url: /admin/pedidos/pedido/3/change/
+    - list [ref=e22]:
+      - listitem [ref=e23]:
+        - link "history Histórico" [ref=e24] [cursor=pointer]:
+          - /url: /admin/pedidos/pedido/3/history/
+          - generic [ref=e25]: history
+          - text: Histórico
+  - generic [ref=e27]:
+    - navigation [ref=e30]:
+      - link "Geral" [ref=e31] [cursor=pointer]:
+        - /url: "#general"
+      - link "Itens do Pedido" [ref=e32] [cursor=pointer]:
+        - /url: "#itens"
+    - generic [ref=e35]:
+      - group [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e39]:
+            - generic [ref=e41]: Cliente
+            - link "Ana Lima - 5521966665555" [ref=e44] [cursor=pointer]:
+              - /url: /admin/pedidos/cliente/3/change/
+          - generic [ref=e46]:
+            - generic [ref=e48]: Status*
+            - generic [ref=e50]:
+              - combobox "Status*" [ref=e51]:
+                - option "Aguardando pagamento"
+                - option "Preparando"
+                - option "Concluído" [selected]
+                - option "Cancelado"
+              - generic: expand_more
+          - generic [ref=e53]:
+            - generic [ref=e55]: Valor total
+            - generic [ref=e57]: 36,48
+      - group [ref=e58]:
+        - heading "Entrega" [level=2] [ref=e59]
+        - generic [ref=e60]:
+          - generic [ref=e62]:
+            - generic [ref=e64]: Endereço de entrega
+            - generic [ref=e66]: Rua do Novo Leblon 50
+          - generic [ref=e68]:
+            - generic [ref=e70]: Bairro
+            - generic [ref=e72]: Novo Leblon
+          - generic [ref=e74]:
+            - generic [ref=e76]: CEP
+            - generic [ref=e78]: 22790-050
+          - generic [ref=e80]:
+            - generic [ref=e82]: Taxa de entrega
+            - generic [ref=e83]:
+              - generic [ref=e84]: 5,00
+              - generic [ref=e85]: Paga ao entregador na entrega (não incluída no Pix).
+          - generic [ref=e87]:
+            - generic [ref=e89]: Observações gerais
+            - generic [ref=e91]: "-"
+      - group [ref=e92]:
+        - heading "Pagamento (Asaas)" [level=2] [ref=e93]
+        - generic [ref=e94]:
+          - generic [ref=e96]:
+            - generic [ref=e98]: ID da cobrança (Asaas)
+            - generic [ref=e100]: "-"
+          - generic [ref=e102]:
+            - generic [ref=e104]: Pix Copia e Cola
+            - generic [ref=e106]: "-"
+      - group [ref=e107]:
+        - heading "Cozinha" [level=2] [ref=e108]
+        - generic [ref=e109]:
+          - generic [ref=e111]:
+            - generic [ref=e113]: Comanda impressa
+            - generic "False" [ref=e116]:
+              - generic [ref=e117]: close_small
+          - generic [ref=e119]:
+            - generic [ref=e121]: Impressa em
+            - generic [ref=e123]: "-"
+      - group [ref=e124]:
+        - group [ref=e125]:
+          - generic "Datas expand_more" [ref=e126]:
+            - heading "Datas" [level=2] [ref=e127] [cursor=pointer]
+            - text: expand_more
+      - text: expand_more
+  - generic [ref=e130]:
+    - button "Salvar" [ref=e131] [cursor=pointer]
+    - button "Salvar e continuar editando" [ref=e132] [cursor=pointer]
+    - link "Remover Pedido" [ref=e134] [cursor=pointer]:
+      - /url: /admin/pedidos/pedido/3/delete/

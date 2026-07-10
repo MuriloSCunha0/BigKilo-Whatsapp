@@ -1,0 +1,72 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}{{ block.super }}
+<style>
+  #pfOverlay{ position:fixed; inset:0; background:rgba(17,24,39,.55); z-index:9999; display:none;
+              align-items:flex-start; justify-content:center; padding:3rem 1rem; overflow-y:auto; }
+  #pfOverlay.open{ display:flex; }
+  #pfCard{ width:100%; max-width:460px; background:#fff; color:#111827; border-radius:14px;
+           box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden; }
+  #pfCard .h{ background:#d97706; color:#fff; padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; }
+  #pfCard .h h1{ font-size:1.1rem; margin:0; } #pfCard .h button{ background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer; }
+  #pfCard .bd{ padding:1.25rem; }
+  #pfCard label{ display:block; font-weight:600; font-size:.85rem; margin:.7rem 0 .25rem; color:#111827; }
+  #pfCard .hint{ font-size:.78rem; color:#6b7280; margin-top:.2rem; }
+  #pfCard input[type=text]{ width:100%; padding:.55rem .7rem; border:1px solid #e5e7eb; border-radius:8px; font-size:.92rem; background:#fff; color:#111827; }
+  #pfCard .row{ display:flex; align-items:center; gap:.5rem; margin-top:.9rem; font-weight:600; font-size:.9rem; }
+  #pfCard .err{ color:#b91c1c; font-size:.85rem; margin-top:.6rem; min-height:1rem; }
+  #pfCard .ft{ display:flex; justify-content:flex-end; gap:.5rem; padding:1rem 1.25rem; border-top:1px solid #e5e7eb; }
+  #pfCard .btn{ border:none; border-radius:9px; padding:.6rem 1.1rem; font-size:.92rem; font-weight:600; cursor:pointer; }
+  #pfCard .prim{ background:#d97706; color:#fff; } #pfCard .sec{ background:#f3f4f6; color:#374151; }
+  html.dark #pfCard{ background:#1f2937; color:#e5e7eb; }
+  html.dark #pfCard label, html.dark #pfCard .row{ color:#f3f4f6; } html.dark #pfCard .hint{ color:#9ca3af; }
+  html.dark #pfCard input[type=text]{ background:#111827; color:#e5e7eb; border-color:#374151; }
+  html.dark #pfCard .ft{ border-color:#374151; } html.dark #pfCard .sec{ background:#374151; color:#e5e7eb; }
+</style>
+{% endblock %}
+
+{% block content %}{{ block.super }}
+{% csrf_token %}
+<div id="pfOverlay" onclick="if(event.target===this)pfClose()">
+  <div id="pfCard">
+    <div class="h"><h1>➕ Novo fluxo de mensagens</h1><button type="button" onclick="pfClose()">✕</button></div>
+    <div class="bd">
+      <label>Nome *</label>
+      <input type="text" id="pfNome" placeholder="Ex.: Natal, Tom descontraído">
+      <div class="hint">ℹ️ Vamos copiar as mensagens atuais para você editar no próximo passo.</div>
+      <label class="row"><input type="checkbox" id="pfAtivo" style="width:auto"> Ativar este fluxo ao criar</label>
+      <div class="hint">ℹ️ Só um fluxo fica ativo por vez (igual aos cardápios).</div>
+      <div class="err" id="pfErr"></div>
+    </div>
+    <div class="ft">
+      <button class="btn sec" type="button" onclick="pfClose()">Cancelar</button>
+      <button class="btn prim" type="button" id="pfSalvar" onclick="pfSalvar()">Criar e editar →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const csrf=()=>document.querySelector('[name=csrfmiddlewaretoken]')?.value||'';
+  window.pfClose=()=>$('pfOverlay').classList.remove('open');
+  window.pfOpen=()=>{ $('pfNome').value=''; $('pfAtivo').checked=false; $('pfErr').textContent='';
+    $('pfSalvar').disabled=false; $('pfSalvar').textContent='Criar e editar →'; $('pfOverlay').classList.add('open'); $('pfNome').focus(); };
+  window.pfSalvar=async()=>{
+    if(!$('pfNome').value.trim()){ $('pfErr').textContent='Informe o nome.'; return; }
+    $('pfSalvar').disabled=true; $('pfSalvar').textContent='Criando...';
+    try{
+      const r=await fetch('/pedidos/perfilfluxo/assistente/salvar/',{method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},
+        body:JSON.stringify({nome:$('pfNome').value.trim(),ativo:$('pfAtivo').checked})});
+      const d=await r.json();
+      if(d.ok){ window.location.href=d.redirect; }
+      else{ $('pfErr').textContent=d.erro||'Erro.'; $('pfSalvar').disabled=false; $('pfSalvar').textContent='Criar e editar →'; }
+    }catch(e){ $('pfErr').textContent='Falha de conexão.'; $('pfSalvar').disabled=false; $('pfSalvar').textContent='Criar e editar →'; }
+  };
+  function hijack(){ document.querySelectorAll('a[href$="/perfilfluxo/add/"]').forEach(a=>
+    a.addEventListener('click', ev=>{ ev.preventDefault(); ev.stopPropagation(); pfOpen(); }, true)); }
+  if(document.readyState!=='loading') hijack(); else document.addEventListener('DOMContentLoaded', hijack);
+})();
+</script>
+{% endblock %}

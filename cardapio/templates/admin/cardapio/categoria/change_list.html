@@ -1,0 +1,104 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}{{ block.super }}
+<style>
+  #czOverlay{ position:fixed; inset:0; background:rgba(17,24,39,.55); z-index:9999;
+              display:none; align-items:flex-start; justify-content:center; padding:3rem 1rem; overflow-y:auto; }
+  #czOverlay.open{ display:flex; }
+  #czCard{ width:100%; max-width:480px; background:#fff; color:#111827; border-radius:14px;
+           box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden; }
+  #czCard .h{ background:#d97706; color:#fff; padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; }
+  #czCard .h h1{ font-size:1.1rem; margin:0; } #czCard .h button{ background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer; }
+  #czCard .bd{ padding:1.25rem; }
+  #czCard label{ display:block; font-weight:600; font-size:.85rem; margin:.7rem 0 .25rem; color:#111827; }
+  #czCard .hint{ font-size:.78rem; color:#6b7280; margin-top:.2rem; }
+  #czCard input, #czCard select{ width:100%; padding:.6rem .7rem; border:1px solid #e5e7eb; border-radius:8px; font-size:.95rem; background:#fff; color:#111827; }
+  #czCard .row{ display:flex; align-items:center; gap:.5rem; margin-top:.9rem; }
+  #czCard .row input{ width:auto; }
+  #czCard .err{ color:#b91c1c; font-size:.85rem; margin-top:.6rem; min-height:1rem; }
+  #czCard .ft{ display:flex; justify-content:flex-end; gap:.5rem; padding:1rem 1.25rem; border-top:1px solid #e5e7eb; }
+  #czCard .btn{ border:none; border-radius:9px; padding:.6rem 1.1rem; font-size:.92rem; font-weight:600; cursor:pointer; }
+  #czCard .prim{ background:#d97706; color:#fff; } #czCard .sec{ background:#f3f4f6; color:#374151; }
+  /* tema escuro (Unfold usa classe .dark no <html>) */
+  html.dark #czCard{ background:#1f2937; color:#e5e7eb; }
+  html.dark #czCard label{ color:#f3f4f6; }
+  html.dark #czCard .hint{ color:#9ca3af; }
+  html.dark #czCard input, html.dark #czCard select{ background:#111827; color:#e5e7eb; border-color:#374151; }
+  html.dark #czCard .ft{ border-color:#374151; }
+  html.dark #czCard .sec{ background:#374151; color:#e5e7eb; }
+</style>
+{% endblock %}
+
+{% block content %}{{ block.super }}
+{% csrf_token %}
+<div id="czOverlay" onclick="if(event.target===this)czClose()">
+  <div id="czCard">
+    <div class="h"><h1 id="czTitulo">➕ Nova categoria</h1><button type="button" onclick="czClose()">✕</button></div>
+    <div class="bd">
+      <label>Nome *</label>
+      <input id="czNome" placeholder="Ex.: Bebidas">
+      <div class="hint">ℹ️ Nome do grupo do cardápio.</div>
+      <label>Tipo *</label>
+      <select id="czTipo">
+        <option value="">— escolha —</option>
+        {% for v, l in categoria_tipos %}<option value="{{ v }}">{{ l }}</option>{% endfor %}
+      </select>
+      <div class="hint">ℹ️ Proteína e Acompanhamento entram no prato montado; os demais são itens avulsos.</div>
+      <label>Ordem de exibição</label>
+      <input id="czOrdem" type="number" value="0">
+      <div class="hint">ℹ️ Em que ordem aparece (0 = primeiro).</div>
+      <label class="row"><input type="checkbox" id="czAtiva" checked> Ativa</label>
+      <div class="err" id="czErr"></div>
+    </div>
+    <div class="ft">
+      <button class="btn sec" type="button" onclick="czClose()">Cancelar</button>
+      <button class="btn prim" type="button" id="czSalvar" onclick="czSalvar()">✓ Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let editId=null;
+  const $=id=>document.getElementById(id);
+  const csrf=()=>document.querySelector('[name=csrfmiddlewaretoken]')?.value||'';
+  window.czClose=()=>{ editId=null; $('czTitulo').textContent='➕ Nova categoria'; $('czOverlay').classList.remove('open'); };
+  window.czOpen=()=>{ editId=null; $('czTitulo').textContent='➕ Nova categoria';
+    $('czNome').value=''; $('czTipo').value=''; $('czOrdem').value='0'; $('czAtiva').checked=true;
+    $('czErr').textContent=''; $('czSalvar').disabled=false; $('czSalvar').textContent='✓ Salvar';
+    $('czOverlay').classList.add('open'); $('czNome').focus(); };
+  window.czOpenEdit=async(id)=>{
+    editId=id; $('czTitulo').textContent='✏️ Editar categoria'; $('czErr').textContent='';
+    try{
+      const r=await fetch('/cardapio/categoria/assistente/'+id+'/');
+      const d=await r.json();
+      if(!d.ok){ alert(d.erro||'Erro ao carregar.'); return; }
+      const c=d.categoria;
+      $('czNome').value=c.nome; $('czTipo').value=c.tipo; $('czOrdem').value=c.ordem; $('czAtiva').checked=!!c.ativa;
+      $('czSalvar').disabled=false; $('czSalvar').textContent='✓ Salvar alterações';
+      $('czOverlay').classList.add('open'); $('czNome').focus();
+    }catch(e){ alert('Falha ao carregar categoria.'); }
+  };
+  window.czSalvar=async()=>{
+    if(!$('czNome').value.trim()){ $('czErr').textContent='Informe o nome.'; return; }
+    if(!$('czTipo').value){ $('czErr').textContent='Escolha o tipo.'; return; }
+    $('czSalvar').disabled=true; $('czSalvar').textContent='Salvando...';
+    const payload={nome:$('czNome').value.trim(),tipo:$('czTipo').value,ordem:$('czOrdem').value,ativa:$('czAtiva').checked};
+    if(editId) payload.categoria_id=editId;
+    try{
+      const r=await fetch('/cardapio/categoria/assistente/salvar/',{method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf()}, body:JSON.stringify(payload)});
+      const d=await r.json();
+      if(d.ok){ window.location.reload(); }
+      else{ $('czErr').textContent=d.erro||'Erro ao salvar.'; $('czSalvar').disabled=false; $('czSalvar').textContent=editId?'✓ Salvar alterações':'✓ Salvar'; }
+    }catch(e){ $('czErr').textContent='Falha de conexão.'; $('czSalvar').disabled=false; $('czSalvar').textContent=editId?'✓ Salvar alterações':'✓ Salvar'; }
+  };
+  function hijack(){ document.querySelectorAll('a[href$="/categoria/add/"]').forEach(a=>
+    a.addEventListener('click', ev=>{ ev.preventDefault(); ev.stopPropagation(); czOpen(); }, true)); }
+  if(document.readyState!=='loading') hijack(); else document.addEventListener('DOMContentLoaded', hijack);
+  const params=new URLSearchParams(window.location.search);
+  const aid=params.get('assistente');
+  if(aid){ params.delete('assistente'); history.replaceState({},'',window.location.pathname+(params.toString()?'?'+params:'')); czOpenEdit(aid); }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+# Traduções do painel Big Kilo (complemento ao pt-br do Django).
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: pt_BR\n"
+
+msgid "Filters"
+msgstr "Filtros"
+
+msgid "General"
+msgstr "Geral"
+
+msgid "Type to search"
+msgstr "Buscar"
+
+msgid "Search"
+msgstr "Buscar"
+
+msgid "Clear all filters"
+msgstr "Limpar filtros"
+
+msgid "Reset filters"
+msgstr "Limpar filtros"
+
+msgid "No results found"
+msgstr "Nenhum resultado encontrado"
+
+msgid "Select action"
+msgstr "Selecione uma ação"
+
+msgid "Run the selected action"
+msgstr "Executar ação selecionada"
+
+msgid "Go"
+msgstr "Executar"
+
+msgid "Save"
+msgstr "Salvar"
+
+msgid "Delete"
+msgstr "Excluir"
+
+msgid "Add"
+msgstr "Adicionar"
+
+msgid "Change"
+msgstr "Alterar"
+
+msgid "Home"
+msgstr "Início"
+
+msgid "View"
+msgstr "Visualizar"
+
+msgid "History"
+msgstr "Histórico"
+
+msgid "Save and continue editing"
+msgstr "Salvar e continuar editando"
+
+msgid "Save and add another"
+msgstr "Salvar e adicionar outro"
+
+msgid "Please correct the errors below."
+msgstr "Corrija os erros abaixo."
+
+msgid "This page yielded into no results"
+msgstr "Esta página não retornou resultados"
+
+msgid "Select record"
+msgstr "Selecionar este item"
+
+msgid "Select action to run"
+msgstr "Selecione a ação"
+
+msgid "Select all objects on this page for an action"
+msgstr "Selecionar todos os itens da página"

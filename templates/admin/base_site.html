@@ -1,0 +1,64 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrahead %}{{ block.super }}
+<script>
+  // Traduz strings da interface do Unfold que ficam em inglês (sem locale próprio).
+  document.addEventListener('DOMContentLoaded', function () {
+    var MAP = { 'Filters': 'Filtros', 'General': 'Geral', 'Clear all filters': 'Limpar filtros',
+                'Type to search': 'Buscar', 'Search': 'Buscar',
+                'No results found': 'Nenhum resultado encontrado',
+                'This page yielded into no results': 'Esta página não retornou resultados',
+                'Reset filters': 'Limpar filtros',
+                'Select action': 'Selecione uma ação', 'Run the selected action': 'Executar ação selecionada',
+                'Run the selected action on the selected items': 'Executar ação nos itens selecionados',
+                'Go': 'Executar', 'Save': 'Salvar', 'Delete': 'Excluir', 'Add': 'Adicionar',
+                'Change': 'Alterar', 'Home': 'Início', 'History': 'Histórico',
+                'Save and continue editing': 'Salvar e continuar editando',
+                'Save and add another': 'Salvar e adicionar outro',
+                'Please correct the error below.': 'Corrija o erro abaixo.',
+                'Please correct the errors below.': 'Corrija os erros abaixo.' };
+    // Placeholders dos campos de busca.
+    document.querySelectorAll('input[placeholder]').forEach(function (i) {
+      var p = i.placeholder.trim();
+      if (MAP[p]) i.placeholder = MAP[p];
+    });
+    // Rótulos de acessibilidade (aria-label / title) que ficaram em inglês.
+    var ARIA = { 'Select record': 'Selecionar este item',
+                 'Select action to run': 'Selecione a ação',
+                 'Select all objects on this page for an action': 'Selecionar todos os itens da página' };
+    document.querySelectorAll('[aria-label],[title]').forEach(function (el) {
+      var a = el.getAttribute('aria-label'); if (a && ARIA[a.trim()]) el.setAttribute('aria-label', ARIA[a.trim()]);
+      var t = el.getAttribute('title'); if (t && ARIA[t.trim()]) el.setAttribute('title', ARIA[t.trim()]);
+    });
+    // Opções <option> dentro de selects (ex.: "Select action").
+    document.querySelectorAll('option').forEach(function (o) {
+      var v = o.textContent.trim(); if (MAP[v]) o.textContent = MAP[v];
+    });
+    // Nós de texto exatos (rótulos como "Filters", aba "General").
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    var nodes = [], n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(function (node) {
+      var t = node.nodeValue.trim();
+      if (MAP[t]) node.nodeValue = node.nodeValue.replace(t, MAP[t]);
+    });
+  });
+
+  // Torna a LINHA INTEIRA das listagens clicável (abre o registro), não só o nome.
+  // Ignora cliques em checkbox, links, botões e campos editáveis.
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!document.body.classList.contains('change-list')) return;
+    document.querySelectorAll('table tbody tr').forEach(function (tr) {
+      var link = tr.querySelector('a[href*="/change/"]');
+      if (!link) return;
+      tr.style.cursor = 'pointer';
+      tr.addEventListener('click', function (e) {
+        if (e.target.closest('a, input, button, label, select, textarea, .fxChip')) return;
+        // não dispara ao selecionar texto
+        if (window.getSelection && String(window.getSelection())) return;
+        window.location.href = link.href;
+      });
+    });
+  });
+</script>
+{% endblock %}

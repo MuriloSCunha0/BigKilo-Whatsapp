@@ -1,0 +1,157 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10] [cursor=pointer]: dock_to_right
+        - link "arrow_back" [ref=e12] [cursor=pointer]:
+          - /url: /admin/pedidos/cliente/
+          - generic [ref=e13]: arrow_back
+        - heading "Pedidos chevron_right Clientes chevron_right Ana Lima - 5521966665555" [level=1] [ref=e14]:
+          - link "Pedidos" [ref=e15] [cursor=pointer]:
+            - /url: /admin/pedidos/
+          - generic [ref=e16]: chevron_right
+          - link "Clientes" [ref=e17] [cursor=pointer]:
+            - /url: /admin/pedidos/cliente/
+          - generic [ref=e18]: chevron_right
+          - link "Ana Lima - 5521966665555" [ref=e19] [cursor=pointer]:
+            - /url: /admin/pedidos/cliente/3/change/
+      - list [ref=e22]:
+        - listitem [ref=e23]:
+          - link "history Histórico" [ref=e24] [cursor=pointer]:
+            - /url: /admin/pedidos/cliente/3/history/
+            - generic [ref=e25]: history
+            - text: Histórico
+    - generic [ref=e30]:
+      - group [ref=e31]:
+        - heading "Contato (vem do WhatsApp)" [level=2] [ref=e32]
+        - generic [ref=e33]: Estes dados são preenchidos automaticamente e não podem ser editados aqui.
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e36]:
+              - generic [ref=e38]: Nome no WhatsApp
+              - generic [ref=e40]: Ana Lima
+            - generic [ref=e41]:
+              - generic [ref=e43]: Telefone (WhatsApp)
+              - generic [ref=e44]:
+                - generic [ref=e45]: "5521966665555"
+                - generic [ref=e46]: "Identificador único no WhatsApp (E.164, ex.: 5521999998888)."
+          - generic [ref=e48]:
+            - generic [ref=e50]: Criado em
+            - generic [ref=e52]: 20 de Junho de 2026 às 17:21
+      - group [ref=e53]:
+        - heading "Resumo" [level=2] [ref=e54]
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - generic [ref=e59]: Pedidos
+            - generic [ref=e61]: "1"
+          - generic [ref=e62]:
+            - generic [ref=e64]: Total gasto
+            - generic [ref=e66]: R$ 36,48
+          - generic [ref=e67]:
+            - generic [ref=e69]: Último pedido
+            - generic [ref=e71]: 20/06/2026 20:21
+      - group [ref=e72]:
+        - heading "Mensagens deste contato" [level=2] [ref=e73]
+        - generic [ref=e74]: O que o bot fala com ele hoje. Clique em 'Personalizar mensagens' para editar só para este contato (com proteção das variáveis).
+        - generic [ref=e75]:
+          - generic [ref=e77]:
+            - generic [ref=e79]: Editar
+            - link "✏️ Personalizar mensagens deste contato" [ref=e82] [cursor=pointer]:
+              - /url: /pedidos/contato/3/mensagens/
+          - generic [ref=e84]:
+            - generic [ref=e86]: Mensagens efetivas
+            - generic [ref=e88]:
+              - generic [ref=e89]:
+                - text: "Boas-vindas / saudação:"
+                - text: Olá! Que bom que você falou com o Big Kilo 🍽️
+              - generic [ref=e90]:
+                - text: "Área de atendimento (resumo):"
+                - text: Novo Leblon e arredores (Barra da Tijuca)
+              - generic [ref=e91]:
+                - text: "Anúncio de promoção:"
+                - text: 🎁 Temos promoções hoje! Confira no cardápio.
+              - generic [ref=e92]:
+                - text: "Pedir bairro:"
+                - text: "Para começar, informe seu bairro:"
+              - generic [ref=e93]:
+                - text: "Fora da área de entrega:"
+                - text: Poxa, ainda não atendemos a sua região. 😕 Obrigado pelo contato!
+              - generic [ref=e94]:
+                - text: "Pedir rua/endereço:"
+                - generic [ref=e95]: "Ótimo, atendemos {bairro}! Agora envie a *rua, número e complemento*."
+              - generic [ref=e96]:
+                - text: "Aguardando pagamento:"
+                - text: Estamos aguardando o pagamento. Para um novo pedido, digite *cancelar*.
+              - generic [ref=e97]:
+                - text: "Pagamento confirmado:"
+                - text: ✅ Pagamento confirmado! Seu pedido já está sendo preparado. A taxa de entrega é paga diretamente ao entregador. Já já chega aí! 🍽️
+      - group "Promoções exclusivas deste contato" [ref=e100]:
+        - heading "Promoções exclusivas deste contato" [level=2] [ref=e101]
+        - region "scrollable content" [ref=e107]:
+          - table [ref=e109]:
+            - rowgroup [ref=e110]:
+              - row "Produto* help Desconto (%)* Mensagem de anúncio help Início Fim Ativo" [ref=e111]:
+                - columnheader "Produto* help" [ref=e112]:
+                  - generic [ref=e113]:
+                    - generic [ref=e114]: Produto*
+                    - generic "ℹ️ Funciona com itens de preço fixo (bebida, sanduíche, etc.)." [ref=e115]: help
+                - columnheader "Desconto (%)*" [ref=e116]:
+                  - generic [ref=e118]: Desconto (%)*
+                - columnheader "Mensagem de anúncio help" [ref=e119]:
+                  - generic [ref=e120]:
+                    - generic [ref=e121]: Mensagem de anúncio
+                    - 'generic "ℹ️ Texto que o bot mostra no início para este contato. Ex.: ''Pra você: 20% no pudim! 🍮''" [ref=e122]': help
+                - columnheader "Início" [ref=e123]:
+                  - generic [ref=e125]: Início
+                - columnheader "Fim" [ref=e126]:
+                  - generic [ref=e128]: Fim
+                - columnheader "Ativo" [ref=e129]:
+                  - generic [ref=e131]: Ativo
+                - columnheader [ref=e132]
+            - rowgroup [ref=e148]:
+              - row "Suco de Laranja more_vert | calendar_today | calendar_today delete" [ref=e223]:
+                - cell "Suco de Laranja more_vert" [ref=e224]:
+                  - generic [ref=e154]:
+                    - combobox [ref=e155]
+                    - combobox "Suco de Laranja" [active] [ref=e225] [cursor=pointer]:
+                      - textbox "Suco de Laranja" [ref=e226]
+                      - text: expand_more
+                    - generic [ref=e162] [cursor=pointer]: more_vert
+                - cell [ref=e163]:
+                  - textbox [ref=e166]
+                - cell [ref=e167]:
+                  - textbox [ref=e171]
+                - cell "| calendar_today" [ref=e172]:
+                  - generic [ref=e175]:
+                    - textbox [ref=e176]
+                    - generic [ref=e177]:
+                      - text: update |
+                      - link "calendar_today" [ref=e178] [cursor=pointer]:
+                        - /url: "#"
+                        - generic "Escolha uma data" [ref=e179]: calendar_today
+                - cell "| calendar_today" [ref=e180]:
+                  - generic [ref=e183]:
+                    - textbox [ref=e184]
+                    - generic [ref=e185]:
+                      - text: update |
+                      - link "calendar_today" [ref=e186] [cursor=pointer]:
+                        - /url: "#"
+                        - generic "Escolha uma data" [ref=e187]: calendar_today
+                - cell [ref=e188]:
+                  - checkbox [checked] [ref=e191] [cursor=pointer]
+                - cell "delete" [ref=e192]:
+                  - generic [ref=e194] [cursor=pointer]: delete
+            - text: update calendar_today update calendar_today
+            - rowgroup [ref=e133]:
+              - row "add Adicionar outro(a) Promoção exclusiva" [ref=e134]:
+                - cell "add Adicionar outro(a) Promoção exclusiva" [ref=e135]:
+                  - link "add Adicionar outro(a) Promoção exclusiva" [ref=e137] [cursor=pointer]:
+                    - /url: "#"
+                    - generic [ref=e139]: add
+                    - generic [ref=e140]: Adicionar outro(a) Promoção exclusiva
+    - generic [ref=e143]:
+      - button "Salvar" [ref=e144] [cursor=pointer]
+      - button "Salvar e continuar editando" [ref=e145] [cursor=pointer]
+      - link "Remover Cliente" [ref=e147] [cursor=pointer]:
+        - /url: /admin/pedidos/cliente/3/delete/
+  - text: navigate_before navigate_next navigate_before navigate_next navigate_before navigate_next navigate_before navigate_next navigate_before navigate_next navigate_before navigate_next

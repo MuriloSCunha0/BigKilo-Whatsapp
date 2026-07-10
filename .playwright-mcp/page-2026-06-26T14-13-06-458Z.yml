@@ -1,0 +1,41 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - link "arrow_back" [ref=e12] [cursor=pointer]:
+        - /url: /admin/pedidos/sessaobot/
+        - generic [ref=e13]: arrow_back
+      - heading "Pedidos chevron_right Conversas (WhatsApp) chevron_right 5521999990000 [Aguardando pagamento]" [level=1] [ref=e14]:
+        - link "Pedidos" [ref=e15] [cursor=pointer]:
+          - /url: /admin/pedidos/
+        - generic [ref=e16]: chevron_right
+        - link "Conversas (WhatsApp)" [ref=e17] [cursor=pointer]:
+          - /url: /admin/pedidos/sessaobot/
+        - generic [ref=e18]: chevron_right
+        - link "5521999990000 [Aguardando pagamento]" [ref=e19] [cursor=pointer]:
+          - /url: /admin/pedidos/sessaobot/5521999990000/change/
+    - list [ref=e22]:
+      - listitem [ref=e23]:
+        - link "history Histórico" [ref=e24] [cursor=pointer]:
+          - /url: /admin/pedidos/sessaobot/5521999990000/history/
+          - generic [ref=e25]: history
+          - text: Histórico
+  - group [ref=e31]:
+    - generic [ref=e32]:
+      - generic [ref=e34]:
+        - generic [ref=e36]: Telefone
+        - generic [ref=e38]: "5521999990000"
+      - generic [ref=e40]:
+        - generic [ref=e42]: Estado da conversa
+        - generic [ref=e44]: Aguardando pagamento
+      - generic [ref=e46]:
+        - generic [ref=e48]: Atualizado em
+        - generic [ref=e50]: 26 de Junho de 2026 às 10:52
+      - generic [ref=e52]:
+        - generic [ref=e54]: Resumo do pedido em andamento
+        - generic [ref=e56]: Nenhum item em andamento. Conversa vazia ou recém-iniciada.
+  - generic [ref=e59]:
+    - button "Salvar" [ref=e60] [cursor=pointer]
+    - button "Salvar e continuar editando" [ref=e61] [cursor=pointer]
+    - link "Remover Conversa (WhatsApp)" [ref=e63] [cursor=pointer]:
+      - /url: /admin/pedidos/sessaobot/5521999990000/delete/

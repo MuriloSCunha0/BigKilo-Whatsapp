@@ -1,0 +1,25 @@
+{% extends "admin/change_form.html" %}
+
+{% block form_before %}
+<div style="border:1px solid #e5e7eb;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;background:rgba(245,158,11,0.05);">
+  <h2 style="font-size:1rem;font-weight:700;margin:0 0 .5rem;">Responder manualmente</h2>
+  <p style="font-size:.85rem;color:#6b7280;margin:0 0 .75rem;">
+    Envie uma mensagem direto ao cliente pelo WhatsApp. Use quando o bot travar (áudio, dúvida, etc.).
+  </p>
+  <form method="post" action="/pedidos/sessao/{{ original.telefone }}/enviar/" style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:flex-end;">
+    {% csrf_token %}
+    <div style="flex:1;min-width:220px;">
+      <label for="txtManual" style="display:block;font-size:.8rem;font-weight:600;margin-bottom:.25rem;">Sua mensagem</label>
+      <textarea id="txtManual" name="texto" rows="3" required
+        placeholder="Ex.: Olá! Vi que você mandou áudio. Pode digitar seu pedido, por favor?"
+        style="width:100%;padding:.55rem .7rem;border:1px solid #e5e7eb;border-radius:8px;font-size:.9rem;"></textarea>
+    </div>
+    <button type="submit" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:.55rem 1rem;font-weight:600;cursor:pointer;">
+      Enviar no WhatsApp
+    </button>
+  </form>
+  <p style="font-size:.75rem;color:#9ca3af;margin:.6rem 0 0;">
+    A mensagem aparece no histórico como [Atendente]. Com MODO_SIMULACAO=True, só registra no painel.
+  </p>
+</div>
+{% endblock %}

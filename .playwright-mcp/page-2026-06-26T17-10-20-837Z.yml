@@ -1,0 +1,30 @@
+- generic [ref=e3]:
+  - generic [ref=e8]:
+    - generic [ref=e10] [cursor=pointer]: dock_to_right
+    - heading "Simulador" [level=1] [ref=e12]:
+      - generic [ref=e13]: Simulador
+  - generic [ref=e16]:
+    - generic [ref=e17]: Converse como se fosse um cliente no WhatsApp e veja o bot respondendo. Use “💸 Simular pagamento” para testar o ciclo até a cozinha.
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]: 🍽️
+        - generic [ref=e21]:
+          - text: Big Kilo
+          - generic [ref=e22]: simulador de atendimento (teste)
+      - generic [ref=e23]:
+        - text: 📱
+        - textbox "Telefone de teste" [ref=e24]: "5521999990000"
+      - generic [ref=e25]:
+        - generic [ref=e32]: 🎁 Temos promoções hoje! Confira no cardápio.
+        - generic [ref=e33]: "Olá! Que bom que você falou com o Big Kilo 🍽️ Atendemos: Novo Leblon e arredores (Barra da Tijuca). Para começar, informe seu bairro: 1 - Barra da Tijuca 2 - Novo Leblon 3 - Recreio dos Bandeirantes 0 - Outro / fora da lista"
+        - generic [ref=e34]: "1"
+        - generic [ref=e35]: Ótimo, atendemos Barra da Tijuca! Agora envie a *rua, número e complemento*.
+        - generic [ref=e36]: Rua das Palmeiras, 123, apto 202
+        - generic [ref=e37]: 📍 Endereço registrado!
+        - generic [ref=e38]: O que você deseja? 1 - Montar refeição completa 2 - Só proteína 3 - Grelhados 4 - Espetinhos 5 - Sanduíches (jantar) 6 - Sopas (jantar) Digite *fechar* para finalizar ou *cancelar* para recomeçar.
+      - generic [ref=e26]:
+        - button "💸 Simular pagamento PIX" [ref=e27] [cursor=pointer]
+        - button "↺ Reiniciar" [ref=e28] [cursor=pointer]
+      - generic [ref=e29]:
+        - textbox "Digite uma mensagem..." [active] [ref=e30]
+        - button "➤" [ref=e31] [cursor=pointer]

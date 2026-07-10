@@ -1,0 +1,101 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - link "arrow_back" [ref=e12] [cursor=pointer]:
+        - /url: /admin/pedidos/sessaobot/
+        - generic [ref=e13]: arrow_back
+      - heading "Pedidos chevron_right Conversas (WhatsApp) chevron_right 5521999990000 [Menu principal]" [level=1] [ref=e14]:
+        - link "Pedidos" [ref=e15] [cursor=pointer]:
+          - /url: /admin/pedidos/
+        - generic [ref=e16]: chevron_right
+        - link "Conversas (WhatsApp)" [ref=e17] [cursor=pointer]:
+          - /url: /admin/pedidos/sessaobot/
+        - generic [ref=e18]: chevron_right
+        - link "5521999990000 [Menu principal]" [ref=e19] [cursor=pointer]:
+          - /url: /admin/pedidos/sessaobot/5521999990000/change/
+    - list [ref=e22]:
+      - listitem [ref=e23]:
+        - link "history Histórico" [ref=e24] [cursor=pointer]:
+          - /url: /admin/pedidos/sessaobot/5521999990000/history/
+          - generic [ref=e25]: history
+          - text: Histórico
+  - group [ref=e31]:
+    - generic [ref=e32]:
+      - generic [ref=e34]:
+        - generic [ref=e36]: Telefone
+        - generic [ref=e38]: "5521999990000"
+      - generic [ref=e40]:
+        - generic [ref=e42]: Estado da conversa
+        - generic [ref=e44]: Menu principal
+      - generic [ref=e46]:
+        - generic [ref=e48]: Atualizado em
+        - generic [ref=e50]: 26 de Junho de 2026 às 14:10
+      - generic [ref=e52]:
+        - generic [ref=e54]: Conversa (cliente x bot)
+        - generic [ref=e57]:
+          - generic [ref=e59]:
+            - generic [ref=e60]: Cliente · 26/06 17:09
+            - text: oi
+          - generic [ref=e62]:
+            - generic [ref=e63]: Bot · 26/06 17:09
+            - text: 🎁 Temos promoções hoje! Confira no cardápio.
+          - generic [ref=e65]:
+            - generic [ref=e66]: Bot · 26/06 17:09
+            - text: "Olá! Que bom que você falou com o Big Kilo 🍽️ Atendemos: Novo Leblon e arredores (Barra da Tijuca). Para começar, informe seu bairro: 1 - Barra da Tijuca 2 - Novo Leblon 3 - Recreio dos Bandeirantes 0 - Outro / fora da lista"
+          - generic [ref=e68]:
+            - generic [ref=e69]: Cliente · 26/06 17:10
+            - text: "1"
+          - generic [ref=e71]:
+            - generic [ref=e72]: Bot · 26/06 17:10
+            - text: Ótimo, atendemos Barra da Tijuca! Agora envie a *rua, número e complemento*.
+          - generic [ref=e74]:
+            - generic [ref=e75]: Cliente · 26/06 17:10
+            - text: Rua das Palmeiras, 123, apto 202
+          - generic [ref=e77]:
+            - generic [ref=e78]: Bot · 26/06 17:10
+            - text: 📍 Endereço registrado!
+          - generic [ref=e80]:
+            - generic [ref=e81]: Bot · 26/06 17:10
+            - text: O que você deseja? 1 - Montar refeição completa 2 - Só proteína 3 - Grelhados 4 - Espetinhos 5 - Sanduíches (jantar) 6 - Sopas (jantar) Digite *fechar* para finalizar ou *cancelar* para recomeçar.
+          - generic [ref=e83]:
+            - generic [ref=e84]: Cliente · 26/06 17:10
+            - text: "4"
+          - generic [ref=e86]:
+            - generic [ref=e87]: Bot · 26/06 17:10
+            - text: "Espetinhos: 1 - Espetinho de Coração (R$ 17,49) 2 - Espetinho de Frango (R$ 6,80) Escolha um número."
+          - generic [ref=e89]:
+            - generic [ref=e90]: Cliente · 26/06 17:10
+            - text: "2"
+          - generic [ref=e92]:
+            - generic [ref=e93]: Bot · 26/06 17:10
+            - text: "✅ Adicionado: Espetinho de Frango — R$ 6,80"
+          - generic [ref=e95]:
+            - generic [ref=e96]: Bot · 26/06 17:10
+            - text: "🛒 Carrinho: 1 item(ns) - R$ 6,80 O que você deseja? 1 - Montar refeição completa 2 - Só proteína 3 - Grelhados 4 - Espetinhos 5 - Sanduíches (jantar) 6 - Sopas (jantar) Digite *fechar* para finalizar ou *cancelar* para recomeçar."
+          - generic [ref=e98]:
+            - generic [ref=e99]: Cliente · 26/06 17:10
+            - text: fechar
+          - generic [ref=e101]:
+            - generic [ref=e102]: Bot · 26/06 17:10
+            - text: "Pedido #7 confirmado! 🧾 Total: R$ 6,80 Taxa de entrega (paga ao entregador): R$ 5,00 Gerando seu Pix..."
+          - generic [ref=e104]:
+            - generic [ref=e105]: Bot · 26/06 17:10
+            - text: "💸 Pague com o Pix copia e cola abaixo:"
+          - generic [ref=e107]:
+            - generic [ref=e108]: Bot · 26/06 17:10
+            - text: 00020126SIMULADO-BIG-KILO5204000053039865802BR5913BIG KILO TESTE6009SAO PAULO62070503***54046.806304SIM0007
+          - generic [ref=e110]:
+            - generic [ref=e111]: Bot · 26/06 17:10
+            - text: Assim que o pagamento cair, seu pedido vai para a cozinha! 🍽️
+          - generic [ref=e113]:
+            - generic [ref=e114]: Bot · 26/06 17:10
+            - text: ✅ Pagamento confirmado! Seu pedido já está sendo preparado. A taxa de entrega é paga diretamente ao entregador. Já já chega aí! 🍽️
+      - generic [ref=e116]:
+        - generic [ref=e118]: Resumo do pedido em andamento
+        - generic [ref=e120]: Nenhum item em andamento. Conversa vazia ou recém-iniciada.
+  - generic [ref=e123]:
+    - button "Salvar" [ref=e124] [cursor=pointer]
+    - button "Salvar e continuar editando" [ref=e125] [cursor=pointer]
+    - link "Remover Conversa (WhatsApp)" [ref=e127] [cursor=pointer]:
+      - /url: /admin/pedidos/sessaobot/5521999990000/delete/

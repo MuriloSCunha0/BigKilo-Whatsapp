@@ -1,0 +1,320 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10] [cursor=pointer]: dock_to_right
+        - link "arrow_back" [ref=e12] [cursor=pointer]:
+          - /url: /admin/cardapio/cardapio/
+          - generic [ref=e13]: arrow_back
+        - heading "Cardápio chevron_right Cardápios" [level=1] [ref=e14]:
+          - link "Cardápio" [ref=e15] [cursor=pointer]:
+            - /url: /admin/cardapio/
+          - generic [ref=e16]: chevron_right
+          - link "Cardápios" [ref=e17] [cursor=pointer]:
+            - /url: /admin/cardapio/cardapio/
+      - link "add" [ref=e20] [cursor=pointer]:
+        - /url: /admin/cardapio/cardapio/add/
+        - generic [ref=e21]: add
+    - generic [ref=e26]:
+      - paragraph [ref=e28]: Por favor corrija o erro abaixo.
+      - group [ref=e29]:
+        - generic [ref=e30]: Dê um nome, escolha o tipo e os produtos. 'Exclusivo' faz este cardápio substituir os normais quando estiver no ar. Itens fixos não precisam de cardápio.
+        - generic [ref=e31]:
+          - generic [ref=e33]:
+            - generic [ref=e35]: Nome*
+            - generic [ref=e36]:
+              - textbox "Nome*" [ref=e38]: Almoço Especial da Casa
+              - generic [ref=e39]: "ℹ️ Ex.: Almoço de Quinta, Dia das Mães."
+          - generic [ref=e41]:
+            - generic [ref=e43]: Tipo*
+            - generic [ref=e44]:
+              - generic [ref=e45]:
+                - combobox "Tipo*" [ref=e46]:
+                  - option "Normal (semanal)" [selected]
+                  - option "Especial (por data)"
+                - generic: expand_more
+              - generic [ref=e47]: "ℹ️ Normal = repete por dia da semana. Especial = vale numa data (ex.: feriado)."
+          - generic [ref=e50]:
+            - generic [ref=e52]: Ativo
+            - generic [ref=e54]:
+              - checkbox "Ativo" [checked] [ref=e55] [cursor=pointer]
+              - generic [ref=e57]: ℹ️ Desmarque para desativar o cardápio inteiro.
+          - generic [ref=e60]:
+            - generic [ref=e62]: Exclusivo
+            - generic [ref=e64]:
+              - checkbox "Exclusivo" [ref=e65] [cursor=pointer]
+              - generic [ref=e67]: ℹ️ Quando no ar, substitui os cardápios normais (mostra só ele + os itens fixos). Ideal para datas comemorativas.
+          - generic [ref=e69]:
+            - generic [ref=e71]: Produtos
+            - generic [ref=e72]:
+              - generic [ref=e74]:
+                - generic [ref=e75]:
+                  - generic [ref=e76]:
+                    - generic [ref=e77]:
+                      - generic [ref=e78]: Produtos disponíveis
+                      - paragraph [ref=e79]: Escolha Produtos selecionando-os e depois selecione o botão de seta "Escolher".
+                    - paragraph [ref=e80]:
+                      - generic:
+                        - generic "Digite nessa caixa para filtrar a lista de Produtos disponíveis."
+                      - textbox "Digite nessa caixa para filtrar a lista de Produtos disponíveis." [ref=e81]:
+                        - /placeholder: Filtro
+                    - listbox "Produtos disponíveis Escolha Produtos selecionando-os e depois selecione o botão de seta \"Escolher\"." [ref=e82]:
+                      - option "Bobó de Camarão" [ref=e83]
+                      - option "Carne Assada" [ref=e84]
+                      - option "Dobradinha com Feijão Branco" [ref=e85]
+                      - option "Filé de Peixe à Milanesa" [ref=e86]
+                      - option "Frango Ensopado \"Caipira\"" [ref=e87]
+                      - option "Frango com Quiabo" [ref=e88]
+                      - option "Isca de Fígado" [ref=e89]
+                      - option "Lombo Suíno ao molho madeira" [ref=e90]
+                      - option "Língua ao molho Madeira" [ref=e91]
+                      - option "Mocotó com Feijão Branco" [ref=e92]
+                      - option "Angu (Polenta Mole)" [ref=e93]
+                      - option "Arroz Branco" [ref=e94]
+                      - option "Arroz Integral" [ref=e95]
+                      - option "Batata Frita" [ref=e96]
+                      - option "Couve Mineira" [ref=e97]
+                      - option "Farofa Crocante" [ref=e98]
+                      - option "Feijão Preto (sem carne)" [ref=e99]
+                      - option "Legumes Sortidos" [ref=e100]
+                      - option "Macarrão ao alho e óleo" [ref=e101]
+                      - option "Molho Branco" [ref=e102]
+                      - option "Molho Vermelho" [ref=e103]
+                      - option "Purê de Abóbora" [ref=e104]
+                      - option "Purê de Batata" [ref=e105]
+                      - option "Purê de Batata Doce" [ref=e106]
+                      - option "Quiabo ao molho Caipira" [ref=e107]
+                      - option "Salada Verde (Alface Crespa)" [ref=e108]
+                      - option "Salada de Maionese" [ref=e109]
+                      - option "Tomate" [ref=e110]
+                      - option "Bife Acebolado (Coração da Alcatra)" [ref=e111]
+                      - option "Espetinho de Coração" [ref=e112]
+                      - option "Sanduíche de Carne Assada no Pão Brioche" [ref=e113]
+                      - option "Sanduíche de Carne Assada no Pão Francês" [ref=e114]
+                      - option "Sanduíche de Frango Desfiado no Pão Brioche" [ref=e115]
+                      - option "Sanduíche de Frango Desfiado no Pão Francês" [ref=e116]
+                      - option "Caldo Verde" [ref=e117]
+                      - option "Caldo de Abóbora" [ref=e118]
+                      - option "Feijão Amigo" [ref=e119]
+                      - option "Sopa de Ervilha" [ref=e120]
+                      - option "Sopa de Legumes com Carne" [ref=e121]
+                      - option "Sopa de Legumes com Frango" [ref=e122]
+                      - option "Alface e Tomate" [ref=e123]
+                      - option "Bacon (sopa)" [ref=e124]
+                      - option "Batata Palha" [ref=e125]
+                      - option "Calabresa (sopa)" [ref=e126]
+                      - option "Cheddar" [ref=e127]
+                      - option "Molho Barbecue" [ref=e128]
+                      - option "Mussarela" [ref=e129]
+                      - option "Torradas (sopa)" [ref=e130]
+                    - button "Escolher todos Produtos" [ref=e131] [cursor=pointer]
+                  - list [ref=e132]:
+                    - listitem [ref=e133]:
+                      - button "Escolher selecionado(s) Produtos arrow_forward" [disabled] [ref=e134]
+                    - listitem [ref=e135]:
+                      - button "Remover selecionado(s) Produtos arrow_back" [disabled] [ref=e136]
+                  - generic [ref=e137]:
+                    - generic [ref=e138]:
+                      - generic [ref=e139]: Produtos escolhido(s)
+                      - paragraph [ref=e140]: Remova Produtos selecionando-os e depois selecione o botão de seta "Remover".
+                    - paragraph [ref=e141]:
+                      - generic:
+                        - generic "Digite nesta caixa para filtrar a lista de selecionados Produtos."
+                      - textbox "Digite nesta caixa para filtrar a lista de selecionados Produtos." [ref=e142]:
+                        - /placeholder: Filtro
+                    - listbox "Produtos escolhido(s) Remova Produtos selecionando-os e depois selecione o botão de seta \"Remover\"." [ref=e143]:
+                      - option "Frango Grelhado" [ref=e144]
+                      - option "Farofa da Casa" [ref=e145]
+                      - option "Espetinho de Frango" [ref=e146]
+                    - generic [ref=e147]: (clique para limpar)
+                    - button "Remover todos Produtos" [ref=e148] [cursor=pointer]
+                - generic [ref=e151] [cursor=pointer]: more_vert
+              - generic [ref=e152]: ℹ️ Itens que aparecem quando este cardápio está no ar. Pressione “Control”, ou “Command” no Mac, para selecionar mais de um.
+      - group [ref=e153]:
+        - heading "Especial (por data)" [level=2] [ref=e154]
+        - generic [ref=e155]: "Preencha só quando o tipo for 'Especial' (ex.: Dia das Mães). Para 'Normal', use os dias/horários abaixo."
+        - generic [ref=e156]:
+          - generic [ref=e158]:
+            - generic [ref=e160]: Válido de
+            - generic [ref=e161]:
+              - generic [ref=e162]:
+                - textbox "Válido de" [ref=e163]
+                - generic [ref=e164]:
+                  - text: update |
+                  - link "calendar_today" [ref=e165] [cursor=pointer]:
+                    - /url: "#"
+                    - generic "Escolha uma data" [ref=e166]: calendar_today
+              - generic [ref=e167]: ℹ️ Só para Especial. Primeiro dia em que vale.
+          - generic [ref=e169]:
+            - generic [ref=e171]: Válido até
+            - generic [ref=e172]:
+              - generic [ref=e173]:
+                - textbox "Válido até" [ref=e174]
+                - generic [ref=e175]:
+                  - text: update |
+                  - link "calendar_today" [ref=e176] [cursor=pointer]:
+                    - /url: "#"
+                    - generic "Escolha uma data" [ref=e177]: calendar_today
+              - generic [ref=e178]: ℹ️ Só para Especial. Último dia em que vale.
+      - group "Horários do cardápio" [ref=e181]:
+        - heading "Horários do cardápio" [level=2] [ref=e182]
+        - region "scrollable content" [ref=e188]:
+          - table [ref=e190]:
+            - rowgroup [ref=e191]:
+              - row "Dia da semana* help Período* help De* help Até* help" [ref=e192]:
+                - columnheader "Dia da semana* help" [ref=e193]:
+                  - generic [ref=e194]:
+                    - generic [ref=e195]: Dia da semana*
+                    - generic "ℹ️ Em que dia este cardápio fica ativo." [ref=e196]: help
+                - columnheader "Período* help" [ref=e197]:
+                  - generic [ref=e198]:
+                    - generic [ref=e199]: Período*
+                    - generic "ℹ️ Almoço (11–15h) ou Jantar (15–19h30). 'Personalizado' = defina o horário." [ref=e200]: help
+                - columnheader "De* help" [ref=e201]:
+                  - generic [ref=e202]:
+                    - generic [ref=e203]: De*
+                    - generic "ℹ️ Preenchido sozinho no Almoço/Jantar." [ref=e204]: help
+                - columnheader "Até* help" [ref=e205]:
+                  - generic [ref=e206]:
+                    - generic [ref=e207]: Até*
+                    - generic "ℹ️ Idem." [ref=e208]: help
+                - columnheader [ref=e209]
+            - rowgroup [ref=e210]:
+              - row "Segunda-feira expand_more Almoço expand_more | schedule Este campo é obrigatório. | schedule Este campo é obrigatório. delete" [ref=e211]:
+                - cell "Segunda-feira expand_more" [ref=e212]:
+                  - generic [ref=e215]:
+                    - combobox [ref=e216]:
+                      - option "Segunda-feira" [selected]
+                      - option "Terça-feira"
+                      - option "Quarta-feira"
+                      - option "Quinta-feira"
+                      - option "Sexta-feira"
+                      - option "Sábado"
+                      - option "Domingo"
+                    - generic: expand_more
+                - cell "Almoço expand_more" [ref=e217]:
+                  - generic [ref=e220]:
+                    - combobox [ref=e221]:
+                      - option "Almoço" [selected]
+                      - option "Jantar"
+                      - option "Personalizado"
+                    - generic: expand_more
+                - cell "| schedule Este campo é obrigatório." [ref=e222]:
+                  - generic [ref=e224]:
+                    - generic [ref=e225]:
+                      - textbox [invalid] [ref=e226]
+                      - generic [ref=e227]:
+                        - text: update |
+                        - link "schedule" [ref=e228] [cursor=pointer]:
+                          - /url: "#"
+                          - generic "Escolha um horário" [ref=e229]: schedule
+                    - generic [ref=e230]: Este campo é obrigatório.
+                - cell "| schedule Este campo é obrigatório." [ref=e231]:
+                  - generic [ref=e233]:
+                    - generic [ref=e234]:
+                      - textbox [invalid] [ref=e235]
+                      - generic [ref=e236]:
+                        - text: update |
+                        - link "schedule" [ref=e237] [cursor=pointer]:
+                          - /url: "#"
+                          - generic "Escolha um horário" [ref=e238]: schedule
+                    - generic [ref=e239]: Este campo é obrigatório.
+                - cell "delete" [ref=e240]:
+                  - generic [ref=e242] [cursor=pointer]: delete
+            - rowgroup [ref=e243]:
+              - row "Terça-feira expand_more Almoço expand_more | schedule Este campo é obrigatório. | schedule Este campo é obrigatório. delete" [ref=e244]:
+                - cell "Terça-feira expand_more" [ref=e245]:
+                  - generic [ref=e248]:
+                    - combobox [ref=e249]:
+                      - option "Segunda-feira"
+                      - option "Terça-feira" [selected]
+                      - option "Quarta-feira"
+                      - option "Quinta-feira"
+                      - option "Sexta-feira"
+                      - option "Sábado"
+                      - option "Domingo"
+                    - generic: expand_more
+                - cell "Almoço expand_more" [ref=e250]:
+                  - generic [ref=e253]:
+                    - combobox [ref=e254]:
+                      - option "Almoço" [selected]
+                      - option "Jantar"
+                      - option "Personalizado"
+                    - generic: expand_more
+                - cell "| schedule Este campo é obrigatório." [ref=e255]:
+                  - generic [ref=e257]:
+                    - generic [ref=e258]:
+                      - textbox [invalid] [ref=e259]
+                      - generic [ref=e260]:
+                        - text: update |
+                        - link "schedule" [ref=e261] [cursor=pointer]:
+                          - /url: "#"
+                          - generic "Escolha um horário" [ref=e262]: schedule
+                    - generic [ref=e263]: Este campo é obrigatório.
+                - cell "| schedule Este campo é obrigatório." [ref=e264]:
+                  - generic [ref=e266]:
+                    - generic [ref=e267]:
+                      - textbox [invalid] [ref=e268]
+                      - generic [ref=e269]:
+                        - text: update |
+                        - link "schedule" [ref=e270] [cursor=pointer]:
+                          - /url: "#"
+                          - generic "Escolha um horário" [ref=e271]: schedule
+                    - generic [ref=e272]: Este campo é obrigatório.
+                - cell "delete" [ref=e273]:
+                  - generic [ref=e275] [cursor=pointer]: delete
+            - rowgroup [ref=e276]:
+              - row "Quarta-feira expand_more Almoço expand_more | schedule Este campo é obrigatório. | schedule Este campo é obrigatório. delete" [ref=e277]:
+                - cell "Quarta-feira expand_more" [ref=e278]:
+                  - generic [ref=e281]:
+                    - combobox [ref=e282]:
+                      - option "Segunda-feira"
+                      - option "Terça-feira"
+                      - option "Quarta-feira" [selected]
+                      - option "Quinta-feira"
+                      - option "Sexta-feira"
+                      - option "Sábado"
+                      - option "Domingo"
+                    - generic: expand_more
+                - cell "Almoço expand_more" [ref=e283]:
+                  - generic [ref=e286]:
+                    - combobox [ref=e287]:
+                      - option "Almoço" [selected]
+                      - option "Jantar"
+                      - option "Personalizado"
+                    - generic: expand_more
+                - cell "| schedule Este campo é obrigatório." [ref=e288]:
+                  - generic [ref=e290]:
+                    - generic [ref=e291]:
+                      - textbox [invalid] [ref=e292]
+                      - generic [ref=e293]:
+                        - text: update |
+                        - link "schedule" [ref=e294] [cursor=pointer]:
+                          - /url: "#"
+                          - generic "Escolha um horário" [ref=e295]: schedule
+                    - generic [ref=e296]: Este campo é obrigatório.
+                - cell "| schedule Este campo é obrigatório." [ref=e297]:
+                  - generic [ref=e299]:
+                    - generic [ref=e300]:
+                      - textbox [invalid] [ref=e301]
+                      - generic [ref=e302]:
+                        - text: update |
+                        - link "schedule" [ref=e303] [cursor=pointer]:
+                          - /url: "#"
+                          - generic "Escolha um horário" [ref=e304]: schedule
+                    - generic [ref=e305]: Este campo é obrigatório.
+                - cell "delete" [ref=e306]:
+                  - generic [ref=e308] [cursor=pointer]: delete
+            - text: update schedule update schedule
+            - rowgroup [ref=e309]:
+              - row "add Adicionar outro(a) Horário do cardápio" [ref=e310]:
+                - cell "add Adicionar outro(a) Horário do cardápio" [ref=e311]:
+                  - link "add Adicionar outro(a) Horário do cardápio" [ref=e313] [cursor=pointer]:
+                    - /url: "#"
+                    - generic [ref=e315]: add
+                    - generic [ref=e316]: Adicionar outro(a) Horário do cardápio
+    - generic [ref=e319]:
+      - button "Salvar" [ref=e320] [cursor=pointer]
+      - button "Salvar e continuar editando" [ref=e321] [cursor=pointer]
+      - button "Salvar e adicionar outro(a)" [ref=e322] [cursor=pointer]
+  - text: navigate_before navigate_next navigate_before navigate_next

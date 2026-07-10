@@ -1,0 +1,89 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}{{ block.super }}
+<style>
+  #aeOverlay{ position:fixed; inset:0; background:rgba(17,24,39,.55); z-index:9999;
+              display:none; align-items:flex-start; justify-content:center; padding:3rem 1rem; overflow-y:auto; }
+  #aeOverlay.open{ display:flex; }
+  #aeCard{ width:100%; max-width:480px; background:#fff; color:#111827; border-radius:14px;
+           box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden; }
+  #aeCard .h{ background:#d97706; color:#fff; padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; }
+  #aeCard .h h1{ font-size:1.1rem; margin:0; } #aeCard .h button{ background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer; }
+  #aeCard .bd{ padding:1.25rem; }
+  #aeCard label{ display:block; font-weight:600; font-size:.85rem; margin:.7rem 0 .25rem; color:#111827; }
+  #aeCard .hint{ font-size:.78rem; color:#6b7280; margin-top:.2rem; }
+  #aeCard input{ width:100%; padding:.6rem .7rem; border:1px solid #e5e7eb; border-radius:8px; font-size:.95rem; background:#fff; color:#111827; }
+  #aeCard .grid2{ display:flex; gap:.6rem; }
+  #aeCard .grid2 > div{ flex:1; }
+  #aeCard .row{ display:flex; align-items:center; gap:.5rem; margin-top:.9rem; }
+  #aeCard .row input{ width:auto; }
+  #aeCard .err{ color:#b91c1c; font-size:.85rem; margin-top:.6rem; min-height:1rem; }
+  #aeCard .ft{ display:flex; justify-content:flex-end; gap:.5rem; padding:1rem 1.25rem; border-top:1px solid #e5e7eb; }
+  #aeCard .btn{ border:none; border-radius:9px; padding:.6rem 1.1rem; font-size:.92rem; font-weight:600; cursor:pointer; }
+  #aeCard .prim{ background:#d97706; color:#fff; } #aeCard .sec{ background:#f3f4f6; color:#374151; }
+  html.dark #aeCard{ background:#1f2937; color:#e5e7eb; }
+  html.dark #aeCard label{ color:#f3f4f6; }
+  html.dark #aeCard .hint{ color:#9ca3af; }
+  html.dark #aeCard input{ background:#111827; color:#e5e7eb; border-color:#374151; }
+  html.dark #aeCard .ft{ border-color:#374151; }
+  html.dark #aeCard .sec{ background:#374151; color:#e5e7eb; }
+</style>
+{% endblock %}
+
+{% block content %}{{ block.super }}
+{% csrf_token %}
+<div id="aeOverlay" onclick="if(event.target===this)aeClose()">
+  <div id="aeCard">
+    <div class="h"><h1>➕ Nova área de entrega</h1><button type="button" onclick="aeClose()">✕</button></div>
+    <div class="bd">
+      <label>Bairro *</label>
+      <input id="aeBairro" placeholder="Ex.: Novo Leblon">
+      <div class="hint">ℹ️ O bot só aceita pedidos dos bairros cadastrados aqui.</div>
+      <div class="grid2">
+        <div>
+          <label>CEP inicial</label>
+          <input id="aeCepIni" placeholder="22790-000">
+        </div>
+        <div>
+          <label>CEP final</label>
+          <input id="aeCepFim" placeholder="22799-999">
+        </div>
+      </div>
+      <div class="hint">ℹ️ Opcional. Se preenchido, o bot valida se o CEP está nesta faixa.</div>
+      <label class="row"><input type="checkbox" id="aeAtivo" checked> Ativo</label>
+      <div class="err" id="aeErr"></div>
+    </div>
+    <div class="ft">
+      <button class="btn sec" type="button" onclick="aeClose()">Cancelar</button>
+      <button class="btn prim" type="button" id="aeSalvar" onclick="aeSalvar()">✓ Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const csrf=()=>document.querySelector('[name=csrfmiddlewaretoken]')?.value||'';
+  window.aeClose=()=>$('aeOverlay').classList.remove('open');
+  window.aeOpen=()=>{ $('aeBairro').value=''; $('aeCepIni').value=''; $('aeCepFim').value=''; $('aeAtivo').checked=true;
+    $('aeErr').textContent=''; $('aeSalvar').disabled=false; $('aeSalvar').textContent='✓ Salvar';
+    $('aeOverlay').classList.add('open'); $('aeBairro').focus(); };
+  window.aeSalvar=async()=>{
+    if(!$('aeBairro').value.trim()){ $('aeErr').textContent='Informe o bairro.'; return; }
+    $('aeSalvar').disabled=true; $('aeSalvar').textContent='Salvando...';
+    try{
+      const r=await fetch('/pedidos/areaentrega/assistente/salvar/',{method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},
+        body:JSON.stringify({bairro:$('aeBairro').value.trim(),cep_inicio:$('aeCepIni').value.trim(),
+          cep_fim:$('aeCepFim').value.trim(),ativo:$('aeAtivo').checked})});
+      const d=await r.json();
+      if(d.ok){ window.location.reload(); }
+      else{ $('aeErr').textContent=d.erro||'Erro ao salvar.'; $('aeSalvar').disabled=false; $('aeSalvar').textContent='✓ Salvar'; }
+    }catch(e){ $('aeErr').textContent='Falha de conexão.'; $('aeSalvar').disabled=false; $('aeSalvar').textContent='✓ Salvar'; }
+  };
+  function hijack(){ document.querySelectorAll('a[href$="/areaentrega/add/"]').forEach(a=>
+    a.addEventListener('click', ev=>{ ev.preventDefault(); ev.stopPropagation(); aeOpen(); }, true)); }
+  if(document.readyState!=='loading') hijack(); else document.addEventListener('DOMContentLoaded', hijack);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+  <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:1rem;">Visão geral · Big Kilo</h1>
+
+  {# ===== Checklist / onboarding (topo) ===== #}
+  {% if not bk_checklist.pronta %}
+  <div style="border:1px solid #fcd34d;background:rgba(245,158,11,0.1);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;">
+    <h2 style="font-weight:700;margin-bottom:.5rem;">Configure sua loja</h2>
+    <p style="font-size:.88rem;color:#6b7280;margin:0 0 .75rem;">Complete os passos abaixo antes de ir ao ar no WhatsApp.</p>
+    <ul style="list-style:none;margin:0;padding:0;font-size:.9rem;line-height:1.9;">
+      {% for item in bk_checklist.itens %}
+      <li style="display:flex;align-items:flex-start;gap:.5rem;">
+        <span>{% if item.ok %}✅{% else %}⬜{% endif %}</span>
+        <span>
+          {% if item.ok %}<s style="color:#6b7280;">{{ item.titulo }}</s>{% else %}
+          <a href="{{ item.link }}" style="color:#b45309;font-weight:600;">{{ item.titulo }}</a>
+          <span style="color:#6b7280;font-size:.8rem;"> — {{ item.dica }}</span>
+          {% endif %}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% else %}
+  <div style="border:1px solid #86efac;background:rgba(22,163,74,0.08);border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem;font-size:.88rem;">
+    ✅ Loja configurada{% if bk_checklist.perfil_ativo %} · Fluxo ativo: <b>{{ bk_checklist.perfil_ativo }}</b>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if bk_comandas_pendentes %}
+  <div style="border:1px solid #fbbf24;background:#fffbeb;border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem;font-size:.88rem;">
+    🖨️ <b>{{ bk_comandas_pendentes }}</b> comanda(s) aguardando impressão na cozinha.
+    <a href="/admin/pedidos/pedido/?status__exact=PREPARANDO" style="color:#b45309;margin-left:.35rem;">Ver pedidos</a>
+    — confira se o <code style="font-size:.78rem;">print_agent.py</code> está rodando no PC.
+  </div>
+  {% endif %}
+
+  <div style="border:1px solid #fcd34d;background:rgba(245,158,11,0.08);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem;">
+    <h2 style="font-weight:700;margin-bottom:.5rem;">Comece por aqui</h2>
+    <ol style="margin:.25rem 0 .75rem 1.1rem;font-size:.9rem;line-height:1.7;">
+      <li><b>Dados da loja</b>: confira nome, horário e preços.</li>
+      <li><b>Fluxos de mensagem</b>: edite a saudação e textos do WhatsApp.</li>
+      <li><b>Áreas de entrega</b>: cadastre os bairros atendidos.</li>
+      <li><b>Produtos</b>: cadastre pratos e disponibilidade.</li>
+      <li><b>Teste no simulador</b> e acompanhe os <b>Pedidos</b>.</li>
+    </ol>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
+      <a href="/admin/pedidos/configuracaoloja/" style="background:#d97706;color:#fff;padding:.45rem .8rem;border-radius:8px;text-decoration:none;font-size:.82rem;">Dados da loja</a>
+      <a href="/admin/pedidos/perfilfluxo/" style="background:#d97706;color:#fff;padding:.45rem .8rem;border-radius:8px;text-decoration:none;font-size:.82rem;">Fluxos de mensagem</a>
+      <a href="/admin/pedidos/areaentrega/" style="background:#fff;border:1px solid #d97706;color:#b45309;padding:.45rem .8rem;border-radius:8px;text-decoration:none;font-size:.82rem;">Áreas de entrega</a>
+      <a href="/admin/cardapio/produto/" style="background:#fff;border:1px solid #d97706;color:#b45309;padding:.45rem .8rem;border-radius:8px;text-decoration:none;font-size:.82rem;">Produtos</a>
+      <a href="/simulador/" style="background:#16a34a;color:#fff;padding:.45rem .8rem;border-radius:8px;text-decoration:none;font-size:.82rem;">Abrir simulador</a>
+    </div>
+  </div>
+
+  {# ===== KPIs ===== #}
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
+    {% for card in bk_cards %}
+    <div style="border:1px solid #e5e7eb;border-radius:10px;padding:1rem 1.25rem;background:rgba(245,158,11,0.06);">
+      <div style="display:flex;align-items:center;gap:.5rem;color:#b45309;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;">
+        <span class="material-symbols-outlined" style="font-size:1.1rem;">{{ card.icone }}</span>
+        {{ card.titulo }}
+      </div>
+      <div style="font-size:1.8rem;font-weight:700;margin-top:.35rem;">{{ card.valor }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  <p style="font-size:.78rem;color:#6b7280;margin:-1rem 0 1.25rem;">Indicadores referentes a <b>hoje</b>. Ticket médio (hoje): {{ bk_ticket }}.</p>
+
+  {# ===== Rankings ===== #}
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;">
+    <div style="border:1px solid #e5e7eb;border-radius:10px;padding:1rem 1.25rem;">
+      <h2 style="font-weight:700;margin-bottom:.75rem;">Mais vendidos hoje</h2>
+      {% for item in bk_mais_vendidos %}
+      <div style="margin-bottom:.6rem;">
+        <div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.15rem;">
+          <span>{{ item.nome }}</span><span style="font-weight:600;">{{ item.qtd }}</span>
+        </div>
+        <div style="background:#f3f4f6;border-radius:6px;height:10px;overflow:hidden;">
+          <div style="height:10px;width:{{ item.pct }}%;background:linear-gradient(90deg,#f59e0b,#d97706);"></div>
+        </div>
+      </div>
+      {% empty %}
+      <p style="color:#6b7280;">Ainda sem vendas registradas hoje.</p>
+      {% endfor %}
+    </div>
+
+    {% if bk_mostrar_menos %}
+    <div style="border:1px solid #e5e7eb;border-radius:10px;padding:1rem 1.25rem;">
+      <h2 style="font-weight:700;margin-bottom:.75rem;">Menos vendidos hoje</h2>
+      {% for item in bk_menos_vendidos %}
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;padding:.35rem 0;border-bottom:1px solid #f3f4f6;">
+        <span>{{ item.nome }}</span><span style="font-weight:600;">{{ item.qtd }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

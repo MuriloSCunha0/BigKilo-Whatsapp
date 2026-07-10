@@ -1,0 +1,150 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - heading "Cardápio chevron_right Promoções" [level=1] [ref=e12]:
+        - link "Cardápio" [ref=e13] [cursor=pointer]:
+          - /url: /admin/cardapio/
+        - generic [ref=e14]: chevron_right
+        - link "Promoções" [ref=e15] [cursor=pointer]:
+          - /url: /admin/cardapio/promocao/
+    - listitem [ref=e17]:
+      - link "➕ Nova promoção" [active] [ref=e18] [cursor=pointer]:
+        - /url: "#"
+  - generic [ref=e20]:
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - search [ref=e27]:
+          - generic [ref=e28]:
+            - button "search" [ref=e29]:
+              - generic [ref=e30]: search
+            - textbox "Buscar" [ref=e31]
+            - generic [ref=e33]: /
+        - generic [ref=e34] [cursor=pointer]:
+          - text: Filtros
+          - generic [ref=e35]: filter_list
+      - region "scrollable content" [ref=e41]:
+        - table [ref=e43]:
+          - rowgroup [ref=e44]:
+            - row "Selecione todos os objetos nessa página para uma ação Nome arrow_circle_down cancel Categoria De Desconto (%) Por Validade Status" [ref=e45]:
+              - columnheader "Selecione todos os objetos nessa página para uma ação" [ref=e46]:
+                - checkbox "Selecione todos os objetos nessa página para uma ação" [ref=e50]: check_small
+              - columnheader "Nome arrow_circle_down cancel" [ref=e51]:
+                - generic [ref=e52]:
+                  - link "Nome" [ref=e54] [cursor=pointer]:
+                    - /url: "?o=-1"
+                  - generic [ref=e55]:
+                    - link "arrow_circle_down" [ref=e56] [cursor=pointer]:
+                      - /url: "?o=-1"
+                      - generic [ref=e57]: arrow_circle_down
+                    - link "cancel" [ref=e58] [cursor=pointer]:
+                      - /url: "?o="
+                      - generic [ref=e59]: cancel
+              - columnheader "Categoria" [ref=e60]:
+                - link "Categoria" [ref=e63] [cursor=pointer]:
+                  - /url: "?o=2.1"
+              - columnheader "De" [ref=e64]:
+                - generic [ref=e66]: De
+              - columnheader "Desconto (%)" [ref=e67]:
+                - link "Desconto (%)" [ref=e70] [cursor=pointer]:
+                  - /url: "?o=4.1"
+              - columnheader "Por" [ref=e71]:
+                - generic [ref=e73]: Por
+              - columnheader "Validade" [ref=e74]:
+                - generic [ref=e76]: Validade
+              - columnheader "Status" [ref=e77]:
+                - generic [ref=e79]: Status
+          - rowgroup [ref=e80]:
+            - row "Select record Espetinho de Frango Espetinhos R$ 8,00 15.00 R$ 6,80 já → sem fim Ativa" [ref=e81] [cursor=pointer]:
+              - cell "Select record" [ref=e82]:
+                - checkbox "Select record" [ref=e83]: check_small
+              - rowheader "Espetinho de Frango" [ref=e84]:
+                - link "Espetinho de Frango" [ref=e85]:
+                  - /url: /admin/cardapio/promocao/52/change/
+              - cell "Espetinhos" [ref=e86]
+              - cell "R$ 8,00" [ref=e87]
+              - cell "15.00" [ref=e88]:
+                - spinbutton [ref=e89]: "15.00"
+              - cell "R$ 6,80" [ref=e90]
+              - cell "já → sem fim" [ref=e91]
+              - cell "Ativa" [ref=e92]:
+                - generic [ref=e93]: Ativa
+    - generic [ref=e100]:
+      - generic [ref=e101]:
+        - heading "➕ Nova promoção" [level=1] [ref=e102]
+        - button "✕" [ref=e103] [cursor=pointer]
+      - generic [ref=e104]:
+        - generic [ref=e105]: Produto *
+        - combobox [ref=e106]:
+          - option "— escolha o produto —"
+          - option "Bobó de Camarão"
+          - option "Carne Assada"
+          - option "Dobradinha com Feijão Branco"
+          - option "Filé de Peixe à Milanesa"
+          - option "Frango Ensopado \"Caipira\""
+          - option "Frango Grelhado"
+          - option "Frango com Quiabo"
+          - option "Isca de Fígado"
+          - option "Lombo Suíno ao molho madeira"
+          - option "Língua ao molho Madeira"
+          - option "Mocotó com Feijão Branco"
+          - option "Angu (Polenta Mole)"
+          - option "Arroz Branco"
+          - option "Arroz Integral"
+          - option "Batata Frita"
+          - option "Couve Mineira"
+          - option "Farofa Crocante"
+          - option "Farofa da Casa"
+          - option "Feijão Preto (sem carne)"
+          - option "Legumes Sortidos"
+          - option "Macarrão ao alho e óleo"
+          - option "Molho Branco"
+          - option "Molho Vermelho"
+          - option "Purê de Abóbora"
+          - option "Purê de Batata"
+          - option "Purê de Batata Doce"
+          - option "Quiabo ao molho Caipira"
+          - option "Salada Verde (Alface Crespa)"
+          - option "Salada de Maionese"
+          - option "Tomate"
+          - option "Bife Acebolado (Coração da Alcatra)"
+          - option "Espetinho de Coração"
+          - option "Espetinho de Frango"
+          - option "Sanduíche de Carne Assada no Pão Brioche"
+          - option "Sanduíche de Carne Assada no Pão Francês"
+          - option "Sanduíche de Frango Desfiado no Pão Brioche"
+          - option "Sanduíche de Frango Desfiado no Pão Francês"
+          - option "Caldo Verde"
+          - option "Caldo de Abóbora"
+          - option "Feijão Amigo"
+          - option "Sopa de Ervilha"
+          - option "Sopa de Legumes com Carne"
+          - option "Sopa de Legumes com Frango"
+          - option "Alface e Tomate"
+          - option "Bacon (sopa)"
+          - option "Batata Palha"
+          - option "Calabresa (sopa)"
+          - option "Cheddar"
+          - option "Molho Barbecue"
+          - option "Mussarela"
+          - option "Torradas (sopa)"
+          - option "Suco de Laranja" [selected]
+        - generic [ref=e107]: ℹ️ A promoção aplica um desconto sobre o preço deste produto.
+        - generic [ref=e108]: Desconto (%) *
+        - spinbutton [ref=e109]
+        - generic [ref=e110]: "ℹ️ Ex.: 10 = 10% de desconto."
+        - generic [ref=e111]:
+          - generic [ref=e112]:
+            - generic [ref=e113]: Início (opcional)
+            - textbox [ref=e114]
+            - generic [ref=e115]: Vazio = já.
+          - generic [ref=e116]:
+            - generic [ref=e117]: Fim (opcional)
+            - textbox [ref=e118]
+            - generic [ref=e119]: Vazio = sem fim.
+      - generic [ref=e121]:
+        - button "Cancelar" [ref=e122] [cursor=pointer]
+        - button "✓ Salvar promoção" [ref=e123] [cursor=pointer]
+  - generic [ref=e95]:
+    - generic [ref=e96]: 1 Promoção
+    - button "Salvar" [ref=e98] [cursor=pointer]

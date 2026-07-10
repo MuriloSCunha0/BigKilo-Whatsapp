@@ -1,0 +1,27 @@
+# Core
+Django==5.2.15
+
+# Tema moderno para o Django Admin (painel do lojista)
+django-unfold==0.97.2
+
+# Servidor ASGI (assíncrono)
+uvicorn[standard]==0.34.0
+
+# Banco de Dados PostgreSQL (driver moderno, recomendado p/ Django 5)
+psycopg[binary]==3.2.3
+
+# Cliente HTTP assíncrono (para Meta Cloud API e Asaas)
+httpx==0.28.1
+
+# Produção / deploy (Railway)
+whitenoise==6.8.2          # serve os arquivos estáticos pelo próprio app
+dj-database-url==2.3.0     # lê o DATABASE_URL do Railway
+
+# Variáveis de ambiente (chaves de API)
+python-dotenv==1.0.1
+
+# Agente de impressão (instale conforme o modo usado no PC do restaurante):
+#   PRINT_MODE=windows  -> pywin32      (impressora térmica USB/cabo no Windows)
+#   PRINT_MODE=escpos   -> python-escpos (impressora ESC/POS em rede)
+# pywin32==308
+# python-escpos==3.1

@@ -1,0 +1,261 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}{{ block.super }}
+<style>
+  #cwOverlay{ position:fixed; inset:0; background:rgba(17,24,39,.55); z-index:9999;
+              display:none; align-items:flex-start; justify-content:center; padding:2.5rem 1rem; overflow-y:auto; }
+  #cwOverlay.open{ display:flex; }
+  #cwCard{ width:100%; max-width:640px; background:#fff; color:#111827; border-radius:14px;
+           box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden; }
+  #cwCard .h{ background:#d97706; color:#fff; padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; }
+  #cwCard .h h1{ font-size:1.1rem; margin:0; } #cwCard .h button{ background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer; }
+  #cwCard .dots{ display:flex; gap:.5rem; padding:1rem 1.25rem 0; }
+  #cwCard .dot{ flex:1; height:6px; border-radius:4px; background:#e5e7eb; } #cwCard .dot.on{ background:#d97706; }
+  #cwCard .bd{ padding:1.25rem; }
+  #cwCard .st{ font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:#b45309; font-weight:700; }
+  #cwCard h2{ font-size:1.15rem; margin:.1rem 0 1rem; }
+  #cwCard label{ display:block; font-weight:600; font-size:.85rem; margin:.7rem 0 .25rem; color:#111827; }
+  #cwCard .hint{ font-size:.78rem; color:#6b7280; margin-top:.2rem; }
+  #cwCard input[type=text], #cwCard input[type=time], #cwCard input[type=date], #cwCard select{ width:100%; padding:.55rem .7rem; border:1px solid #e5e7eb; border-radius:8px; font-size:.92rem; background:#fff; color:#111827; }
+  #cwCard .add{ background:none; border:none; color:#b45309; font-size:.85rem; cursor:pointer; padding:.4rem 0; }
+  #cwCard .ctrow{ display:flex; gap:.5rem; margin-top:.5rem; align-items:center; }
+  #cwCard .ctrow select{ flex:1; } #cwCard .ctrow input[type=time]{ width:115px; } #cwCard .ctrow .btn{ padding:.4rem .6rem; }
+  #cwCard .row{ display:flex; align-items:center; gap:.5rem; margin-top:.9rem; font-weight:600; font-size:.9rem; }
+  #cwCard .grid{ display:grid; grid-template-columns:1fr 88px 88px; gap:.5rem .5rem; align-items:center; margin-top:.5rem; }
+  #cwCard .grid .gh{ font-size:.75rem; color:#6b7280; text-align:center; font-weight:700; }
+  #cwCard .chk{ display:flex; justify-content:center; }
+  #cwCard .picker{ border:1px solid #e5e7eb; border-radius:10px; margin-top:.5rem; max-height:300px; overflow-y:auto; }
+  #cwCard .pcat{ background:#f9fafb; color:#6b7280; font-size:.72rem; font-weight:700; text-transform:uppercase; padding:.35rem .8rem; position:sticky; top:0; }
+  #cwCard .pitem{ display:flex; align-items:center; gap:.6rem; padding:.45rem .8rem; font-size:.9rem; cursor:pointer; border-top:1px solid #f3f4f6; }
+  #cwCard .pitem:hover{ background:#fff7ed; }
+  #cwCard .count{ font-size:.8rem; color:#b45309; font-weight:700; margin-top:.5rem; }
+  #cwCard .review{ background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:.8rem 1rem; font-size:.9rem; line-height:1.7; }
+  #cwCard .err{ color:#b91c1c; font-size:.85rem; margin-top:.6rem; min-height:1rem; }
+  #cwCard .ft{ display:flex; justify-content:space-between; gap:.5rem; padding:1rem 1.25rem; border-top:1px solid #e5e7eb; }
+  #cwCard .btn{ border:none; border-radius:9px; padding:.6rem 1.1rem; font-size:.92rem; font-weight:600; cursor:pointer; }
+  #cwCard .prim{ background:#d97706; color:#fff; } #cwCard .sec{ background:#f3f4f6; color:#374151; }
+  /* tema escuro */
+  html.dark #cwCard{ background:#1f2937; color:#e5e7eb; }
+  html.dark #cwCard h2, html.dark #cwCard label, html.dark #cwCard .row{ color:#f3f4f6; }
+  html.dark #cwCard .hint, html.dark #cwCard .grid .gh{ color:#9ca3af; }
+  html.dark #cwCard input[type=text], html.dark #cwCard input[type=time], html.dark #cwCard input[type=date], html.dark #cwCard select{ background:#111827; color:#e5e7eb; border-color:#374151; }
+  html.dark #cwCard input[type=time], html.dark #cwCard input[type=date]{ color-scheme:dark; }
+  html.dark #cwCard .picker{ border-color:#374151; } html.dark #cwCard .pcat{ background:#111827; }
+  html.dark #cwCard .pitem{ border-top-color:#374151; } html.dark #cwCard .pitem:hover{ background:#26344a; }
+  html.dark #cwCard .review{ background:#111827; border-color:#374151; }
+  html.dark #cwCard .ft{ border-color:#374151; } html.dark #cwCard .sec{ background:#374151; color:#e5e7eb; }
+  html.dark #cwCard .dot{ background:#374151; }
+</style>
+{% endblock %}
+
+{% block content %}{{ block.super }}
+{% csrf_token %}
+<div id="cwOverlay" onclick="if(event.target===this)cwClose()">
+  <div id="cwCard">
+    <div class="h"><h1 id="cwTitulo">➕ Novo cardápio</h1><button type="button" onclick="cwClose()">✕</button></div>
+    <div class="dots"><div class="dot on" data-d="1"></div><div class="dot" data-d="2"></div><div class="dot" data-d="3"></div><div class="dot" data-d="4"></div></div>
+    <div class="bd">
+      <section data-step="1">
+        <div class="st">Passo 1 de 4</div><h2>Nome e tipo</h2>
+        <label>Nome *</label>
+        <input type="text" id="cwNome" placeholder="Ex.: Almoço de Quinta, Dia das Mães">
+        <div class="hint">ℹ️ Um nome que ajude você a identificar.</div>
+        <label>Tipo *</label>
+        <select id="cwTipo" onchange="cwTipoChange()">
+          <option value="NORMAL">Normal — repete por dia da semana</option>
+          <option value="ESPECIAL">Especial — vale numa data (ex.: Dia das Mães)</option>
+        </select>
+        <label class="row"><input type="checkbox" id="cwAtivo" checked style="width:auto"> Cardápio ativo</label>
+        <label class="row"><input type="checkbox" id="cwExcl" style="width:auto"> Exclusivo (substitui os normais quando estiver no ar)</label>
+        <div class="hint">ℹ️ Marque "exclusivo" para datas comemorativas: no período dele, só ele + os itens fixos aparecem.</div>
+      </section>
+
+      <section data-step="2" style="display:none">
+        <div class="st">Passo 2 de 4</div><h2 id="cwQuandoTit">Quando este cardápio fica no ar?</h2>
+        <div id="cwSemanal">
+          <div class="hint">Marque os dias e períodos. Almoço 11–15h · Jantar 15–19h30.</div>
+          <div class="grid" id="cwGrade"><div class="gh"></div><div class="gh">Almoço</div><div class="gh">Jantar</div></div>
+          <div style="margin-top:1rem;font-weight:600;font-size:.85rem;">Horários personalizados (opcional)</div>
+          <div class="hint">Para um horário diferente num dia específico (ex.: quinta das 11:00 às 14:00).</div>
+          <div id="cwCustom"></div>
+          <button type="button" class="add" onclick="cwAddCustom()">+ adicionar horário personalizado</button>
+        </div>
+        <div id="cwEspecial" style="display:none">
+          <div class="hint">Defina a faixa de datas em que este cardápio especial vale.</div>
+          <label>Válido de *</label><input type="date" id="cwDataIni">
+          <label>Válido até</label><input type="date" id="cwDataFim">
+          <div class="hint">ℹ️ Deixe "até" vazio para valer só no dia inicial.</div>
+        </div>
+      </section>
+
+      <section data-step="3" style="display:none">
+        <div class="st">Passo 3 de 4</div><h2>Produtos do cardápio</h2>
+        <input type="text" id="cwBusca" placeholder="🔎 Buscar produto..." oninput="cwFiltrar()">
+        <div class="picker" id="cwPicker">
+          {% for cat_nome, produtos in wizard_produtos_por_cat %}
+          <div class="pcat" data-cat="{{ cat_nome }}">{{ cat_nome }}</div>
+          {% for p in produtos %}
+          <label class="pitem" data-nome="{{ p.nome|lower }}">
+            <input type="checkbox" class="cwProd" value="{{ p.id }}" data-nome="{{ p.nome }}" onchange="cwCount()">
+            {{ p.nome }}
+          </label>
+          {% endfor %}
+          {% empty %}
+          <div class="pitem">Nenhum produto cadastrado.</div>
+          {% endfor %}
+        </div>
+        <div class="count" id="cwCount">0 selecionado(s)</div>
+      </section>
+
+      <section data-step="4" style="display:none">
+        <div class="st">Passo 4 de 4</div><h2>Revisão</h2><div class="review" id="cwReview"></div>
+      </section>
+      <div class="err" id="cwErr"></div>
+    </div>
+    <div class="ft">
+      <button class="btn sec" id="cwBack" onclick="cwBackStep()" style="visibility:hidden">← Voltar</button>
+      <button class="btn prim" id="cwNext" onclick="cwNext()">Avançar →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const DIAS=[[0,'Segunda'],[1,'Terça'],[2,'Quarta'],[3,'Quinta'],[4,'Sexta'],[5,'Sábado']];
+  let step=1, editId=null;
+  const $=id=>document.getElementById(id);
+  const csrf=()=>document.querySelector('[name=csrfmiddlewaretoken]')?.value||'';
+  const err=m=>$('cwErr').textContent=m||'';
+
+  const grade=$('cwGrade');
+  DIAS.forEach(([d,n])=>grade.insertAdjacentHTML('beforeend',
+    `<div>${n}</div><div class="chk"><input type="checkbox" data-dia="${d}" data-per="ALMOCO"></div><div class="chk"><input type="checkbox" data-dia="${d}" data-per="JANTAR"></div>`));
+
+  window.cwFiltrar=()=>{
+    const q=$('cwBusca').value.toLowerCase();
+    document.querySelectorAll('#cwPicker .pitem').forEach(it=>{
+      it.style.display = (it.dataset.nome||'').includes(q) ? 'flex':'none';
+    });
+    document.querySelectorAll('#cwPicker .pcat').forEach(h=>h.style.display = q ? 'none':'block');
+  };
+  window.cwCount=()=>{ const n=document.querySelectorAll('.cwProd:checked').length; $('cwCount').textContent=n+' selecionado(s)'; };
+  window.cwAddCustom=()=>{
+    const opts=DIAS.map(([d,n])=>`<option value="${d}">${n}</option>`).join('');
+    $('cwCustom').insertAdjacentHTML('beforeend',
+      `<div class="ctrow"><select>${opts}</select><input type="time" class="ctini" value="11:00"><span style="font-size:.8rem;opacity:.7">até</span><input type="time" class="ctfim" value="14:00"><button type="button" class="btn sec" onclick="this.parentNode.remove()">✕</button></div>`);
+  };
+  window.cwTipoChange=()=>{
+    const esp=$('cwTipo').value==='ESPECIAL';
+    $('cwSemanal').style.display=esp?'none':'block';
+    $('cwEspecial').style.display=esp?'block':'none';
+    $('cwQuandoTit').textContent=esp?'Em quais datas vale?':'Quando este cardápio fica no ar?';
+  };
+
+  function coleta(){
+    const ag=[]; document.querySelectorAll('#cwGrade input:checked').forEach(c=>ag.push({dia:c.dataset.dia,periodo:c.dataset.per}));
+    document.querySelectorAll('#cwCustom .ctrow').forEach(r=>{
+      const dia=r.querySelector('select').value, ini=r.querySelector('.ctini').value, fim=r.querySelector('.ctfim').value;
+      if(ini && fim) ag.push({dia:dia, periodo:'CUSTOM', hora_inicio:ini, hora_fim:fim});
+    });
+    const prods=[...document.querySelectorAll('.cwProd:checked')].map(c=>c.value);
+    const payload={nome:$('cwNome').value.trim(), ativo:$('cwAtivo').checked, tipo:$('cwTipo').value,
+      exclusivo:$('cwExcl').checked, data_inicio:$('cwDataIni').value, data_fim:$('cwDataFim').value,
+      agenda:ag, produtos:prods};
+    if(editId) payload.cardapio_id=editId;
+    return payload;
+  }
+  function valida(){
+    if(step===1 && !$('cwNome').value.trim()) return 'Informe o nome do cardápio.';
+    if(step===2){
+      if($('cwTipo').value==='ESPECIAL'){
+        if(!$('cwDataIni').value) return 'Informe a data inicial (válido de).';
+      } else {
+        const g=document.querySelectorAll('#cwGrade input:checked').length;
+        const cst=[...document.querySelectorAll('#cwCustom .ctrow')].filter(r=>r.querySelector('.ctini').value && r.querySelector('.ctfim').value).length;
+        if(!g && !cst) return 'Marque ao menos um dia/período (ou um horário personalizado).';
+      }
+    }
+    if(step===3 && !document.querySelectorAll('.cwProd:checked').length) return 'Escolha ao menos um produto.';
+    return '';
+  }
+  function review(){
+    const d=coleta();
+    let ag;
+    if(d.tipo==='ESPECIAL'){
+      ag = 'Especial: ' + (d.data_inicio||'?') + (d.data_fim ? (' a '+d.data_fim) : ' (só esse dia)');
+    } else {
+      const m={}; d.agenda.forEach(r=>{const n=DIAS[+r.dia][1];
+        const lbl = r.periodo==='ALMOCO'?'almoço' : r.periodo==='JANTAR'?'jantar' : (r.hora_inicio+'-'+r.hora_fim);
+        (m[n]=m[n]||[]).push(lbl)});
+      ag=Object.entries(m).map(([k,v])=>`${k}: ${v.join('/')}`).join(' · ')||'—';
+    }
+    if(d.exclusivo) ag += ' · EXCLUSIVO';
+    const nomes=[...document.querySelectorAll('.cwProd:checked')].map(c=>c.dataset.nome);
+    $('cwReview').innerHTML=`<b>${d.nome}</b> ${d.ativo?'(ativo)':'(inativo)'}<br>Quando: ${ag}<br>Produtos (${nomes.length}): ${nomes.join(', ')}`;
+  }
+  function show(){
+    document.querySelectorAll('#cwCard section[data-step]').forEach(s=>s.style.display=(+s.dataset.step===step)?'block':'none');
+    document.querySelectorAll('#cwCard .dot').forEach(x=>x.classList.toggle('on',+x.dataset.d<=step));
+    $('cwBack').style.visibility=step>1?'visible':'hidden';
+    $('cwNext').textContent=step===4?(editId?'✓ Salvar alterações':'✓ Salvar cardápio'):'Avançar →';
+    if(step===4) review();
+  }
+  window.cwBackStep=()=>{ if(step>1){step--;err('');show();} };
+  window.cwNext=async()=>{
+    const e=valida(); if(e){err(e);return;} err('');
+    if(step<4){step++;show();return;}
+    $('cwNext').disabled=true; $('cwNext').textContent='Salvando...';
+    try{
+      const r=await fetch('/cardapio/cardapio/assistente/salvar/',{method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(coleta())});
+      const data=await r.json();
+      if(data.ok){ window.location.reload(); }
+      else{ err(data.erro||'Erro ao salvar.'); $('cwNext').disabled=false; $('cwNext').textContent='✓ Salvar cardápio'; }
+    }catch(ex){ err('Falha de conexão.'); $('cwNext').disabled=false; $('cwNext').textContent='✓ Salvar cardápio'; }
+  };
+  window.cwClose=()=>{ editId=null; $('cwTitulo').textContent='➕ Novo cardápio'; $('cwOverlay').classList.remove('open'); };
+  window.cwOpen=()=>{ editId=null; $('cwTitulo').textContent='➕ Novo cardápio'; step=1; err('');
+    $('cwNome').value=''; $('cwAtivo').checked=true; $('cwBusca').value='';
+    $('cwTipo').value='NORMAL'; $('cwExcl').checked=false; $('cwDataIni').value=''; $('cwDataFim').value='';
+    document.querySelectorAll('#cwGrade input:checked, .cwProd:checked').forEach(c=>c.checked=false);
+    $('cwCustom').innerHTML=''; cwTipoChange();
+    cwFiltrar(); cwCount(); $('cwNext').disabled=false; show(); $('cwOverlay').classList.add('open'); };
+
+  window.cwOpenEdit=async(id)=>{
+    editId=id; step=1; err(''); $('cwTitulo').textContent='✏️ Editar cardápio';
+    try{
+      const r=await fetch('/cardapio/cardapio/assistente/'+id+'/');
+      const d=await r.json();
+      if(!d.ok){ alert(d.erro||'Erro ao carregar.'); return; }
+      const c=d.cardapio;
+      $('cwNome').value=c.nome; $('cwTipo').value=c.tipo; $('cwAtivo').checked=!!c.ativo;
+      $('cwExcl').checked=!!c.exclusivo; $('cwDataIni').value=c.data_inicio||''; $('cwDataFim').value=c.data_fim||'';
+      document.querySelectorAll('#cwGrade input').forEach(x=>x.checked=false);
+      $('cwCustom').innerHTML='';
+      (c.grade||[]).forEach(g=>{
+        const el=document.querySelector(`#cwGrade input[data-dia="${g.dia}"][data-per="${g.periodo}"]`);
+        if(el) el.checked=true;
+      });
+      (c.custom||[]).forEach(row=>{
+        cwAddCustom();
+        const last=$('cwCustom').lastElementChild;
+        if(last){ last.querySelector('select').value=String(row.dia);
+          last.querySelector('.ctini').value=row.hora_inicio; last.querySelector('.ctfim').value=row.hora_fim; }
+      });
+      document.querySelectorAll('.cwProd').forEach(ch=>{
+        ch.checked=(c.produtos||[]).includes(parseInt(ch.value,10));
+      });
+      cwTipoChange(); cwFiltrar(); cwCount(); $('cwNext').disabled=false; show();
+      $('cwOverlay').classList.add('open');
+    }catch(e){ alert('Falha ao carregar cardápio.'); }
+  };
+
+  function hijack(){ document.querySelectorAll('a[href$="/cardapio/add/"]').forEach(a=>
+    a.addEventListener('click', ev=>{ ev.preventDefault(); ev.stopPropagation(); cwOpen(); }, true)); }
+  if(document.readyState!=='loading') hijack(); else document.addEventListener('DOMContentLoaded', hijack);
+  const params=new URLSearchParams(window.location.search);
+  const aid=params.get('assistente');
+  if(aid){ params.delete('assistente'); history.replaceState({},'',window.location.pathname+(params.toString()?'?'+params:'')); cwOpenEdit(aid); }
+})();
+</script>
+{% endblock %}

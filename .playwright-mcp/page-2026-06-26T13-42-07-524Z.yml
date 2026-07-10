@@ -1,0 +1,143 @@
+- generic [ref=e2]:
+  - navigation [ref=e63]:
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - link "restaurant" [ref=e66] [cursor=pointer]:
+          - /url: /admin/
+          - generic [ref=e67]: restaurant
+        - generic [ref=e68]:
+          - link "Big Kilo" [ref=e71] [cursor=pointer]:
+            - /url: /admin/
+          - generic [ref=e72]: Comida Caseira · Delivery
+      - generic [ref=e73] [cursor=pointer]: close
+    - generic [ref=e75]:
+      - generic [ref=e76]: manage_search
+      - searchbox "Filtrar itens de navegação" [ref=e77]
+      - generic [ref=e79]: t
+    - region "scrollable content" [ref=e83]:
+      - generic [ref=e84]:
+        - generic [ref=e85]:
+          - separator [ref=e86]
+          - heading "Início" [level=2] [ref=e87]
+          - list [ref=e88]:
+            - listitem [ref=e89]:
+              - link "dashboard Painel (resumo)" [ref=e90] [cursor=pointer]:
+                - /url: /admin/
+                - generic [ref=e91]: dashboard
+                - generic [ref=e92]: Painel (resumo)
+            - listitem [ref=e93]:
+              - link "receipt_long Pedidos" [ref=e94] [cursor=pointer]:
+                - /url: /admin/pedidos/pedido/
+                - generic [ref=e95]: receipt_long
+                - generic [ref=e96]: Pedidos
+            - listitem [ref=e97]:
+              - link "chat Simulador (testar bot)" [ref=e98] [cursor=pointer]:
+                - /url: /simulador/
+                - generic [ref=e99]: chat
+                - generic [ref=e100]: Simulador (testar bot)
+        - generic [ref=e101]:
+          - separator [ref=e102]
+          - heading "Cardápio" [level=2] [ref=e103]
+          - list [ref=e104]:
+            - listitem [ref=e105]:
+              - link "lunch_dining Produtos" [ref=e106] [cursor=pointer]:
+                - /url: /admin/cardapio/produto/
+                - generic [ref=e107]: lunch_dining
+                - generic [ref=e108]: Produtos
+            - listitem [ref=e109]:
+              - link "menu_book Cardápios" [ref=e110] [cursor=pointer]:
+                - /url: /admin/cardapio/cardapio/
+                - generic [ref=e111]: menu_book
+                - generic [ref=e112]: Cardápios
+            - listitem [ref=e113]:
+              - link "category Categorias" [ref=e114] [cursor=pointer]:
+                - /url: /admin/cardapio/categoria/
+                - generic [ref=e115]: category
+                - generic [ref=e116]: Categorias
+            - listitem [ref=e117]:
+              - link "local_offer Promoções" [ref=e118] [cursor=pointer]:
+                - /url: /admin/cardapio/promocao/
+                - generic [ref=e119]: local_offer
+                - generic [ref=e120]: Promoções
+        - generic [ref=e121]:
+          - separator [ref=e122]
+          - heading "Configuração da loja" [level=2] [ref=e123]
+          - list [ref=e124]:
+            - listitem [ref=e125]:
+              - link "storefront Dados da loja" [ref=e126] [cursor=pointer]:
+                - /url: /admin/pedidos/configuracaoloja/
+                - generic [ref=e127]: storefront
+                - generic [ref=e128]: Dados da loja
+            - listitem [ref=e129]:
+              - link "chat_bubble Fluxos de mensagem" [ref=e130] [cursor=pointer]:
+                - /url: /admin/pedidos/perfilfluxo/
+                - generic [ref=e131]: chat_bubble
+                - generic [ref=e132]: Fluxos de mensagem
+            - listitem [ref=e133]:
+              - link "map Áreas de entrega" [ref=e134] [cursor=pointer]:
+                - /url: /admin/pedidos/areaentrega/
+                - generic [ref=e135]: map
+                - generic [ref=e136]: Áreas de entrega
+        - generic [ref=e137]:
+          - separator [ref=e138]
+          - heading "Avançado chevron_right" [level=2] [ref=e139] [cursor=pointer]:
+            - text: Avançado
+            - generic [ref=e140]: chevron_right
+    - generic [ref=e142] [cursor=pointer]:
+      - generic [ref=e143]: A
+      - generic [ref=e144]:
+        - generic [ref=e145]: admin
+        - generic [ref=e146]: admin@bigkilo.local
+      - generic [ref=e147]: unfold_more
+  - generic [ref=e3]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - heading "Gestão de Cardápio e Pedidos" [level=1] [ref=e12]:
+        - generic [ref=e13]: Gestão de Cardápio e Pedidos
+    - generic [ref=e16]:
+      - heading "Visão geral · Big Kilo" [level=1] [ref=e17]
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - generic [ref=e21]: receipt_long
+            - text: Pedidos hoje
+          - generic [ref=e22]: "0"
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - generic [ref=e25]: payments
+            - text: Faturamento hoje
+          - generic [ref=e26]: R$ 0,00
+        - generic [ref=e27]:
+          - generic [ref=e28]:
+            - generic [ref=e29]: hourglass_top
+            - text: Aguardando pagamento
+          - generic [ref=e30]: "0"
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: trending_up
+            - text: Ticket médio (hoje)
+          - generic [ref=e34]: R$ 0,00
+      - generic [ref=e36]:
+        - heading "🔥 Mais vendidos (desde o início)" [level=2] [ref=e37]
+        - generic [ref=e39]:
+          - generic [ref=e40]: Frango Ensopado "Caipira"
+          - generic [ref=e41]: "1"
+        - generic [ref=e45]:
+          - generic [ref=e46]: Bife Acebolado (Coração da Alcatra)
+          - generic [ref=e47]: "1"
+      - generic [ref=e50]:
+        - heading "👋 Comece por aqui" [level=2] [ref=e51]
+        - list [ref=e52]:
+          - listitem [ref=e53]: "Dados da loja: confira nome, horário, área e preços."
+          - listitem [ref=e54]: "Áreas de entrega: cadastre os bairros que você atende."
+          - listitem [ref=e55]: "Produtos: cadastre os pratos, preços e em que dias/horários aparecem."
+          - listitem [ref=e56]: Teste no simulador e acompanhe os Pedidos aqui no painel.
+        - generic [ref=e57]:
+          - link "⚙️ Dados da loja" [ref=e58] [cursor=pointer]:
+            - /url: /admin/pedidos/configuracaoloja/
+          - link "📍 Áreas de entrega" [ref=e59] [cursor=pointer]:
+            - /url: /admin/pedidos/areaentrega/
+          - link "🍽️ Produtos" [ref=e60] [cursor=pointer]:
+            - /url: /admin/cardapio/produto/
+          - link "💬 Abrir simulador" [ref=e61] [cursor=pointer]:
+            - /url: /simulador/

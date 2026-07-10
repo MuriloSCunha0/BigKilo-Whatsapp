@@ -1,0 +1,86 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - heading "Pedidos chevron_right Áreas de entrega" [level=1] [ref=e12]:
+        - link "Pedidos" [ref=e13] [cursor=pointer]:
+          - /url: /admin/pedidos/
+        - generic [ref=e14]: chevron_right
+        - link "Áreas de entrega" [ref=e15] [cursor=pointer]:
+          - /url: /admin/pedidos/areaentrega/
+    - link "add" [ref=e18] [cursor=pointer]:
+      - /url: /admin/pedidos/areaentrega/add/
+      - generic [ref=e19]: add
+  - generic [ref=e25]:
+    - generic [ref=e26]:
+      - search [ref=e28]:
+        - generic [ref=e29]:
+          - button "search" [ref=e30]:
+            - generic [ref=e31]: search
+          - textbox "Type to search" [ref=e32]
+          - generic [ref=e34]: /
+      - generic [ref=e35] [cursor=pointer]:
+        - text: Filters
+        - generic [ref=e36]: filter_list
+    - region "scrollable content" [ref=e42]:
+      - table [ref=e44]:
+        - rowgroup [ref=e45]:
+          - row "Selecione todos os objetos nessa página para uma ação Bairro arrow_circle_down cancel CEP inicial CEP final Ativo" [ref=e46]:
+            - columnheader "Selecione todos os objetos nessa página para uma ação" [ref=e47]:
+              - checkbox "Selecione todos os objetos nessa página para uma ação" [ref=e51]: check_small
+            - columnheader "Bairro arrow_circle_down cancel" [ref=e52]:
+              - generic [ref=e53]:
+                - link "Bairro" [ref=e55] [cursor=pointer]:
+                  - /url: "?o=-1"
+                - generic [ref=e56]:
+                  - link "arrow_circle_down" [ref=e57] [cursor=pointer]:
+                    - /url: "?o=-1"
+                    - generic [ref=e58]: arrow_circle_down
+                  - link "cancel" [ref=e59] [cursor=pointer]:
+                    - /url: "?o="
+                    - generic [ref=e60]: cancel
+            - columnheader "CEP inicial" [ref=e61]:
+              - link "CEP inicial" [ref=e64] [cursor=pointer]:
+                - /url: "?o=2.1"
+            - columnheader "CEP final" [ref=e65]:
+              - link "CEP final" [ref=e68] [cursor=pointer]:
+                - /url: "?o=3.1"
+            - columnheader "Ativo" [ref=e69]:
+              - link "Ativo" [ref=e72] [cursor=pointer]:
+                - /url: "?o=4.1"
+        - rowgroup [ref=e73]:
+          - row "Select record Barra da Tijuca 22600-000 22799-999" [ref=e74] [cursor=pointer]:
+            - cell "Select record" [ref=e75]:
+              - checkbox "Select record" [ref=e76]: check_small
+            - rowheader "Barra da Tijuca" [ref=e77]:
+              - link "Barra da Tijuca" [ref=e78]:
+                - /url: /admin/pedidos/areaentrega/2/change/
+            - cell "22600-000" [ref=e79]
+            - cell "22799-999" [ref=e80]
+            - cell [ref=e81]:
+              - checkbox [checked] [ref=e82]
+        - rowgroup [ref=e83]:
+          - row "Select record Novo Leblon 22790-000 22799-999" [ref=e84] [cursor=pointer]:
+            - cell "Select record" [ref=e85]:
+              - checkbox "Select record" [ref=e86]: check_small
+            - rowheader "Novo Leblon" [ref=e87]:
+              - link "Novo Leblon" [ref=e88]:
+                - /url: /admin/pedidos/areaentrega/1/change/
+            - cell "22790-000" [ref=e89]
+            - cell "22799-999" [ref=e90]
+            - cell [ref=e91]:
+              - checkbox [checked] [ref=e92]
+        - rowgroup [ref=e93]:
+          - row "Select record Recreio dos Bandeirantes 22790-000 22795-999" [ref=e94] [cursor=pointer]:
+            - cell "Select record" [ref=e95]:
+              - checkbox "Select record" [ref=e96]: check_small
+            - rowheader "Recreio dos Bandeirantes" [ref=e97]:
+              - link "Recreio dos Bandeirantes" [ref=e98]:
+                - /url: /admin/pedidos/areaentrega/3/change/
+            - cell "22790-000" [ref=e99]
+            - cell "22795-999" [ref=e100]
+            - cell [ref=e101]:
+              - checkbox [checked] [ref=e102]
+  - generic [ref=e104]:
+    - generic [ref=e105]: 3 Áreas de entrega
+    - button "Salvar" [ref=e107] [cursor=pointer]

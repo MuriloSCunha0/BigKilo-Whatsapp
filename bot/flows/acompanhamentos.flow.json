@@ -1,0 +1,44 @@
+﻿{
+  "version": "7.0",
+  "data_api_version": "3.0",
+  "routing_model": {
+    "SELECT_ACOMP": []
+  },
+  "screens": [
+    {
+      "id": "SELECT_ACOMP",
+      "title": "Acompanhamentos",
+      "terminal": true,
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "Escolha seus acompanhamentos"
+          },
+          {
+            "type": "TextBody",
+            "text": "Marque de ${data.min_items} a ${data.max_items} opcoes e toque em Confirmar."
+          },
+          {
+            "type": "CheckboxGroup",
+            "name": "acompanhamentos",
+            "label": "Acompanhamentos",
+            "required": true,
+            "data-source": "${data.options}"
+          },
+          {
+            "type": "Footer",
+            "label": "Confirmar",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {
+                "acompanhamentos": "${form.acompanhamentos}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

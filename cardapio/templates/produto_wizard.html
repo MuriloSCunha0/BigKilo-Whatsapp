@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Novo produto · Big Kilo</title>
+{% csrf_token %}
+<style>
+  :root{ --amber:#d97706; --amber2:#b45309; --soft:#fef3c7; --line:#e5e7eb; }
+  *{ box-sizing:border-box; font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+  body{ margin:0; background:rgba(17,24,39,.55); min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:2.5rem 1rem; }
+  .card{ width:100%; max-width:620px; background:#fff; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.35); overflow:hidden; }
+  .head{ background:var(--amber); color:#fff; padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; }
+  .head h1{ font-size:1.1rem; margin:0; } .head a{ color:#fff; text-decoration:none; font-size:1.3rem; opacity:.9; }
+  .steps{ display:flex; gap:.5rem; padding:1rem 1.25rem 0; }
+  .steps .dot{ flex:1; height:6px; border-radius:4px; background:var(--line); }
+  .steps .dot.on{ background:var(--amber); }
+  .body{ padding:1.25rem; }
+  .stepTitle{ font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; color:var(--amber2); font-weight:700; margin-bottom:.25rem; }
+  h2{ font-size:1.15rem; margin:.1rem 0 1rem; }
+  label{ display:block; font-weight:600; font-size:.85rem; margin:.7rem 0 .25rem; }
+  .hint{ font-size:.78rem; color:#6b7280; margin-top:.2rem; }
+  input,select,textarea{ width:100%; padding:.6rem .7rem; border:1px solid var(--line); border-radius:8px; font-size:.95rem; }
+  textarea{ min-height:64px; resize:vertical; }
+  .opt{ border:1px solid var(--line); border-radius:10px; padding:.7rem .8rem; margin-bottom:.5rem; cursor:pointer; display:flex; gap:.6rem; align-items:flex-start; }
+  .opt.sel{ border-color:var(--amber); background:var(--soft); }
+  .opt b{ display:block; font-size:.92rem; } .opt span{ font-size:.78rem; color:#6b7280; }
+  .faixa{ display:flex; gap:.5rem; margin-bottom:.5rem; }
+  .faixa input{ flex:1; }
+  .grid{ display:grid; grid-template-columns:1fr auto auto; gap:.4rem .6rem; align-items:center; margin-top:.5rem; }
+  .grid .h{ font-size:.75rem; color:#6b7280; text-align:center; font-weight:700; }
+  .chk{ display:flex; justify-content:center; }
+  .review{ background:#f9fafb; border:1px solid var(--line); border-radius:10px; padding:.8rem 1rem; font-size:.9rem; line-height:1.7; }
+  .foot{ display:flex; justify-content:space-between; gap:.5rem; padding:1rem 1.25rem; border-top:1px solid var(--line); }
+  button{ border:none; border-radius:9px; padding:.6rem 1.1rem; font-size:.92rem; font-weight:600; cursor:pointer; }
+  .prim{ background:var(--amber); color:#fff; } .sec{ background:#f3f4f6; color:#374151; }
+  .err{ color:#b91c1c; font-size:.85rem; margin-top:.5rem; min-height:1rem; }
+  .muted{ background:var(--soft); color:#92400e; border-radius:8px; padding:.6rem .8rem; font-size:.85rem; }
+  .add{ background:none; color:var(--amber2); padding:.2rem 0; font-size:.85rem; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="head">
+    <h1>➕ Novo produto</h1>
+    <a href="/admin/cardapio/produto/" title="Fechar">✕</a>
+  </div>
+  <div class="steps">
+    <div class="dot on" data-d="1"></div><div class="dot" data-d="2"></div>
+    <div class="dot" data-d="3"></div><div class="dot" data-d="4"></div>
+  </div>
+  <div class="body">
+    <!-- PASSO 1 -->
+    <section data-step="1">
+      <div class="stepTitle">Passo 1 de 4</div>
+      <h2>Informações básicas</h2>
+      <label>Categoria *</label>
+      <select id="categoria">
+        <option value="">— escolha —</option>
+        {% for c in categorias %}
+        <option value="{{ c.id }}" data-tipo="{{ c.tipo }}">{{ c.nome }} ({{ c.get_tipo_display }})</option>
+        {% endfor %}
+      </select>
+      <div class="hint">ℹ️ A que grupo do cardápio o item pertence.</div>
+      <label>Nome *</label>
+      <input id="nome" placeholder="Ex.: Carne Assada">
+      <label>Descrição</label>
+      <textarea id="descricao" placeholder="Ingredientes/detalhes que o cliente vê (opcional)"></textarea>
+      <label>Como é vendido? *</label>
+      <div id="modos">
+        <div class="opt" data-modo="MONTAGEM"><div><b>Entra no prato montado</b><span>Proteína ou acompanhamento (preço por peso, da tabela da loja)</span></div></div>
+        <div class="opt" data-modo="FAIXA"><div><b>Tem tamanhos com preços</b><span>Ex.: sopa 300/500ml, grelhado 100/200/300g</span></div></div>
+        <div class="opt" data-modo="UNIDADE"><div><b>Item avulso (preço fixo)</b><span>Ex.: sanduíche, bebida, espetinho</span></div></div>
+        <div class="opt" data-modo="ADICIONAL"><div><b>Adicional / extra</b><span>Ex.: queijo, bacon, batata palha</span></div></div>
+      </div>
+    </section>
+
+    <!-- PASSO 2 -->
+    <section data-step="2" style="display:none">
+      <div class="stepTitle">Passo 2 de 4</div>
+      <h2>Preço</h2>
+      <div id="p_montagem" style="display:none">
+        <div class="muted">Este item usa a <b>tabela de preços da loja</b> (definida em Dados da loja). Nada a preencher aqui.</div>
+        <div id="p_kg_wrap" style="display:none">
+          <label>Preço por kg — só proteína (opcional)</label>
+          <input id="preco_kg" inputmode="decimal" placeholder="Ex.: 159,90">
+          <div class="hint">ℹ️ Só para carnes com preço diferenciado. Deixe vazio para usar a tabela padrão.</div>
+        </div>
+      </div>
+      <div id="p_fixo" style="display:none">
+        <label>Preço (R$) *</label>
+        <input id="preco" inputmode="decimal" placeholder="Ex.: 22,00">
+        <div class="hint">ℹ️ Preço cobrado por unidade.</div>
+      </div>
+      <div id="p_faixa" style="display:none">
+        <label>Tamanhos e preços *</label>
+        <div class="hint">ℹ️ Adicione cada tamanho com seu preço. Ex.: 300ml → 18,00.</div>
+        <div id="faixas"></div>
+        <button type="button" class="add" onclick="addFaixa()">+ adicionar tamanho</button>
+      </div>
+    </section>
+
+    <!-- PASSO 3 -->
+    <section data-step="3" style="display:none">
+      <div class="stepTitle">Passo 3 de 4</div>
+      <h2>Quando fica disponível?</h2>
+      <label style="display:flex;gap:.5rem;align-items:center;font-weight:600;">
+        <input type="checkbox" id="todos" checked style="width:auto"> Disponível todos os dias e horários
+      </label>
+      <div id="agenda" style="display:none">
+        <div class="hint">Marque os períodos em que o item aparece (Almoço 11–15h · Jantar 15–19h30).</div>
+        <div class="grid" id="grade">
+          <div class="h"></div><div class="h">Almoço</div><div class="h">Jantar</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PASSO 4 -->
+    <section data-step="4" style="display:none">
+      <div class="stepTitle">Passo 4 de 4</div>
+      <h2>Revisão</h2>
+      <div class="review" id="review"></div>
+    </section>
+
+    <div class="err" id="err"></div>
+  </div>
+  <div class="foot">
+    <button class="sec" id="btnBack" onclick="back()" style="visibility:hidden">← Voltar</button>
+    <button class="prim" id="btnNext" onclick="next()">Avançar →</button>
+  </div>
+</div>
+
+<script>
+const DIAS = [[0,'Segunda'],[1,'Terça'],[2,'Quarta'],[3,'Quinta'],[4,'Sexta'],[5,'Sábado']];
+const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+let step = 1, modo = '';
+const $ = id => document.getElementById(id);
+const err = m => $('err').textContent = m || '';
+
+// montar grade de dias
+const grade = $('grade');
+DIAS.forEach(([d,nome]) => {
+  grade.insertAdjacentHTML('beforeend',
+    `<div>${nome}</div>
+     <div class="chk"><input type="checkbox" data-dia="${d}" data-per="ALMOCO"></div>
+     <div class="chk"><input type="checkbox" data-dia="${d}" data-per="JANTAR"></div>`);
+});
+
+// seleção de modo
+document.querySelectorAll('#modos .opt').forEach(o => o.onclick = () => {
+  document.querySelectorAll('#modos .opt').forEach(x => x.classList.remove('sel'));
+  o.classList.add('sel'); modo = o.dataset.modo;
+});
+$('todos').onchange = () => $('agenda').style.display = $('todos').checked ? 'none' : 'block';
+
+function addFaixa(rot='', pr=''){
+  $('faixas').insertAdjacentHTML('beforeend',
+    `<div class="faixa"><input placeholder="Tamanho (ex.: 500ml)" value="${rot}">
+     <input inputmode="decimal" placeholder="Preço" value="${pr}" style="max-width:120px">
+     <button type="button" class="sec" onclick="this.parentNode.remove()">✕</button></div>`);
+}
+
+function prepStep2(){
+  const tipo = $('categoria').selectedOptions[0]?.dataset.tipo;
+  $('p_montagem').style.display = modo==='MONTAGEM' ? 'block':'none';
+  $('p_kg_wrap').style.display = (modo==='MONTAGEM' && tipo==='PROTEINA') ? 'block':'none';
+  $('p_fixo').style.display = (modo==='UNIDADE'||modo==='ADICIONAL') ? 'block':'none';
+  $('p_faixa').style.display = modo==='FAIXA' ? 'block':'none';
+  if(modo==='FAIXA' && !$('faixas').children.length) addFaixa();
+}
+
+function coleta(){
+  const disp = [];
+  document.querySelectorAll('#grade input:checked').forEach(c => disp.push({dia:c.dataset.dia, periodo:c.dataset.per}));
+  return {
+    categoria_id: $('categoria').value, nome: $('nome').value.trim(),
+    descricao: $('descricao').value.trim(), modo_venda: modo,
+    preco: $('preco').value, preco_kg: $('preco_kg').value,
+    faixas: [...$('faixas').querySelectorAll('.faixa')].map(f => ({rotulo:f.children[0].value, preco:f.children[1].value})),
+    todos_dias: $('todos').checked, disponibilidades: disp,
+  };
+}
+
+function valida(){
+  if(step===1){
+    if(!$('categoria').value) return 'Escolha a categoria.';
+    if(!$('nome').value.trim()) return 'Informe o nome.';
+    if(!modo) return 'Escolha como o item é vendido.';
+  }
+  if(step===2){
+    if((modo==='UNIDADE'||modo==='ADICIONAL') && !$('preco').value.trim()) return 'Informe o preço.';
+    if(modo==='FAIXA'){
+      const fs=[...$('faixas').querySelectorAll('.faixa')].filter(f=>f.children[0].value.trim());
+      if(!fs.length) return 'Adicione ao menos um tamanho com preço.';
+    }
+  }
+  return '';
+}
+
+function review(){
+  const d = coleta();
+  const tipo = $('categoria').selectedOptions[0]?.textContent || '';
+  const modos = {MONTAGEM:'Prato montado',FAIXA:'Tamanhos',UNIDADE:'Avulso',ADICIONAL:'Adicional'};
+  let preco = '—';
+  if(modo==='FAIXA') preco = d.faixas.map(f=>`${f.rotulo}: R$ ${f.preco}`).join(', ');
+  else if(modo==='UNIDADE'||modo==='ADICIONAL') preco = 'R$ '+d.preco;
+  else preco = 'Tabela da loja'+(d.preco_kg?` (kg: R$ ${d.preco_kg})`:'');
+  let ag = 'Todos os dias e horários';
+  if(!d.todos_dias){
+    const m={}; d.disponibilidades.forEach(r=>{const n=DIAS[+r.dia][1]; (m[n]=m[n]||[]).push(r.periodo==='ALMOCO'?'almoço':'jantar')});
+    ag = Object.entries(m).map(([k,v])=>`${k}: ${v.join('/')}`).join(' · ') || '⚠️ nenhum período marcado';
+  }
+  $('review').innerHTML =
+    `<b>${d.nome}</b><br>Categoria: ${tipo}<br>Tipo: ${modos[modo]}<br>Preço: ${preco}<br>Disponível: ${ag}`;
+}
+
+function show(){
+  document.querySelectorAll('section[data-step]').forEach(s => s.style.display = (+s.dataset.step===step)?'block':'none');
+  document.querySelectorAll('.steps .dot').forEach(d => d.classList.toggle('on', +d.dataset.d<=step));
+  $('btnBack').style.visibility = step>1 ? 'visible':'hidden';
+  $('btnNext').textContent = step===4 ? '✓ Salvar produto' : 'Avançar →';
+  if(step===2) prepStep2();
+  if(step===4) review();
+}
+function back(){ if(step>1){ step--; err(''); show(); } }
+async function next(){
+  const e = valida(); if(e){ err(e); return; } err('');
+  if(step<4){ step++; show(); return; }
+  // salvar
+  $('btnNext').disabled = true; $('btnNext').textContent = 'Salvando...';
+  try{
+    const r = await fetch('/cardapio/produto/assistente/salvar/', {
+      method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body:JSON.stringify(coleta())});
+    const data = await r.json();
+    if(data.ok){ window.location.href = data.redirect; }
+    else { err(data.erro||'Erro ao salvar.'); $('btnNext').disabled=false; $('btnNext').textContent='✓ Salvar produto'; }
+  }catch(ex){ err('Falha de conexão.'); $('btnNext').disabled=false; $('btnNext').textContent='✓ Salvar produto'; }
+}
+show();
+</script>
+</body>
+</html>

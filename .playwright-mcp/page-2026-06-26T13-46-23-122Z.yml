@@ -1,0 +1,122 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10] [cursor=pointer]: dock_to_right
+        - link "arrow_back" [ref=e12] [cursor=pointer]:
+          - /url: /admin/cardapio/produto/
+          - generic [ref=e13]: arrow_back
+        - heading "Cardápio chevron_right Produtos" [level=1] [ref=e14]:
+          - link "Cardápio" [ref=e15] [cursor=pointer]:
+            - /url: /admin/cardapio/
+          - generic [ref=e16]: chevron_right
+          - link "Produtos" [ref=e17] [cursor=pointer]:
+            - /url: /admin/cardapio/produto/
+      - link "add" [ref=e20] [cursor=pointer]:
+        - /url: /admin/cardapio/produto/add/
+        - generic [ref=e21]: add
+    - generic [ref=e26]:
+      - paragraph [ref=e28]: Por favor corrija o erro abaixo.
+      - group [ref=e29]:
+        - heading "1. Informações básicas" [level=2] [ref=e30]
+        - generic [ref=e31]: "Comece por aqui: a que grupo pertence, o nome e como o item é vendido."
+        - generic [ref=e32]:
+          - generic [ref=e34]:
+            - generic [ref=e36]: Categoria*
+            - generic [ref=e37]:
+              - generic [ref=e39]:
+                - combobox [active] [ref=e40]
+                - combobox "Espetinhos" [ref=e43] [cursor=pointer]:
+                  - textbox "Espetinhos" [ref=e44]
+                  - text: expand_more
+                - generic [ref=e47] [cursor=pointer]: more_vert
+              - generic [ref=e48]: ℹ️ A qual grupo do cardápio o item pertence (Proteínas, Acompanhamentos, Bebidas…).
+          - generic [ref=e50]:
+            - generic [ref=e52]: Nome*
+            - generic [ref=e53]:
+              - textbox "Nome*" [ref=e55]: Espetinho de Frango
+              - generic [ref=e56]: "ℹ️ Nome que o cliente vê no WhatsApp. Ex.: Carne Assada."
+          - generic [ref=e58]:
+            - generic [ref=e60]: Descrição
+            - generic [ref=e61]:
+              - textbox "Descrição" [ref=e62]
+              - generic [ref=e63]: ℹ️ Detalhes/ingredientes mostrados ao cliente quando ele seleciona o item (opcional).
+          - generic [ref=e65]:
+            - generic [ref=e67]: Como é vendido*
+            - generic [ref=e68]:
+              - generic [ref=e69]:
+                - combobox "Como é vendido*" [ref=e70]:
+                  - option "Montagem (por peso)"
+                  - option "Faixas de preço"
+                  - option "Unidade (preço fixo)" [selected]
+                  - option "Adicional"
+                - generic: expand_more
+              - generic [ref=e71]: "ℹ️ Montagem = entra no prato por peso. Faixa = tamanhos com preços. Unidade = preço fixo. Adicional = extra (ex.: queijo)."
+      - group [ref=e72]:
+        - heading "2. Preço" [level=2] [ref=e73]
+        - generic [ref=e74]: "'Unidade/Adicional' usa o preço fixo; 'Faixa' usa os tamanhos abaixo; 'Montagem' usa a tabela da loja. Preço/kg só para carne em 'só proteína'."
+        - generic [ref=e75]:
+          - generic [ref=e77]:
+            - generic [ref=e79]: Preço fixo (R$)*
+            - generic [ref=e80]:
+              - spinbutton "Preço fixo (R$)*" [invalid] [ref=e81]: "0.00800"
+              - generic [ref=e82]: ℹ️ Só para itens vendidos por Unidade/Adicional. Deixe 0 para Montagem ou Faixa.
+              - list [ref=e84]:
+                - listitem [ref=e85]: warning Certifique-se de que não tenha mais de 2 casas decimais.
+          - generic [ref=e87]:
+            - generic [ref=e89]: Preço por kg — só proteína (R$)*
+            - generic [ref=e90]:
+              - spinbutton "Preço por kg — só proteína (R$)*" [ref=e91]: "0.00"
+              - generic [ref=e92]: "ℹ️ Opcional. Preço por quilo desta carne no modo 'só proteína' (ex.: 159,90). Deixe 0 para usar a tabela padrão da loja."
+      - group [ref=e93]:
+        - heading "3. Situação e disponibilidade" [level=2] [ref=e94]
+        - generic [ref=e95]: Marque 'sempre disponível' para os fixos. Itens que variam você adiciona em Cardápios (menu lateral).
+        - generic [ref=e96]:
+          - generic [ref=e99]:
+            - generic [ref=e101]: Ativo
+            - generic [ref=e103]:
+              - checkbox "Ativo" [checked] [ref=e104] [cursor=pointer]
+              - generic [ref=e106]: "ℹ️ Desmarque para esconder o item do cardápio (ex.: saiu de linha)."
+          - generic [ref=e109]:
+            - generic [ref=e111]: Esgotado
+            - generic [ref=e113]:
+              - checkbox "Esgotado" [ref=e114] [cursor=pointer]
+              - generic [ref=e116]: ℹ️ Marque quando acabar — o item some do cardápio na hora. Continua esgotado até você desmarcar.
+          - generic [ref=e119]:
+            - generic [ref=e121]: Sempre disponível
+            - generic [ref=e123]:
+              - checkbox "Sempre disponível" [ref=e124] [cursor=pointer]
+              - generic [ref=e126]: "ℹ️ Marque para itens fixos (carne assada, arroz…): aparecem sempre que a loja está aberta, sem precisar de cardápio. Itens que variam ficam em cardápios."
+      - group [ref=e127]:
+        - group [ref=e128]:
+          - generic "Promoção (opcional) expand_more" [ref=e129]:
+            - heading "Promoção (opcional)" [level=2] [ref=e130] [cursor=pointer]
+            - text: expand_more
+          - text: update calendar_today update schedule update calendar_today update schedule
+      - group "Faixas de preço" [ref=e133]:
+        - heading "Faixas de preço" [level=2] [ref=e134]
+        - region "scrollable content" [ref=e140]:
+          - table [ref=e142]:
+            - rowgroup [ref=e143]:
+              - row "Tamanho* help Preço (R$)* help" [ref=e144]:
+                - columnheader "Tamanho* help" [ref=e145]:
+                  - generic [ref=e146]:
+                    - generic [ref=e147]: Tamanho*
+                    - 'generic "ℹ️ Tamanho mostrado ao cliente. Ex.: 300g, 500ml." [ref=e148]': help
+                - columnheader "Preço (R$)* help" [ref=e149]:
+                  - generic [ref=e150]:
+                    - generic [ref=e151]: Preço (R$)*
+                    - generic "ℹ️ Preço deste tamanho." [ref=e152]: help
+                - columnheader [ref=e153]
+            - rowgroup [ref=e154]:
+              - row "add Adicionar outro(a) Faixa de preço" [ref=e155]:
+                - cell "add Adicionar outro(a) Faixa de preço" [ref=e156]:
+                  - link "add Adicionar outro(a) Faixa de preço" [ref=e158] [cursor=pointer]:
+                    - /url: "#"
+                    - generic [ref=e160]: add
+                    - generic [ref=e161]: Adicionar outro(a) Faixa de preço
+    - generic [ref=e164]:
+      - button "Salvar" [ref=e165] [cursor=pointer]
+      - button "Salvar e continuar editando" [ref=e166] [cursor=pointer]
+      - button "Salvar e adicionar outro(a)" [ref=e167] [cursor=pointer]
+  - text: navigate_before navigate_next navigate_before navigate_next

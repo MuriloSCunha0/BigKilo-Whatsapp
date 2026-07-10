@@ -1,0 +1,107 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - link "arrow_back" [ref=e12] [cursor=pointer]:
+        - /url: /admin/pedidos/pedido/
+        - generic [ref=e13]: arrow_back
+      - 'heading "Pedidos chevron_right Pedidos chevron_right Pedido #1 - 5521988887777 - Aguardando pagamento" [level=1] [ref=e14]':
+        - link "Pedidos" [ref=e15] [cursor=pointer]:
+          - /url: /admin/pedidos/
+        - generic [ref=e16]: chevron_right
+        - link "Pedidos" [ref=e17] [cursor=pointer]:
+          - /url: /admin/pedidos/pedido/
+        - generic [ref=e18]: chevron_right
+        - 'link "Pedido #1 - 5521988887777 - Aguardando pagamento" [ref=e19] [cursor=pointer]':
+          - /url: /admin/pedidos/pedido/1/change/
+    - list [ref=e22]:
+      - listitem [ref=e23]:
+        - link "history Histórico" [ref=e24] [cursor=pointer]:
+          - /url: /admin/pedidos/pedido/1/history/
+          - generic [ref=e25]: history
+          - text: Histórico
+  - generic [ref=e27]:
+    - navigation [ref=e30]:
+      - link "General" [ref=e31] [cursor=pointer]:
+        - /url: "#general"
+      - link "Itens do Pedido" [ref=e32] [cursor=pointer]:
+        - /url: "#itens"
+    - generic [ref=e35]:
+      - group [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e39]:
+            - generic [ref=e41]: Cliente*
+            - generic [ref=e44]:
+              - generic [ref=e45]:
+                - combobox "Cliente*" [ref=e46]:
+                  - option "Select value"
+                  - option "T - 5521900224477"
+                  - option "T - 5521900224466"
+                  - option "Cliente Teste - 5521999990000"
+                  - option "Ana Lima - 5521966665555"
+                  - option "João Pereira - 5521977776666"
+                  - option "Maria Souza - 5521988887777" [selected]
+                - generic: expand_more
+              - generic [ref=e49] [cursor=pointer]: more_vert
+          - generic [ref=e51]:
+            - generic [ref=e53]: Status*
+            - generic [ref=e55]:
+              - combobox "Status*" [ref=e56]:
+                - option "Aguardando pagamento" [selected]
+                - option "Preparando"
+                - option "Concluído"
+                - option "Cancelado"
+              - generic: expand_more
+          - generic [ref=e58]:
+            - generic [ref=e60]: Valor total*
+            - spinbutton "Valor total*" [ref=e62]: "50.95"
+      - group [ref=e63]:
+        - heading "Entrega" [level=2] [ref=e64]
+        - generic [ref=e65]:
+          - generic [ref=e67]:
+            - generic [ref=e69]: Endereço de entrega
+            - textbox "Endereço de entrega" [ref=e71]: Rua Mário Agostinelli 100, ap 502
+          - generic [ref=e73]:
+            - generic [ref=e75]: Bairro
+            - textbox "Bairro" [ref=e78]: Novo Leblon
+          - generic [ref=e80]:
+            - generic [ref=e82]: CEP
+            - textbox "CEP" [ref=e85]: 22790-100
+          - generic [ref=e87]:
+            - generic [ref=e89]: Taxa de entrega*
+            - generic [ref=e90]:
+              - spinbutton "Taxa de entrega*" [ref=e91]: "5.00"
+              - generic [ref=e92]: Paga ao entregador na entrega (não incluída no Pix).
+          - generic [ref=e94]:
+            - generic [ref=e96]: Observações gerais
+            - textbox "Observações gerais" [ref=e98]
+      - group [ref=e99]:
+        - heading "Pagamento (Asaas)" [level=2] [ref=e100]
+        - generic [ref=e101]:
+          - generic [ref=e103]:
+            - generic [ref=e105]: ID da cobrança (Asaas)
+            - generic [ref=e107]: pay_demo_001
+          - generic [ref=e109]:
+            - generic [ref=e111]: Pix Copia e Cola
+            - generic [ref=e113]: 00020126...EXEMPLO-PIX...6304ABCD
+      - group [ref=e114]:
+        - heading "Cozinha" [level=2] [ref=e115]
+        - generic [ref=e116]:
+          - generic [ref=e118]:
+            - generic [ref=e120]: Comanda impressa
+            - generic "False" [ref=e123]:
+              - generic [ref=e124]: close_small
+          - generic [ref=e126]:
+            - generic [ref=e128]: Impressa em
+            - generic [ref=e130]: "-"
+      - group [ref=e131]:
+        - group [ref=e132]:
+          - generic "Datas expand_more" [ref=e133]:
+            - heading "Datas" [level=2] [ref=e134] [cursor=pointer]
+            - text: expand_more
+      - text: expand_more
+  - generic [ref=e137]:
+    - button "Salvar" [ref=e138] [cursor=pointer]
+    - button "Salvar e continuar editando" [ref=e139] [cursor=pointer]
+    - link "Remover Pedido" [ref=e141] [cursor=pointer]:
+      - /url: /admin/pedidos/pedido/1/delete/

@@ -1,0 +1,62 @@
+- generic [ref=e3]:
+  - generic [ref=e8]:
+    - generic [ref=e10] [cursor=pointer]: dock_to_right
+    - heading "Gestão de Cardápio e Pedidos" [level=1] [ref=e12]:
+      - generic [ref=e13]: Gestão de Cardápio e Pedidos
+  - generic [ref=e16]:
+    - heading "Visão geral · Big Kilo" [level=1] [ref=e17]
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]: receipt_long
+          - text: Pedidos hoje
+        - generic [ref=e22]: "0"
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: payments
+          - text: Faturamento hoje
+        - generic [ref=e26]: R$ 0,00
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]: hourglass_top
+          - text: Aguardando pagamento
+        - generic [ref=e30]: "0"
+      - generic [ref=e31]:
+        - generic [ref=e32]:
+          - generic [ref=e33]: trending_up
+          - text: Ticket médio
+        - generic [ref=e34]: R$ 0,00
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - heading "🔥 Mais vendidos" [level=2] [ref=e37]
+        - generic [ref=e39]:
+          - generic [ref=e40]: Frango Ensopado "Caipira"
+          - generic [ref=e41]: "1"
+        - generic [ref=e45]:
+          - generic [ref=e46]: Bife Acebolado (Coração da Alcatra)
+          - generic [ref=e47]: "1"
+      - generic [ref=e50]:
+        - heading "🧊 Menos vendidos" [level=2] [ref=e51]
+        - generic [ref=e52]:
+          - generic [ref=e53]: Bife Acebolado (Coração da Alcatra)
+          - generic [ref=e54]: "1"
+        - generic [ref=e55]:
+          - generic [ref=e56]: Frango Ensopado "Caipira"
+          - generic [ref=e57]: "1"
+        - paragraph [ref=e58]: Use para enxugar o cardápio e evitar desperdício.
+    - generic [ref=e59]:
+      - heading "👋 Comece por aqui" [level=2] [ref=e60]
+      - list [ref=e61]:
+        - listitem [ref=e62]: "Dados da loja: confira nome, horário, área e preços."
+        - listitem [ref=e63]: "Áreas de entrega: cadastre os bairros que você atende."
+        - listitem [ref=e64]: "Produtos: cadastre os pratos, preços e em que dias/horários aparecem."
+        - listitem [ref=e65]: Teste no simulador e acompanhe os Pedidos aqui no painel.
+      - generic [ref=e66]:
+        - link "⚙️ Dados da loja" [ref=e67] [cursor=pointer]:
+          - /url: /admin/pedidos/configuracaoloja/
+        - link "📍 Áreas de entrega" [ref=e68] [cursor=pointer]:
+          - /url: /admin/pedidos/areaentrega/
+        - link "🍽️ Produtos" [ref=e69] [cursor=pointer]:
+          - /url: /admin/cardapio/produto/
+        - link "💬 Abrir simulador" [ref=e70] [cursor=pointer]:
+          - /url: /simulador/

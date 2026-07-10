@@ -1,0 +1,115 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}{{ block.super }}
+<style>
+  #pmOverlay{ position:fixed; inset:0; background:rgba(17,24,39,.55); z-index:9999;
+              display:none; align-items:flex-start; justify-content:center; padding:3rem 1rem; overflow-y:auto; }
+  #pmOverlay.open{ display:flex; }
+  #pmCard{ width:100%; max-width:500px; background:#fff; color:#111827; border-radius:14px;
+           box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden; }
+  #pmCard .h{ background:#d97706; color:#fff; padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; }
+  #pmCard .h h1{ font-size:1.1rem; margin:0; } #pmCard .h button{ background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer; }
+  #pmCard .bd{ padding:1.25rem; }
+  #pmCard label{ display:block; font-weight:600; font-size:.85rem; margin:.7rem 0 .25rem; color:#111827; }
+  #pmCard .hint{ font-size:.78rem; color:#6b7280; margin-top:.2rem; }
+  #pmCard input, #pmCard select{ width:100%; padding:.55rem .7rem; border:1px solid #e5e7eb; border-radius:8px; font-size:.92rem; background:#fff; color:#111827; }
+  #pmCard .duo{ display:flex; gap:.6rem; } #pmCard .duo > div{ flex:1; }
+  #pmCard .err{ color:#b91c1c; font-size:.85rem; margin-top:.6rem; min-height:1rem; }
+  #pmCard .ft{ display:flex; justify-content:flex-end; gap:.5rem; padding:1rem 1.25rem; border-top:1px solid #e5e7eb; }
+  #pmCard .btn{ border:none; border-radius:9px; padding:.6rem 1.1rem; font-size:.92rem; font-weight:600; cursor:pointer; }
+  #pmCard .prim{ background:#d97706; color:#fff; } #pmCard .sec{ background:#f3f4f6; color:#374151; }
+  html.dark #pmCard{ background:#1f2937; color:#e5e7eb; }
+  html.dark #pmCard label{ color:#f3f4f6; } html.dark #pmCard .hint{ color:#9ca3af; }
+  html.dark #pmCard input, html.dark #pmCard select{ background:#111827; color:#e5e7eb; border-color:#374151; }
+  html.dark #pmCard input[type=date]{ color-scheme:dark; }
+  html.dark #pmCard .ft{ border-color:#374151; } html.dark #pmCard .sec{ background:#374151; color:#e5e7eb; }
+</style>
+{% endblock %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="#" onclick="pmOpen();return false;"
+       class="bg-primary-600 border border-transparent flex font-medium gap-2 group items-center justify-center px-3 py-2 rounded-default text-white text-sm">
+      ➕ Nova promoção
+    </a>
+  </li>
+{% endblock %}
+
+{% block content %}{{ block.super }}
+{% csrf_token %}
+<div id="pmOverlay" onclick="if(event.target===this)pmClose()">
+  <div id="pmCard">
+    <div class="h"><h1 id="pmTitulo">➕ Nova promoção</h1><button type="button" onclick="pmClose()">✕</button></div>
+    <div class="bd">
+      <label>Produto *</label>
+      <select id="pmProd">
+        <option value="">— escolha o produto —</option>
+        {% for cat_nome, produtos in wizard_produtos_por_cat %}
+        <optgroup label="{{ cat_nome }}">
+          {% for p in produtos %}<option value="{{ p.id }}">{{ p.nome }}</option>{% endfor %}
+        </optgroup>
+        {% endfor %}
+      </select>
+      <div class="hint">ℹ️ A promoção aplica um desconto sobre o preço deste produto.</div>
+      <label>Desconto (%) *</label>
+      <input id="pmDesc" type="number" min="1" max="100" placeholder="Ex.: 10">
+      <div class="hint">ℹ️ Ex.: 10 = 10% de desconto.</div>
+      <div class="duo">
+        <div><label>Início (opcional)</label><input id="pmIni" type="date"><div class="hint">Vazio = já.</div></div>
+        <div><label>Fim (opcional)</label><input id="pmFim" type="date"><div class="hint">Vazio = sem fim.</div></div>
+      </div>
+      <div class="err" id="pmErr"></div>
+    </div>
+    <div class="ft">
+      <button class="btn sec" type="button" onclick="pmClose()">Cancelar</button>
+      <button class="btn prim" type="button" id="pmSalvar" onclick="pmSalvar()">✓ Salvar promoção</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let editId=null;
+  const $=id=>document.getElementById(id);
+  const csrf=()=>document.querySelector('[name=csrfmiddlewaretoken]')?.value||'';
+  window.pmClose=()=>{ editId=null; $('pmTitulo').textContent='➕ Nova promoção'; $('pmProd').disabled=false; $('pmOverlay').classList.remove('open'); };
+  window.pmOpen=()=>{ editId=null; $('pmTitulo').textContent='➕ Nova promoção'; $('pmProd').disabled=false;
+    $('pmProd').value=''; $('pmDesc').value=''; $('pmIni').value=''; $('pmFim').value='';
+    $('pmErr').textContent=''; $('pmSalvar').disabled=false; $('pmSalvar').textContent='✓ Salvar promoção';
+    $('pmOverlay').classList.add('open'); };
+  window.pmOpenEdit=async(produtoId)=>{
+    editId=produtoId; $('pmTitulo').textContent='✏️ Editar promoção'; $('pmErr').textContent='';
+    try{
+      const r=await fetch('/cardapio/promocao/assistente/'+produtoId+'/');
+      const d=await r.json();
+      if(!d.ok){ alert(d.erro||'Erro ao carregar.'); return; }
+      const p=d.promocao;
+      $('pmProd').value=String(p.produto_id); $('pmProd').disabled=true;
+      $('pmDesc').value=p.desconto; $('pmIni').value=p.data_inicio||''; $('pmFim').value=p.data_fim||'';
+      $('pmSalvar').disabled=false; $('pmSalvar').textContent='✓ Salvar alterações';
+      $('pmOverlay').classList.add('open');
+    }catch(e){ alert('Falha ao carregar promoção.'); }
+  };
+  window.pmSalvar=async()=>{
+    const prodId=editId||$('pmProd').value;
+    if(!prodId){ $('pmErr').textContent='Escolha o produto.'; return; }
+    const desc=parseFloat(String($('pmDesc').value).replace(',','.')); if(!desc||desc<=0||desc>100){ $('pmErr').textContent='Desconto entre 1 e 100%.'; return; }
+    $('pmSalvar').disabled=true; $('pmSalvar').textContent='Salvando...';
+    try{
+      const r=await fetch('/cardapio/promocao/assistente/salvar/',{method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},
+        body:JSON.stringify({produto_id:prodId,desconto:$('pmDesc').value,data_inicio:$('pmIni').value,data_fim:$('pmFim').value})});
+      const data=await r.json();
+      if(data.ok){ window.location.reload(); }
+      else{ $('pmErr').textContent=data.erro||'Erro ao salvar.'; $('pmSalvar').disabled=false; $('pmSalvar').textContent=editId?'✓ Salvar alterações':'✓ Salvar promoção'; }
+    }catch(e){ $('pmErr').textContent='Falha de conexão.'; $('pmSalvar').disabled=false; $('pmSalvar').textContent=editId?'✓ Salvar alterações':'✓ Salvar promoção'; }
+  };
+  function hijack(){ document.querySelectorAll('a[href$="/promocao/add/"]').forEach(a=>
+    a.addEventListener('click', ev=>{ ev.preventDefault(); ev.stopPropagation(); pmOpen(); }, true)); }
+  if(document.readyState!=='loading') hijack(); else document.addEventListener('DOMContentLoaded', hijack);
+  const params=new URLSearchParams(window.location.search);
+  const aid=params.get('assistente');
+  if(aid){ params.delete('assistente'); history.replaceState({},'',window.location.pathname+(params.toString()?'?'+params:'')); pmOpenEdit(aid); }
+})();
+</script>
+{% endblock %}

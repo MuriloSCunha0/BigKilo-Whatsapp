@@ -1,0 +1,38 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - heading "Cardápio chevron_right Promoções" [level=1] [ref=e12]:
+        - link "Cardápio" [ref=e13] [cursor=pointer]:
+          - /url: /admin/cardapio/
+        - generic [ref=e14]: chevron_right
+        - link "Promoções" [ref=e15] [cursor=pointer]:
+          - /url: /admin/cardapio/promocao/
+    - link "add" [ref=e18] [cursor=pointer]:
+      - /url: /admin/cardapio/promocao/add/
+      - generic [ref=e19]: add
+  - generic [ref=e25]:
+    - generic [ref=e26]:
+      - search [ref=e28]:
+        - generic [ref=e29]:
+          - button "search" [ref=e30]:
+            - generic [ref=e31]: search
+          - textbox "Type to search" [ref=e32]
+          - generic [ref=e34]: /
+      - generic [ref=e35] [cursor=pointer]:
+        - text: Filters
+        - generic [ref=e36]: filter_list
+    - generic [ref=e38]:
+      - generic [ref=e40]: inbox
+      - heading "No results found" [level=2] [ref=e41]
+      - paragraph [ref=e42]: This page yielded into no results. Create a new item or reset your filters.
+      - generic [ref=e43]:
+        - link "add Adicionar Promoção" [ref=e44] [cursor=pointer]:
+          - /url: /admin/cardapio/promocao/add/
+          - generic [ref=e45]: add
+          - text: Adicionar Promoção
+        - link "filter_list_off Reset filters" [ref=e46] [cursor=pointer]:
+          - /url: "?"
+          - generic [ref=e47]: filter_list_off
+          - text: Reset filters
+  - generic [ref=e50]: 0 Promoções

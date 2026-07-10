@@ -1,0 +1,78 @@
+- generic [ref=e3]:
+  - generic [ref=e8]:
+    - generic [ref=e10] [cursor=pointer]: dock_to_right
+    - 'heading "Editar fluxo: Padrão" [level=1] [ref=e12]':
+      - generic [ref=e13]: "Editar fluxo: Padrão"
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - text: ✏️ Padrão ATIVO
+        - generic [ref=e18]: Edite os textos de cada etapa. O fluxo continua o mesmo; só muda o que o bot fala.
+      - generic [ref=e19]:
+        - checkbox "Manter/ativar este fluxo" [checked] [ref=e20]
+        - text: Manter/ativar este fluxo
+    - generic [ref=e21]:
+      - heading "1 Boas-vindas / saudação" [level=3] [ref=e22]:
+        - generic [ref=e23]: "1"
+        - text: Boas-vindas / saudação
+      - paragraph [ref=e24]: No início, quando o cliente manda a 1ª mensagem.
+      - textbox [ref=e25]: Olá! Que bom que você falou com o Big Kilo 🍽️
+      - generic [ref=e26]: "Padrão do sistema: Olá! Que bom que você falou com o Big Kilo 🍽️"
+    - generic [ref=e27]:
+      - heading "2 Área de atendimento (resumo)" [level=3] [ref=e28]:
+        - generic [ref=e29]: "2"
+        - text: Área de atendimento (resumo)
+      - paragraph [ref=e30]: Texto curto da área de entrega, mostrado na saudação.
+      - textbox [ref=e31]: Novo Leblon e arredores (Barra da Tijuca)
+      - generic [ref=e32]: "Padrão do sistema: Novo Leblon e arredores (Barra da Tijuca)"
+    - generic [ref=e33]:
+      - heading "3 Anúncio de promoção" [level=3] [ref=e34]:
+        - generic [ref=e35]: "3"
+        - text: Anúncio de promoção
+      - paragraph [ref=e36]: Logo no início, se houver promoção ativa.
+      - textbox [ref=e37]: 🎁 Temos promoções hoje! Confira no cardápio.
+      - generic [ref=e38]: "Padrão do sistema: 🎁 Temos promoções hoje! Confira no cardápio."
+    - generic [ref=e39]:
+      - heading "4 Pedir bairro" [level=3] [ref=e40]:
+        - generic [ref=e41]: "4"
+        - text: Pedir bairro
+      - paragraph [ref=e42]: Ao pedir o bairro do cliente.
+      - textbox [ref=e43]: "Para começar, informe seu bairro:"
+      - generic [ref=e44]: "Padrão do sistema: Para começar, informe seu bairro:"
+    - generic [ref=e45]:
+      - heading "5 Fora da área de entrega" [level=3] [ref=e46]:
+        - generic [ref=e47]: "5"
+        - text: Fora da área de entrega
+      - paragraph [ref=e48]: Quando o bairro está fora da área de entrega.
+      - textbox [ref=e49]: Poxa, ainda não atendemos a sua região. 😕 Obrigado pelo contato!
+      - generic [ref=e50]: "Padrão do sistema: Poxa, ainda não atendemos a sua região. 😕 Obrigado pelo contato!"
+    - generic [ref=e51]:
+      - heading "6 Pedir rua/endereço" [level=3] [ref=e52]:
+        - generic [ref=e53]: "6"
+        - text: Pedir rua/endereço
+      - paragraph [ref=e54]: Depois do bairro, ao pedir a rua/endereço.
+      - textbox [ref=e55]: "Ótimo, atendemos {bairro}! Agora envie a *rua, número e complemento*."
+      - generic [ref=e57]:
+        - generic [ref=e58] [cursor=pointer]: "{bairro}"
+        - text: = o bairro que o cliente escolheu
+        - generic [ref=e59]: · obrigatória, não pode ser removida
+      - generic [ref=e60]: "Padrão do sistema: Ótimo, atendemos {bairro}! Agora envie a *rua, número e complemento*."
+    - generic [ref=e61]:
+      - heading "7 Aguardando pagamento" [level=3] [ref=e62]:
+        - generic [ref=e63]: "7"
+        - text: Aguardando pagamento
+      - paragraph [ref=e64]: Enquanto aguarda o pagamento do Pix.
+      - textbox [ref=e65]: Estamos aguardando o pagamento. Para um novo pedido, digite *cancelar*.
+      - generic [ref=e66]: "Padrão do sistema: Estamos aguardando o pagamento. Para um novo pedido, digite *cancelar*."
+    - generic [ref=e67]:
+      - heading "8 Pagamento confirmado" [level=3] [ref=e68]:
+        - generic [ref=e69]: "8"
+        - text: Pagamento confirmado
+      - paragraph [ref=e70]: Quando o pagamento é confirmado.
+      - textbox [ref=e71]: ✅ Pagamento confirmado! Seu pedido já está sendo preparado. A taxa de entrega é paga diretamente ao entregador. Já já chega aí! 🍽️
+      - generic [ref=e72]: "Padrão do sistema: ✅ Pagamento confirmado! Seu pedido já está sendo preparado. A taxa de entrega é paga diretamente ao entregador. Já já chega aí! 🍽️"
+    - generic [ref=e73]:
+      - link "Voltar" [ref=e74] [cursor=pointer]:
+        - /url: /admin/pedidos/perfilfluxo/
+      - button "🧪 Salvar e testar" [ref=e75] [cursor=pointer]
+      - button "✓ Salvar mensagens" [ref=e76] [cursor=pointer]

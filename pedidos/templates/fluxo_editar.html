@@ -1,0 +1,197 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<style>
+  #fxHead{ display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+  #fxHead .nome{ font-size:1.3rem; font-weight:700; }
+  #fxHead .badge{ font-size:.72rem; font-weight:700; padding:.2rem .6rem; border-radius:20px; background:#16a34a; color:#fff; }
+  #fxLayout{ display:grid; grid-template-columns:220px 1fr 300px; gap:1rem; align-items:start; }
+  @media(max-width:1100px){ #fxLayout{ grid-template-columns:1fr; } #fxPreview{ order:-1; position:relative!important; top:auto!important; } }
+  #fxRail{ display:flex; flex-direction:column; gap:.35rem; max-height:70vh; overflow-y:auto; padding-right:.25rem; }
+  .fxGrp{ font-size:.7rem; font-weight:700; color:#9ca3af; text-transform:uppercase; margin:.6rem 0 .25rem .2rem; }
+  .fxStepBtn{ text-align:left; border:1px solid #e5e7eb; background:#fff; border-radius:10px; padding:.45rem .55rem; cursor:pointer; font-size:.8rem; }
+  .fxStepBtn.active{ border-color:#d97706; background:#fff7ed; box-shadow:0 0 0 2px rgba(217,119,6,.15); }
+  .fxStepBtn small{ display:block; color:#6b7280; font-size:.68rem; margin-top:.1rem; }
+  #fxEditor{ border:1px solid #e5e7eb; border-radius:14px; padding:1.1rem; background:#fff; min-height:320px; }
+  #fxEditor h2{ margin:0 0 .2rem; font-size:1.1rem; }
+  #fxEditor .quando{ font-size:.8rem; color:#6b7280; margin:0 0 .8rem; }
+  #fxEditor textarea{ width:100%; min-height:140px; padding:.75rem; border:1px solid #d1d5db; border-radius:10px; font-size:1rem; line-height:1.45; resize:vertical; }
+  #fxEditor textarea.invalido{ border-color:#dc2626; background:#fef2f2; }
+  .fxVars{ display:flex; flex-wrap:wrap; gap:.4rem; margin:.6rem 0; }
+  .fxChip{ border:none; background:#fef3c7; color:#92400e; border-radius:8px; padding:.35rem .65rem; cursor:pointer; font-size:.8rem; font-weight:600; }
+  .fxChip:hover{ background:#fde68a; }
+  .fxHint{ font-size:.78rem; color:#6b7280; margin:.4rem 0; }
+  .fxErro{ color:#dc2626; font-size:.78rem; margin-top:.35rem; display:none; }
+  .fxBase{ font-size:.72rem; color:#9ca3af; margin-top:.5rem; padding:.5rem; background:#f9fafb; border-radius:8px; }
+  #fxPreview{ position:sticky; top:1rem; }
+  #fxPhone{ background:#ece5dd; border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,.12); border:1px solid rgba(0,0,0,.08); }
+  #fxPhone .top{ background:#d97706; color:#fff; padding:.6rem .8rem; font-size:.85rem; font-weight:600; }
+  #fxPhone .chat{ min-height:220px; max-height:360px; overflow-y:auto; padding:.7rem; }
+  #fxPhone .bubble{ background:#fff; border-radius:10px; padding:.55rem .7rem; font-size:.85rem; line-height:1.4; white-space:pre-wrap; box-shadow:0 1px 1px rgba(0,0,0,.06); }
+  #fxPhone .bubble b{ font-weight:700; }
+  #fxPhone .lbl{ font-size:.72rem; color:#6b7280; margin-top:.5rem; text-align:center; }
+  #fxBar{ position:sticky; bottom:0; background:rgba(255,255,255,.97); border-top:1px solid #e5e7eb; padding:.8rem 0; margin-top:1rem;
+          display:flex; gap:.6rem; align-items:center; justify-content:flex-end; }
+  #fxBar .msg{ margin-right:auto; font-size:.85rem; }
+  .fxbtn{ border:none; border-radius:9px; padding:.6rem 1.2rem; font-weight:600; cursor:pointer; font-size:.92rem; text-decoration:none; display:inline-block; }
+  .fxprim{ background:#d97706; color:#fff; } .fxsec{ background:#f3f4f6; color:#374151; }
+  .fxbtn:disabled{ opacity:.5; cursor:not-allowed; }
+  html.dark #fxEditor, html.dark .fxStepBtn{ background:#111827; border-color:#374151; color:#e5e7eb; }
+  html.dark #fxEditor textarea{ background:#0f172a; color:#e5e7eb; border-color:#374151; }
+  html.dark #fxPhone{ background:#1f2937; } html.dark #fxPhone .bubble{ background:#374151; color:#f3f4f6; }
+  html.dark #fxBar{ background:rgba(17,24,33,.97); border-top-color:#374151; }
+</style>
+
+<div id="fxHead">
+  <div>
+    <span class="nome">{{ titulo }}</span>
+    {% if mostrar_ativar and ativo %}<span class="badge">ATIVO</span>{% endif %}
+    <div style="font-size:.82rem;color:#6b7280;margin-top:.2rem;">{{ subtitulo }}</div>
+  </div>
+  {% if mostrar_ativar %}<label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;">
+    <input type="checkbox" id="fxAtivar" {% if ativo %}checked{% endif %}> Usar este fluxo agora
+  </label>{% endif %}
+</div>
+
+<div id="fxLayout">
+  <nav id="fxRail" aria-label="Etapas do fluxo">
+    {% for g in grupos %}
+    <div class="fxGrp">{{ g.titulo }}</div>
+    {% for e in g.etapas %}
+    <button type="button" class="fxStepBtn" data-chave="{{ e.chave }}" onclick="fxSelecionar('{{ e.chave }}')">
+      {{ e.label }}
+      <small>{{ e.quando|truncatechars:50 }}</small>
+    </button>
+    {% endfor %}
+    {% endfor %}
+  </nav>
+
+  <div id="fxEditor">
+    {% for e in etapas %}
+    <div class="fxPanel" id="panel_{{ e.chave }}" style="display:none;">
+      <h2>{{ e.label }}</h2>
+      <p class="quando">📍 {{ e.quando }}</p>
+      <p class="fxHint">Escreva como se estivesse falando com o cliente. Use os botões abaixo para inserir partes automáticas.</p>
+      <textarea id="txt_{{ e.chave }}" data-chave="{{ e.chave }}"
+                data-vars='[{% for v in e.variaveis %}"{{ v.tok }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
+                oninput="fxAtualizar()">{{ e.texto }}</textarea>
+      {% if e.variaveis %}
+      <div class="fxVars">
+        {% for v in e.variaveis %}
+        <button type="button" class="fxChip" onclick="fxInserir('{{ e.chave }}','{{ v.tok }}')">+ {{ v.label|default:v.tok }}</button>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="fxErro" id="err_{{ e.chave }}"></div>
+      <div class="fxBase"><strong>{{ base_label }}:</strong> {{ e.base|truncatechars:180 }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <aside id="fxPreview">
+    <div id="fxPhone">
+      <div class="top">📱 WhatsApp — prévia</div>
+      <div class="chat"><div class="bubble" id="fxBubble">Selecione uma etapa à esquerda para ver como fica.</div></div>
+    </div>
+    <p class="lbl">Atualiza enquanto você digita</p>
+  </aside>
+</div>
+
+<div id="fxBar">
+  <span class="msg" id="fxMsg"></span>
+  <a class="fxbtn fxsec" href="{{ voltar_url }}">Voltar</a>
+  {% if testar_url %}<button class="fxbtn fxsec" id="fxTestar" onclick="fxTestar()">🧪 Testar conversa</button>{% endif %}
+  <button class="fxbtn fxprim" id="fxSalvar" onclick="fxSalvar()">Salvar</button>
+</div>
+
+<script>
+(function(){
+  const csrf=document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const SAVE_URL="{{ save_url }}";
+  {% if testar_url %}const TESTAR_URL="{{ testar_url }}";{% endif %}
+  const MOSTRAR_ATIVAR={% if mostrar_ativar %}true{% else %}false{% endif %};
+  const AMOSTRAS={{ preview_amostras_json|safe }};
+  let chaveAtiva=null;
+
+  function fxEsc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fxPreviewTexto(raw){
+    let t=raw||'';
+    Object.keys(AMOSTRAS).forEach(k=>{ t=t.split(k).join(AMOSTRAS[k]); });
+    return fxEsc(t).replace(/\*([^*]+)\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
+  }
+  window.fxSelecionar=(chave)=>{
+    chaveAtiva=chave;
+    document.querySelectorAll('.fxPanel').forEach(p=>p.style.display='none');
+    document.querySelectorAll('.fxStepBtn').forEach(b=>b.classList.remove('active'));
+    const panel=document.getElementById('panel_'+chave);
+    const btn=document.querySelector('.fxStepBtn[data-chave="'+chave+'"]');
+    if(panel) panel.style.display='block';
+    if(btn) btn.classList.add('active');
+    fxAtualizar();
+  };
+  window.fxInserir=(chave,token)=>{
+    const t=document.getElementById('txt_'+chave);
+    const s=t.selectionStart||t.value.length;
+    t.value=t.value.slice(0,s)+token+t.value.slice(t.selectionEnd||s);
+    t.focus(); fxAtualizar();
+  };
+  window.fxValidar=()=>{
+    let ok=true;
+    document.querySelectorAll('textarea[data-chave]').forEach(t=>{
+      const vars=JSON.parse(t.dataset.vars||'[]');
+      const faltando=vars.filter(v=>!t.value.includes(v));
+      const err=document.getElementById('err_'+t.dataset.chave);
+      if(faltando.length){ ok=false; t.classList.add('invalido');
+        err.style.display='block';
+        err.textContent='Esta mensagem precisa incluir: '+faltando.map(v=>{
+          if(v==='{bairro}') return 'nome do bairro';
+          if(v==='{lim}') return 'quantidade máxima';
+          if(v==='{data}') return 'data da encomenda';
+          return v;
+        }).join(', ')+'. Use os botões amarelos acima.';
+      } else{ t.classList.remove('invalido'); err.style.display='none'; }
+    });
+    document.getElementById('fxSalvar').disabled=!ok;
+    const bt=document.getElementById('fxTestar'); if(bt) bt.disabled=!ok;
+    return ok;
+  };
+  window.fxAtualizar=()=>{
+    fxValidar();
+    if(!chaveAtiva) return;
+    const t=document.getElementById('txt_'+chaveAtiva);
+    document.getElementById('fxBubble').innerHTML=fxPreviewTexto(t?t.value:'');
+  };
+  async function fxSave(){
+    const mensagens={};
+    document.querySelectorAll('textarea[data-chave]').forEach(t=>mensagens[t.dataset.chave]=t.value);
+    const body={mensagens};
+    if(MOSTRAR_ATIVAR) body.ativar=document.getElementById('fxAtivar').checked;
+    const r=await fetch(SAVE_URL,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf},body:JSON.stringify(body)});
+    return r.json();
+  }
+  window.fxSalvar=async()=>{
+    if(!fxValidar()) return;
+    const msg=document.getElementById('fxMsg'); msg.textContent='';
+    const btn=document.getElementById('fxSalvar'); btn.disabled=true; btn.textContent='Salvando...';
+    try{
+      const d=await fxSave();
+      if(d.ok){ msg.style.color='#16a34a'; msg.textContent='Salvo!'; setTimeout(()=>window.location.href=d.redirect||"{{ voltar_url }}",500); }
+      else{ msg.style.color='#b91c1c'; msg.textContent=d.erro||'Erro ao salvar.'; btn.disabled=false; btn.textContent='Salvar'; }
+    }catch(e){ msg.style.color='#b91c1c'; msg.textContent='Falha de conexão.'; btn.disabled=false; btn.textContent='Salvar'; }
+  };
+  {% if testar_url %}
+  window.fxTestar=async()=>{
+    if(!fxValidar()) return;
+    const d=await fxSave();
+    if(d.ok) window.location.href=TESTAR_URL;
+    else document.getElementById('fxMsg').textContent=d.erro||'Erro ao salvar.';
+  };
+  {% endif %}
+  const first=document.querySelector('.fxStepBtn');
+  if(first) fxSelecionar(first.dataset.chave);
+})();
+</script>
+{% endblock %}

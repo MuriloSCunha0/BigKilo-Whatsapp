@@ -1,0 +1,115 @@
+- generic [ref=e3]:
+  - generic [ref=e8]:
+    - generic [ref=e10] [cursor=pointer]: dock_to_right
+    - heading "Pedidos chevron_right Pedidos" [level=1] [ref=e12]:
+      - link "Pedidos" [ref=e13] [cursor=pointer]:
+        - /url: /admin/pedidos/
+      - generic [ref=e14]: chevron_right
+      - link "Pedidos" [ref=e15] [cursor=pointer]:
+        - /url: /admin/pedidos/pedido/
+  - generic [ref=e21]:
+    - generic [ref=e22]:
+      - search [ref=e24]:
+        - generic [ref=e25]:
+          - button "search" [ref=e26]:
+            - generic [ref=e27]: search
+          - textbox "Buscar" [ref=e28]
+          - generic [ref=e30]: /
+      - generic [ref=e31] [cursor=pointer]:
+        - text: Filtros
+        - generic [ref=e32]: filter_list
+    - region "scrollable content" [ref=e38]:
+      - table [ref=e40]:
+        - rowgroup [ref=e41]:
+          - row "Selecione todos os objetos nessa página para uma ação ID Cliente Status Total Bairro Comanda Criado em arrow_circle_up cancel" [ref=e42]:
+            - columnheader "Selecione todos os objetos nessa página para uma ação" [ref=e43]:
+              - checkbox "Selecione todos os objetos nessa página para uma ação" [ref=e47]: check_small
+            - columnheader "ID" [ref=e48]:
+              - link "ID" [ref=e51] [cursor=pointer]:
+                - /url: "?o=1.-7"
+            - columnheader "Cliente" [ref=e52]:
+              - link "Cliente" [ref=e55] [cursor=pointer]:
+                - /url: "?o=2.-7"
+            - columnheader "Status" [ref=e56]:
+              - link "Status" [ref=e59] [cursor=pointer]:
+                - /url: "?o=3.-7"
+            - columnheader "Total" [ref=e60]:
+              - link "Total" [ref=e63] [cursor=pointer]:
+                - /url: "?o=4.-7"
+            - columnheader "Bairro" [ref=e64]:
+              - link "Bairro" [ref=e67] [cursor=pointer]:
+                - /url: "?o=5.-7"
+            - columnheader "Comanda" [ref=e68]:
+              - generic [ref=e70]: Comanda
+            - columnheader "Criado em arrow_circle_up cancel" [ref=e71]:
+              - generic [ref=e72]:
+                - link "Criado em" [ref=e74] [cursor=pointer]:
+                  - /url: "?o=7"
+                - generic [ref=e75]:
+                  - link "arrow_circle_up" [ref=e76] [cursor=pointer]:
+                    - /url: "?o=7"
+                    - generic [ref=e77]: arrow_circle_up
+                  - link "cancel" [ref=e78] [cursor=pointer]:
+                    - /url: "?o="
+                    - generic [ref=e79]: cancel
+        - rowgroup [ref=e80]:
+          - row "Select record 5 Cliente Teste - 5521999990000 Concluído R$ 6,80 Barra da Tijuca Impressa 26 de Junho de 2026 às 10:52" [ref=e81] [cursor=pointer]:
+            - cell "Select record" [ref=e82]:
+              - checkbox "Select record" [ref=e83]: check_small
+            - rowheader "5" [ref=e84]:
+              - link "5" [ref=e85]:
+                - /url: /admin/pedidos/pedido/5/change/
+            - cell "Cliente Teste - 5521999990000" [ref=e86]
+            - cell "Concluído" [ref=e87]:
+              - generic [ref=e88]: Concluído
+            - cell "R$ 6,80" [ref=e89]
+            - cell "Barra da Tijuca" [ref=e90]
+            - cell "Impressa" [ref=e91]:
+              - generic [ref=e92]: Impressa
+            - cell "26 de Junho de 2026 às 10:52" [ref=e93]
+        - rowgroup [ref=e94]:
+          - row "Select record 3 Ana Lima - 5521966665555 Concluído R$ 36,48 Novo Leblon Pendente 20 de Junho de 2026 às 17:21" [ref=e95] [cursor=pointer]:
+            - cell "Select record" [ref=e96]:
+              - checkbox "Select record" [ref=e97]: check_small
+            - rowheader "3" [ref=e98]:
+              - link "3" [ref=e99]:
+                - /url: /admin/pedidos/pedido/3/change/
+            - cell "Ana Lima - 5521966665555" [ref=e100]
+            - cell "Concluído" [ref=e101]:
+              - generic [ref=e102]: Concluído
+            - cell "R$ 36,48" [ref=e103]
+            - cell "Novo Leblon" [ref=e104]
+            - cell "Pendente" [ref=e105]:
+              - generic [ref=e106]: Pendente
+            - cell "20 de Junho de 2026 às 17:21" [ref=e107]
+        - rowgroup [ref=e108]:
+          - row "Select record 2 João Pereira - 5521977776666 Concluído R$ 94,43 Barra da Tijuca Impressa 20 de Junho de 2026 às 17:21" [ref=e109] [cursor=pointer]:
+            - cell "Select record" [ref=e110]:
+              - checkbox "Select record" [ref=e111]: check_small
+            - rowheader "2" [ref=e112]:
+              - link "2" [ref=e113]:
+                - /url: /admin/pedidos/pedido/2/change/
+            - cell "João Pereira - 5521977776666" [ref=e114]
+            - cell "Concluído" [ref=e115]:
+              - generic [ref=e116]: Concluído
+            - cell "R$ 94,43" [ref=e117]
+            - cell "Barra da Tijuca" [ref=e118]
+            - cell "Impressa" [ref=e119]:
+              - generic [ref=e120]: Impressa
+            - cell "20 de Junho de 2026 às 17:21" [ref=e121]
+        - rowgroup [ref=e122]:
+          - row "Select record 1 Maria Souza - 5521988887777 Aguardando pagamento R$ 50,95 Novo Leblon Pendente 20 de Junho de 2026 às 17:21" [ref=e123] [cursor=pointer]:
+            - cell "Select record" [ref=e124]:
+              - checkbox "Select record" [ref=e125]: check_small
+            - rowheader "1" [ref=e126]:
+              - link "1" [ref=e127]:
+                - /url: /admin/pedidos/pedido/1/change/
+            - cell "Maria Souza - 5521988887777" [ref=e128]
+            - cell "Aguardando pagamento" [ref=e129]:
+              - generic [ref=e130]: Aguardando pagamento
+            - cell "R$ 50,95" [ref=e131]
+            - cell "Novo Leblon" [ref=e132]
+            - cell "Pendente" [ref=e133]:
+              - generic [ref=e134]: Pendente
+            - cell "20 de Junho de 2026 às 17:21" [ref=e135]
+  - generic [ref=e138]: 4 Pedidos

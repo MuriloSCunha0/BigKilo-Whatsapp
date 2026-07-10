@@ -1,0 +1,52 @@
+- generic [ref=e3]:
+  - generic [ref=e8]:
+    - generic [ref=e10] [cursor=pointer]: dock_to_right
+    - heading "Gestão de Cardápio e Pedidos" [level=1] [ref=e12]:
+      - generic [ref=e13]: Gestão de Cardápio e Pedidos
+  - generic [ref=e16]:
+    - heading "Visão geral · Big Kilo" [level=1] [ref=e17]
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]: receipt_long
+          - text: Pedidos hoje
+        - generic [ref=e22]: "0"
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: payments
+          - text: Faturamento hoje
+        - generic [ref=e26]: R$ 0,00
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]: hourglass_top
+          - text: Aguardando pagamento
+        - generic [ref=e30]: "0"
+      - generic [ref=e31]:
+        - generic [ref=e32]:
+          - generic [ref=e33]: trending_up
+          - text: Ticket médio (hoje)
+        - generic [ref=e34]: R$ 0,00
+    - generic [ref=e36]:
+      - heading "🔥 Mais vendidos (desde o início)" [level=2] [ref=e37]
+      - generic [ref=e39]:
+        - generic [ref=e40]: Frango Ensopado "Caipira"
+        - generic [ref=e41]: "1"
+      - generic [ref=e45]:
+        - generic [ref=e46]: Bife Acebolado (Coração da Alcatra)
+        - generic [ref=e47]: "1"
+    - generic [ref=e50]:
+      - heading "👋 Comece por aqui" [level=2] [ref=e51]
+      - list [ref=e52]:
+        - listitem [ref=e53]: "Dados da loja: confira nome, horário, área e preços."
+        - listitem [ref=e54]: "Áreas de entrega: cadastre os bairros que você atende."
+        - listitem [ref=e55]: "Produtos: cadastre os pratos, preços e em que dias/horários aparecem."
+        - listitem [ref=e56]: Teste no simulador e acompanhe os Pedidos aqui no painel.
+      - generic [ref=e57]:
+        - link "⚙️ Dados da loja" [ref=e58] [cursor=pointer]:
+          - /url: /admin/pedidos/configuracaoloja/
+        - link "📍 Áreas de entrega" [ref=e59] [cursor=pointer]:
+          - /url: /admin/pedidos/areaentrega/
+        - link "🍽️ Produtos" [ref=e60] [cursor=pointer]:
+          - /url: /admin/cardapio/produto/
+        - link "💬 Abrir simulador" [ref=e61] [cursor=pointer]:
+          - /url: /simulador/

@@ -1,0 +1,42 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - link "arrow_back" [ref=e12] [cursor=pointer]:
+        - /url: /admin/pedidos/areaentrega/
+        - generic [ref=e13]: arrow_back
+      - heading "Pedidos chevron_right Áreas de entrega" [level=1] [ref=e14]:
+        - link "Pedidos" [ref=e15] [cursor=pointer]:
+          - /url: /admin/pedidos/
+        - generic [ref=e16]: chevron_right
+        - link "Áreas de entrega" [ref=e17] [cursor=pointer]:
+          - /url: /admin/pedidos/areaentrega/
+    - link "add" [ref=e20] [cursor=pointer]:
+      - /url: /admin/pedidos/areaentrega/add/
+      - generic [ref=e21]: add
+  - group [ref=e27]:
+    - generic [ref=e28]:
+      - generic [ref=e30]:
+        - generic [ref=e32]: Bairro*
+        - generic [ref=e33]:
+          - textbox "Bairro*" [active] [ref=e35]
+          - generic [ref=e36]: ℹ️ Bairro atendido. O bot só aceita pedidos dos bairros cadastrados aqui.
+      - generic [ref=e38]:
+        - generic [ref=e40]: CEP inicial
+        - generic [ref=e41]:
+          - textbox "CEP inicial" [ref=e43]
+          - generic [ref=e44]: "ℹ️ Opcional. Início da faixa de CEP atendida. Ex.: 22790-000."
+      - generic [ref=e46]:
+        - generic [ref=e48]: CEP final
+        - generic [ref=e49]:
+          - textbox "CEP final" [ref=e51]
+          - generic [ref=e52]: "ℹ️ Opcional. Fim da faixa. Ex.: 22799-999."
+      - generic [ref=e55]:
+        - generic [ref=e57]: Ativo
+        - generic [ref=e59]:
+          - checkbox "Ativo" [checked] [ref=e60] [cursor=pointer]
+          - generic [ref=e62]: ℹ️ Desmarque para parar de atender este bairro.
+  - generic [ref=e65]:
+    - button "Salvar" [ref=e66] [cursor=pointer]
+    - button "Salvar e continuar editando" [ref=e67] [cursor=pointer]
+    - button "Salvar e adicionar outro(a)" [ref=e68] [cursor=pointer]

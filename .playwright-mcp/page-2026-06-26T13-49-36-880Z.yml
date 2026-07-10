@@ -1,0 +1,274 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - heading "Cardápio chevron_right Cardápios" [level=1] [ref=e12]:
+        - link "Cardápio" [ref=e13] [cursor=pointer]:
+          - /url: /admin/cardapio/
+        - generic [ref=e14]: chevron_right
+        - link "Cardápios" [ref=e15] [cursor=pointer]:
+          - /url: /admin/cardapio/cardapio/
+    - link "add" [ref=e18] [cursor=pointer]:
+      - /url: /admin/cardapio/cardapio/add/
+      - generic [ref=e19]: add
+  - list [ref=e22]:
+    - listitem [ref=e23]:
+      - generic [ref=e24]:
+        - text: O Cardápio “
+        - link "Almoço Especial da Casa" [ref=e25] [cursor=pointer]:
+          - /url: /admin/cardapio/cardapio/16/change/
+        - text: ” foi adicionado com sucesso.
+  - generic [ref=e31]:
+    - generic [ref=e32]:
+      - search [ref=e34]:
+        - generic [ref=e35]:
+          - button "search" [ref=e36]:
+            - generic [ref=e37]: search
+          - textbox "Buscar" [ref=e38]
+          - generic [ref=e40]: /
+      - generic [ref=e41] [cursor=pointer]:
+        - text: Filtros
+        - generic [ref=e42]: filter_list
+    - region "scrollable content" [ref=e48]:
+      - table [ref=e50]:
+        - rowgroup [ref=e51]:
+          - row "Selecione todos os objetos nessa página para uma ação Nome arrow_circle_down cancel Tipo Exclusivo Ativo Dias/horários Itens" [ref=e52]:
+            - columnheader "Selecione todos os objetos nessa página para uma ação" [ref=e53]:
+              - checkbox "Selecione todos os objetos nessa página para uma ação" [ref=e57]: check_small
+            - columnheader "Nome arrow_circle_down cancel" [ref=e58]:
+              - generic [ref=e59]:
+                - link "Nome" [ref=e61] [cursor=pointer]:
+                  - /url: "?o=-1"
+                - generic [ref=e62]:
+                  - link "arrow_circle_down" [ref=e63] [cursor=pointer]:
+                    - /url: "?o=-1"
+                    - generic [ref=e64]: arrow_circle_down
+                  - link "cancel" [ref=e65] [cursor=pointer]:
+                    - /url: "?o="
+                    - generic [ref=e66]: cancel
+            - columnheader "Tipo" [ref=e67]:
+              - link "Tipo" [ref=e70] [cursor=pointer]:
+                - /url: "?o=2.1"
+            - columnheader "Exclusivo" [ref=e71]:
+              - link "Exclusivo" [ref=e74] [cursor=pointer]:
+                - /url: "?o=3.1"
+            - columnheader "Ativo" [ref=e75]:
+              - link "Ativo" [ref=e78] [cursor=pointer]:
+                - /url: "?o=4.1"
+            - columnheader "Dias/horários" [ref=e79]:
+              - generic [ref=e81]: Dias/horários
+            - columnheader "Itens" [ref=e82]:
+              - generic [ref=e84]: Itens
+        - rowgroup [ref=e85]:
+          - row "Select record Almoço Especial da Casa Normal (semanal) close_small Segunda-feira 11:00–15:00; Terça-feira 11:00–15:00; Quarta-feira 11:00–15:00 3" [ref=e86] [cursor=pointer]:
+            - cell "Select record" [ref=e87]:
+              - checkbox "Select record" [ref=e88]: check_small
+            - rowheader "Almoço Especial da Casa" [ref=e89]:
+              - link "Almoço Especial da Casa" [ref=e90]:
+                - /url: /admin/cardapio/cardapio/16/change/
+            - cell "Normal (semanal)" [ref=e91]
+            - cell "close_small" [ref=e92]:
+              - generic "False" [ref=e93]:
+                - generic [ref=e94]: close_small
+            - cell [ref=e95]:
+              - checkbox [checked] [ref=e96]
+            - cell "Segunda-feira 11:00–15:00; Terça-feira 11:00–15:00; Quarta-feira 11:00–15:00" [ref=e97]
+            - cell "3" [ref=e98]
+        - rowgroup [ref=e99]:
+          - row "Select record Almoço diário Normal (semanal) close_small Segunda-feira 11:00–15:00; Terça-feira 11:00–15:00; Quarta-feira 11:00–15:00; Quinta-feira 11:00–15:00; Sexta-feira 11:00–15:00; Sábado 11:00–15:00 3" [ref=e100] [cursor=pointer]:
+            - cell "Select record" [ref=e101]:
+              - checkbox "Select record" [ref=e102]: check_small
+            - rowheader "Almoço diário" [ref=e103]:
+              - link "Almoço diário" [ref=e104]:
+                - /url: /admin/cardapio/cardapio/1/change/
+            - cell "Normal (semanal)" [ref=e105]
+            - cell "close_small" [ref=e106]:
+              - generic "False" [ref=e107]:
+                - generic [ref=e108]: close_small
+            - cell [ref=e109]:
+              - checkbox [checked] [ref=e110]
+            - cell "Segunda-feira 11:00–15:00; Terça-feira 11:00–15:00; Quarta-feira 11:00–15:00; Quinta-feira 11:00–15:00; Sexta-feira 11:00–15:00; Sábado 11:00–15:00" [ref=e111]
+            - cell "3" [ref=e112]
+        - rowgroup [ref=e113]:
+          - 'row "Select record Dia das Mães Especial (por data) check_small Especial: 10/05/2026 a 10/05/2026 · exclusivo 3" [ref=e114] [cursor=pointer]':
+            - cell "Select record" [ref=e115]:
+              - checkbox "Select record" [ref=e116]: check_small
+            - rowheader "Dia das Mães" [ref=e117]:
+              - link "Dia das Mães" [ref=e118]:
+                - /url: /admin/cardapio/cardapio/13/change/
+            - cell "Especial (por data)" [ref=e119]
+            - cell "check_small" [ref=e120]:
+              - generic "True" [ref=e121]:
+                - generic [ref=e122]: check_small
+            - cell [ref=e123]:
+              - checkbox [checked] [ref=e124]
+            - 'cell "Especial: 10/05/2026 a 10/05/2026 · exclusivo" [ref=e125]'
+            - cell "3" [ref=e126]
+        - rowgroup [ref=e127]:
+          - row "Select record Jantar diário Normal (semanal) close_small Segunda-feira 15:00–19:30; Terça-feira 15:00–19:30; Quarta-feira 15:00–19:30; Quinta-feira 15:00–19:30; Sexta-feira 15:00–19:30; Sábado 15:00–19:30 18" [ref=e128] [cursor=pointer]:
+            - cell "Select record" [ref=e129]:
+              - checkbox "Select record" [ref=e130]: check_small
+            - rowheader "Jantar diário" [ref=e131]:
+              - link "Jantar diário" [ref=e132]:
+                - /url: /admin/cardapio/cardapio/2/change/
+            - cell "Normal (semanal)" [ref=e133]
+            - cell "close_small" [ref=e134]:
+              - generic "False" [ref=e135]:
+                - generic [ref=e136]: close_small
+            - cell [ref=e137]:
+              - checkbox [checked] [ref=e138]
+            - cell "Segunda-feira 15:00–19:30; Terça-feira 15:00–19:30; Quarta-feira 15:00–19:30; Quinta-feira 15:00–19:30; Sexta-feira 15:00–19:30; Sábado 15:00–19:30" [ref=e139]
+            - cell "18" [ref=e140]
+        - rowgroup [ref=e141]:
+          - row "Select record Quarta - Almoço Normal (semanal) close_small Quarta-feira 11:00–15:00 3" [ref=e142] [cursor=pointer]:
+            - cell "Select record" [ref=e143]:
+              - checkbox "Select record" [ref=e144]: check_small
+            - rowheader "Quarta - Almoço" [ref=e145]:
+              - link "Quarta - Almoço" [ref=e146]:
+                - /url: /admin/cardapio/cardapio/6/change/
+            - cell "Normal (semanal)" [ref=e147]
+            - cell "close_small" [ref=e148]:
+              - generic "False" [ref=e149]:
+                - generic [ref=e150]: close_small
+            - cell [ref=e151]:
+              - checkbox [checked] [ref=e152]
+            - cell "Quarta-feira 11:00–15:00" [ref=e153]
+            - cell "3" [ref=e154]
+        - rowgroup [ref=e155]:
+          - row "Select record Quinta - Almoço Normal (semanal) close_small Quinta-feira 11:00–15:00 4" [ref=e156] [cursor=pointer]:
+            - cell "Select record" [ref=e157]:
+              - checkbox "Select record" [ref=e158]: check_small
+            - rowheader "Quinta - Almoço" [ref=e159]:
+              - link "Quinta - Almoço" [ref=e160]:
+                - /url: /admin/cardapio/cardapio/7/change/
+            - cell "Normal (semanal)" [ref=e161]
+            - cell "close_small" [ref=e162]:
+              - generic "False" [ref=e163]:
+                - generic [ref=e164]: close_small
+            - cell [ref=e165]:
+              - checkbox [checked] [ref=e166]
+            - cell "Quinta-feira 11:00–15:00" [ref=e167]
+            - cell "4" [ref=e168]
+        - rowgroup [ref=e169]:
+          - row "Select record Quinta - Jantar Normal (semanal) close_small Quinta-feira 15:00–19:30 2" [ref=e170] [cursor=pointer]:
+            - cell "Select record" [ref=e171]:
+              - checkbox "Select record" [ref=e172]: check_small
+            - rowheader "Quinta - Jantar" [ref=e173]:
+              - link "Quinta - Jantar" [ref=e174]:
+                - /url: /admin/cardapio/cardapio/8/change/
+            - cell "Normal (semanal)" [ref=e175]
+            - cell "close_small" [ref=e176]:
+              - generic "False" [ref=e177]:
+                - generic [ref=e178]: close_small
+            - cell [ref=e179]:
+              - checkbox [checked] [ref=e180]
+            - cell "Quinta-feira 15:00–19:30" [ref=e181]
+            - cell "2" [ref=e182]
+        - rowgroup [ref=e183]:
+          - row "Select record Segunda - Almoço Normal (semanal) close_small Segunda-feira 11:00–15:00 2" [ref=e184] [cursor=pointer]:
+            - cell "Select record" [ref=e185]:
+              - checkbox "Select record" [ref=e186]: check_small
+            - rowheader "Segunda - Almoço" [ref=e187]:
+              - link "Segunda - Almoço" [ref=e188]:
+                - /url: /admin/cardapio/cardapio/3/change/
+            - cell "Normal (semanal)" [ref=e189]
+            - cell "close_small" [ref=e190]:
+              - generic "False" [ref=e191]:
+                - generic [ref=e192]: close_small
+            - cell [ref=e193]:
+              - checkbox [checked] [ref=e194]
+            - cell "Segunda-feira 11:00–15:00" [ref=e195]
+            - cell "2" [ref=e196]
+        - rowgroup [ref=e197]:
+          - row "Select record Segunda - Jantar Normal (semanal) close_small Segunda-feira 15:00–19:30 1" [ref=e198] [cursor=pointer]:
+            - cell "Select record" [ref=e199]:
+              - checkbox "Select record" [ref=e200]: check_small
+            - rowheader "Segunda - Jantar" [ref=e201]:
+              - link "Segunda - Jantar" [ref=e202]:
+                - /url: /admin/cardapio/cardapio/4/change/
+            - cell "Normal (semanal)" [ref=e203]
+            - cell "close_small" [ref=e204]:
+              - generic "False" [ref=e205]:
+                - generic [ref=e206]: close_small
+            - cell [ref=e207]:
+              - checkbox [checked] [ref=e208]
+            - cell "Segunda-feira 15:00–19:30" [ref=e209]
+            - cell "1" [ref=e210]
+        - rowgroup [ref=e211]:
+          - row "Select record Sexta - Almoço Normal (semanal) close_small Sexta-feira 11:00–15:00 3" [ref=e212] [cursor=pointer]:
+            - cell "Select record" [ref=e213]:
+              - checkbox "Select record" [ref=e214]: check_small
+            - rowheader "Sexta - Almoço" [ref=e215]:
+              - link "Sexta - Almoço" [ref=e216]:
+                - /url: /admin/cardapio/cardapio/9/change/
+            - cell "Normal (semanal)" [ref=e217]
+            - cell "close_small" [ref=e218]:
+              - generic "False" [ref=e219]:
+                - generic [ref=e220]: close_small
+            - cell [ref=e221]:
+              - checkbox [checked] [ref=e222]
+            - cell "Sexta-feira 11:00–15:00" [ref=e223]
+            - cell "3" [ref=e224]
+        - rowgroup [ref=e225]:
+          - row "Select record Sexta - Jantar Normal (semanal) close_small Sexta-feira 15:00–19:30 2" [ref=e226] [cursor=pointer]:
+            - cell "Select record" [ref=e227]:
+              - checkbox "Select record" [ref=e228]: check_small
+            - rowheader "Sexta - Jantar" [ref=e229]:
+              - link "Sexta - Jantar" [ref=e230]:
+                - /url: /admin/cardapio/cardapio/10/change/
+            - cell "Normal (semanal)" [ref=e231]
+            - cell "close_small" [ref=e232]:
+              - generic "False" [ref=e233]:
+                - generic [ref=e234]: close_small
+            - cell [ref=e235]:
+              - checkbox [checked] [ref=e236]
+            - cell "Sexta-feira 15:00–19:30" [ref=e237]
+            - cell "2" [ref=e238]
+        - rowgroup [ref=e239]:
+          - row "Select record Sábado - Almoço Normal (semanal) close_small Sábado 11:00–15:00 2" [ref=e240] [cursor=pointer]:
+            - cell "Select record" [ref=e241]:
+              - checkbox "Select record" [ref=e242]: check_small
+            - rowheader "Sábado - Almoço" [ref=e243]:
+              - link "Sábado - Almoço" [ref=e244]:
+                - /url: /admin/cardapio/cardapio/11/change/
+            - cell "Normal (semanal)" [ref=e245]
+            - cell "close_small" [ref=e246]:
+              - generic "False" [ref=e247]:
+                - generic [ref=e248]: close_small
+            - cell [ref=e249]:
+              - checkbox [checked] [ref=e250]
+            - cell "Sábado 11:00–15:00" [ref=e251]
+            - cell "2" [ref=e252]
+        - rowgroup [ref=e253]:
+          - row "Select record Sábado - Jantar Normal (semanal) close_small Sábado 15:00–19:30 1" [ref=e254] [cursor=pointer]:
+            - cell "Select record" [ref=e255]:
+              - checkbox "Select record" [ref=e256]: check_small
+            - rowheader "Sábado - Jantar" [ref=e257]:
+              - link "Sábado - Jantar" [ref=e258]:
+                - /url: /admin/cardapio/cardapio/12/change/
+            - cell "Normal (semanal)" [ref=e259]
+            - cell "close_small" [ref=e260]:
+              - generic "False" [ref=e261]:
+                - generic [ref=e262]: close_small
+            - cell [ref=e263]:
+              - checkbox [checked] [ref=e264]
+            - cell "Sábado 15:00–19:30" [ref=e265]
+            - cell "1" [ref=e266]
+        - rowgroup [ref=e267]:
+          - row "Select record Terça - Almoço Normal (semanal) close_small Terça-feira 11:00–15:00 2" [ref=e268] [cursor=pointer]:
+            - cell "Select record" [ref=e269]:
+              - checkbox "Select record" [ref=e270]: check_small
+            - rowheader "Terça - Almoço" [ref=e271]:
+              - link "Terça - Almoço" [ref=e272]:
+                - /url: /admin/cardapio/cardapio/5/change/
+            - cell "Normal (semanal)" [ref=e273]
+            - cell "close_small" [ref=e274]:
+              - generic "False" [ref=e275]:
+                - generic [ref=e276]: close_small
+            - cell [ref=e277]:
+              - checkbox [checked] [ref=e278]
+            - cell "Terça-feira 11:00–15:00" [ref=e279]
+            - cell "2" [ref=e280]
+  - generic [ref=e282]:
+    - generic [ref=e283]: 14 Cardápios
+    - button "Salvar" [ref=e285] [cursor=pointer]

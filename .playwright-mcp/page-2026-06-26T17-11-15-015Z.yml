@@ -1,0 +1,56 @@
+- generic [ref=e3]:
+  - generic [ref=e8]:
+    - generic [ref=e10] [cursor=pointer]: dock_to_right
+    - heading "Pedidos chevron_right Conversas (WhatsApp)" [level=1] [ref=e12]:
+      - link "Pedidos" [ref=e13] [cursor=pointer]:
+        - /url: /admin/pedidos/
+      - generic [ref=e14]: chevron_right
+      - link "Conversas (WhatsApp)" [ref=e15] [cursor=pointer]:
+        - /url: /admin/pedidos/sessaobot/
+  - generic [ref=e21]:
+    - generic [ref=e22]:
+      - search [ref=e24]:
+        - generic [ref=e25]:
+          - button "search" [ref=e26]:
+            - generic [ref=e27]: search
+          - textbox "Buscar" [ref=e28]
+          - generic [ref=e30]: /
+      - generic [ref=e31] [cursor=pointer]:
+        - text: Filtros
+        - generic [ref=e32]: filter_list
+    - region "scrollable content" [ref=e38]:
+      - table [ref=e40]:
+        - rowgroup [ref=e41]:
+          - row "Selecione todos os objetos nessa página para uma ação Telefone Estado da conversa Atualizado em" [ref=e42]:
+            - columnheader "Selecione todos os objetos nessa página para uma ação" [ref=e43]:
+              - checkbox "Selecione todos os objetos nessa página para uma ação" [ref=e47]: check_small
+            - columnheader "Telefone" [ref=e48]:
+              - link "Telefone" [ref=e51] [cursor=pointer]:
+                - /url: "?o=1"
+            - columnheader "Estado da conversa" [ref=e52]:
+              - link "Estado da conversa" [ref=e55] [cursor=pointer]:
+                - /url: "?o=2"
+            - columnheader "Atualizado em" [ref=e56]:
+              - link "Atualizado em" [ref=e59] [cursor=pointer]:
+                - /url: "?o=3"
+        - rowgroup [ref=e60]:
+          - row "Select record 5521999990000 Menu principal 26 de Junho de 2026 às 14:10" [ref=e61] [cursor=pointer]:
+            - cell "Select record" [ref=e62]:
+              - checkbox "Select record" [ref=e63]: check_small
+            - rowheader "5521999990000" [ref=e64]:
+              - link "5521999990000" [ref=e65]:
+                - /url: /admin/pedidos/sessaobot/5521999990000/change/
+            - cell "Menu principal" [ref=e66]:
+              - generic [ref=e67]: Menu principal
+            - cell "26 de Junho de 2026 às 14:10" [ref=e68]
+        - rowgroup [ref=e69]:
+          - row "Select record 5521988887777 Escolhendo item 26 de Junho de 2026 às 11:14" [ref=e70] [cursor=pointer]:
+            - cell "Select record" [ref=e71]:
+              - checkbox "Select record" [ref=e72]: check_small
+            - rowheader "5521988887777" [ref=e73]:
+              - link "5521988887777" [ref=e74]:
+                - /url: /admin/pedidos/sessaobot/5521988887777/change/
+            - cell "Escolhendo item" [ref=e75]:
+              - generic [ref=e76]: Escolhendo item
+            - cell "26 de Junho de 2026 às 11:14" [ref=e77]
+  - generic [ref=e80]: 2 Conversas (WhatsApp)

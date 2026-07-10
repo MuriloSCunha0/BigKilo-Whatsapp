@@ -1,0 +1,88 @@
+- generic [ref=e3]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e10] [cursor=pointer]: dock_to_right
+      - heading "Cardápio chevron_right Promoções" [level=1] [ref=e12]:
+        - link "Cardápio" [ref=e13] [cursor=pointer]:
+          - /url: /admin/cardapio/
+        - generic [ref=e14]: chevron_right
+        - link "Promoções" [ref=e15] [cursor=pointer]:
+          - /url: /admin/cardapio/promocao/
+    - listitem [ref=e17]:
+      - link "➕ Nova promoção" [ref=e18] [cursor=pointer]:
+        - /url: "#"
+  - generic [ref=e24]:
+    - generic [ref=e25]:
+      - search [ref=e27]:
+        - generic [ref=e28]:
+          - button "search" [ref=e29]:
+            - generic [ref=e30]: search
+          - textbox "Buscar" [ref=e31]
+          - generic [ref=e33]: /
+      - generic [ref=e34] [cursor=pointer]:
+        - text: Filtros
+        - generic [ref=e35]: filter_list
+    - region "scrollable content" [ref=e41]:
+      - table [ref=e43]:
+        - rowgroup [ref=e44]:
+          - row "Selecione todos os objetos nessa página para uma ação Nome arrow_circle_down cancel Categoria De Desconto (%) Por Validade Status" [ref=e45]:
+            - columnheader "Selecione todos os objetos nessa página para uma ação" [ref=e46]:
+              - checkbox "Selecione todos os objetos nessa página para uma ação" [ref=e50]: check_small
+            - columnheader "Nome arrow_circle_down cancel" [ref=e51]:
+              - generic [ref=e52]:
+                - link "Nome" [ref=e54] [cursor=pointer]:
+                  - /url: "?o=-1"
+                - generic [ref=e55]:
+                  - link "arrow_circle_down" [ref=e56] [cursor=pointer]:
+                    - /url: "?o=-1"
+                    - generic [ref=e57]: arrow_circle_down
+                  - link "cancel" [ref=e58] [cursor=pointer]:
+                    - /url: "?o="
+                    - generic [ref=e59]: cancel
+            - columnheader "Categoria" [ref=e60]:
+              - link "Categoria" [ref=e63] [cursor=pointer]:
+                - /url: "?o=2.1"
+            - columnheader "De" [ref=e64]:
+              - generic [ref=e66]: De
+            - columnheader "Desconto (%)" [ref=e67]:
+              - link "Desconto (%)" [ref=e70] [cursor=pointer]:
+                - /url: "?o=4.1"
+            - columnheader "Por" [ref=e71]:
+              - generic [ref=e73]: Por
+            - columnheader "Validade" [ref=e74]:
+              - generic [ref=e76]: Validade
+            - columnheader "Status" [ref=e77]:
+              - generic [ref=e79]: Status
+        - rowgroup [ref=e80]:
+          - row "Select record Espetinho de Frango Espetinhos R$ 8,00 15.00 R$ 6,80 já → sem fim Ativa" [ref=e81] [cursor=pointer]:
+            - cell "Select record" [ref=e82]:
+              - checkbox "Select record" [ref=e83]: check_small
+            - rowheader "Espetinho de Frango" [ref=e84]:
+              - link "Espetinho de Frango" [ref=e85]:
+                - /url: /admin/cardapio/promocao/52/change/
+            - cell "Espetinhos" [ref=e86]
+            - cell "R$ 8,00" [ref=e87]
+            - cell "15.00" [ref=e88]:
+              - spinbutton [ref=e89]: "15.00"
+            - cell "R$ 6,80" [ref=e90]
+            - cell "já → sem fim" [ref=e91]
+            - cell "Ativa" [ref=e92]:
+              - generic [ref=e93]: Ativa
+        - rowgroup [ref=e94]:
+          - row "Select record Suco de Laranja Bebidas R$ 7,50 10.00 R$ 6,75 já → sem fim Ativa" [ref=e95] [cursor=pointer]:
+            - cell "Select record" [ref=e96]:
+              - checkbox "Select record" [ref=e97]: check_small
+            - rowheader "Suco de Laranja" [ref=e98]:
+              - link "Suco de Laranja" [ref=e99]:
+                - /url: /admin/cardapio/promocao/53/change/
+            - cell "Bebidas" [ref=e100]
+            - cell "R$ 7,50" [ref=e101]
+            - cell "10.00" [ref=e102]:
+              - spinbutton [ref=e103]: "10.00"
+            - cell "R$ 6,75" [ref=e104]
+            - cell "já → sem fim" [ref=e105]
+            - cell "Ativa" [ref=e106]:
+              - generic [ref=e107]: Ativa
+  - generic [ref=e109]:
+    - generic [ref=e110]: 2 Promoções
+    - button "Salvar" [ref=e112] [cursor=pointer]
