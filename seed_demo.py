@@ -1,6 +1,6 @@
 """
 Popula o banco com o cardápio REAL do Big Kilo (PLANILHA CARDAPIO WHATSAPP),
-agora organizado em CARDÁPIOS (agendados por dia/período) + itens fixos.
+organizado em CARDÁPIOS (agendados por dia/período) + itens fixos.
 
 - Itens fixos (todo dia, almoço e jantar) => sempre_disponivel=True.
 - Itens que variam (só almoço, só jantar, por dia) => entram em cardápios.
@@ -50,9 +50,13 @@ def criar_config():
     cfg.nome_loja = "Big Kilo"
     cfg.slogan = "Comida Caseira"
     cfg.taxa_entrega = D("7.00")
-    # Preços arredondados (decisão do cliente, reunião 30/06).
-    cfg.completa_300, cfg.completa_500, cfg.completa_700 = D("32"), D("51"), D("70")
-    cfg.proteina_300, cfg.proteina_500, cfg.proteina_700, cfg.proteina_1000 = D("42"), D("68"), D("94"), D("133")
+    # Preços fixados da planilha
+    cfg.completa_300, cfg.completa_500, cfg.completa_700 = D("31.97"), D("50.95"), D("69.93")
+    cfg.lim_acomp_300, cfg.lim_acomp_500, cfg.lim_acomp_700 = 2, 3, 4
+    cfg.lim_prot_300, cfg.lim_prot_500, cfg.lim_prot_700 = 1, 1, 2
+    
+    cfg.proteina_300, cfg.proteina_500, cfg.proteina_700, cfg.proteina_1000 = D("42.47"), D("68.45"), D("94.43"), D("133.40")
+    
     cfg.chave_pix = "bigkilo@exemplo.com.br"
     cfg.dias_funcionamento = TODOS
     cfg.hora_abertura = "11:00"
@@ -111,83 +115,84 @@ def criar_cardapio():
     c_esp = cat("Espetinhos", Categoria.Tipo.ESPETINHO, 4)
     c_sand = cat("Sanduíches", Categoria.Tipo.SANDUICHE, 5)
     c_sopa = cat("Sopas", Categoria.Tipo.SOPA, 6)
-    c_adic = cat("Adicionais", Categoria.Tipo.ADICIONAL, 7)
+    c_adic = cat("Adicionais do Sanduíche", Categoria.Tipo.ADICIONAL, 7)
+    c_adic_sopa = cat("Adicionais Sopa", Categoria.Tipo.ADICIONAL, 8)
     M = Produto.ModoVenda
 
     # ===== Fixos (sempre disponíveis) =====
-    for nome in ["Feijão Preto (sem carne)", "Arroz Branco", "Arroz Integral", "Farofa Crocante",
-                 "Salada de Maionese", "Salada Verde (Alface Crespa)", "Tomate", "Legumes Sortidos", "Batata Frita"]:
+    # Acompanhamentos Fixos
+    for nome in ["Feijão Preto (sem carne)", "Arroz Branco", "Arroz Integral", 
+                 "Farofa Crocante", "Salada de Maionese", "Salada Verde (Alface Crespa)", 
+                 "Tomate", "Legumes Sortidos", "Batata Frita"]:
         prod(c_acomp, nome, M.MONTAGEM, sempre=True)
+        
+    # Proteínas Fixas
     prod(c_prot, "Carne Assada", M.MONTAGEM, sempre=True)
-    prod(c_prot, 'Frango Ensopado "Caipira"', M.MONTAGEM, sempre=True)
+    prod(c_prot, 'Frango Escopado "Caipira"', M.MONTAGEM, sempre=True)
+    
+    # Grelhados e Espetinhos Fixos
     prod(c_grel, "Bife Acebolado (Coração da Alcatra)", M.FAIXA, sempre=True,
          faixas=[("100g", "16.49"), ("200g", "36.48"), ("300g", "52.97")])
     prod(c_esp, "Espetinho de Coração", M.UNIDADE, preco="17.49", sempre=True)
 
     # ===== Itens que variam (vão para cardápios) =====
+    
+    # Acompanhamentos Variáveis
     macarrao = prod(c_acomp, "Macarrão ao alho e óleo", M.MONTAGEM)
     molho_v = prod(c_acomp, "Molho Vermelho", M.MONTAGEM)
     molho_b = prod(c_acomp, "Molho Branco", M.MONTAGEM)
-    pure_doce = prod(c_acomp, "Purê de Batata Doce", M.MONTAGEM)
-    pure_bat = prod(c_acomp, "Purê de Batata", M.MONTAGEM)
-    pure_abo = prod(c_acomp, "Purê de Abóbora", M.MONTAGEM)
-    couve = prod(c_acomp, "Couve Mineira", M.MONTAGEM)
     angu = prod(c_acomp, "Angu (Polenta Mole)", M.MONTAGEM)
+    pure_bat = prod(c_acomp, "Pure de Batata", M.MONTAGEM)
+    pure_abo = prod(c_acomp, "Pure de Abóbora", M.MONTAGEM)
+    couve = prod(c_acomp, "Couve Mineira", M.MONTAGEM)
     quiabo = prod(c_acomp, "Quiabo ao molho Caipira", M.MONTAGEM)
 
-    dobradinha = prod(c_prot, "Dobradinha com Feijão Branco", M.MONTAGEM)
-    isca = prod(c_prot, "Isca de Fígado", M.MONTAGEM)
-    lombo = prod(c_prot, "Lombo Suíno ao molho madeira", M.MONTAGEM)
-    lingua = prod(c_prot, "Língua ao molho Madeira", M.MONTAGEM)
-    frango_quiabo = prod(c_prot, "Frango com Quiabo", M.MONTAGEM)
-    peixe = prod(c_prot, "Filé de Peixe à Milanesa", M.MONTAGEM)
-    bobo = prod(c_prot, "Bobó de Camarão", M.MONTAGEM)
+    # Proteínas Variáveis
     mocoto = prod(c_prot, "Mocotó com Feijão Branco", M.MONTAGEM)
+    lombo = prod(c_prot, "Lombo Suíno ao molho madeira", M.MONTAGEM)
+    bife_role = prod(c_prot, "Bife a Rolê", M.MONTAGEM)
+    estrogonofe = prod(c_prot, "Estrogonofe de Frango", M.MONTAGEM)
+    lingua = prod(c_prot, "Lingua ao molho Madeira", M.MONTAGEM)
+    frango_quiabo = prod(c_prot, "Frango com Quiabo", M.MONTAGEM)
+    peixe = prod(c_prot, "Filé de Peixe a Milanesa", M.MONTAGEM)
+    bobo = prod(c_prot, "Bobo de Camarão", M.MONTAGEM)
 
     sand = [
-        prod(c_sand, "Sanduíche de Carne Assada no Pão Francês", M.UNIDADE, preco="20.30"),
-        prod(c_sand, "Sanduíche de Carne Assada no Pão Brioche", M.UNIDADE, preco="24.30"),
-        prod(c_sand, "Sanduíche de Frango Desfiado no Pão Francês", M.UNIDADE, preco="13.30"),
-        prod(c_sand, "Sanduíche de Frango Desfiado no Pão Brioche", M.UNIDADE, preco="17.30"),
+        prod(c_sand, "Sanduiche de Carne Assada no Pão Frances", M.UNIDADE, preco="20.30"),
+        prod(c_sand, "Sanduiche de Carne Assada no Pão Brioche", M.UNIDADE, preco="24.30"),
+        prod(c_sand, "Sanduiche de Frango Desfiado no Pão Frances", M.UNIDADE, preco="13.30"),
+        prod(c_sand, "Sanduiche de Frango desfiado no Pão Brioche", M.UNIDADE, preco="17.30"),
     ]
+    
     sopas = [prod(c_sopa, n, M.FAIXA, faixas=[("300ml", "18.00"), ("500ml", "25.00")])
              for n in ["Caldo Verde", "Sopa de Ervilha", "Caldo de Abóbora", "Feijão Amigo",
                        "Sopa de Legumes com Carne", "Sopa de Legumes com Frango"]]
-    adic = [prod(c_adic, n, M.ADICIONAL, preco=p)
+                       
+    adic_sand = [prod(c_adic, n, M.ADICIONAL, preco=p)
             for n, p in [("Cheddar", "3.00"), ("Mussarela", "3.00"), ("Alface e Tomate", "3.00"),
-                         ("Batata Palha", "2.00"), ("Molho Barbecue", "2.00"),
-                         ("Calabresa (sopa)", "2.00"), ("Bacon (sopa)", "2.00"), ("Torradas (sopa)", "4.00")]]
+                         ("Batata Palha", "2.00"), ("Molho Barbecue", "2.00")]]
+                         
+    adic_sopa = [prod(c_adic_sopa, n, M.ADICIONAL, preco=p)
+            for n, p in [("Calabresa", "2.00"), ("Bacon", "2.00"), ("Torradas", "4.00")]]
 
-    # Exemplo de carne premium com preço/kg próprio
-    Produto.objects.filter(nome="Bobó de Camarão").update(preco_kg=D("169.00"))
+    # ===== Cardápios por dia e período =====
+    
+    # Sanduíches, Sopas e Adicionais são servidos no Jantar todos os dias (segunda a sábado)
+    # Obs: na planilha original de Sábado a Sopa não tinha marcação "X", mas a regra geral é Jantar
+    card("Sanduíches e Sopas (Jantar Diário)", [(TODOS, J)], sand + sopas + adic_sand + adic_sopa)
+    
+    # Alguns acompanhamentos são servidos todos os dias no ALMOÇO
+    card("Massas (Almoço Diário)", [(TODOS, A)], [macarrao, molho_v, molho_b])
 
-    # ===== Cardápios =====
-    card("Almoço diário", [(TODOS, A)], [macarrao, molho_v, molho_b])
-    card("Jantar diário", [(TODOS, J)], sand + sopas + adic)
-    card("Segunda - Almoço", [([0], A)], [dobradinha, pure_doce])
-    card("Segunda - Jantar", [([0], J)], [dobradinha])
-    card("Terça - Almoço", [([1], A)], [isca, pure_bat])
-    card("Quarta - Almoço", [([2], A)], [lombo, pure_abo, couve])
-    card("Quinta - Almoço", [([3], A)], [lingua, frango_quiabo, quiabo, pure_bat])
-    card("Quinta - Jantar", [([3], J)], [frango_quiabo, quiabo])
-    card("Sexta - Almoço", [([4], A)], [peixe, bobo, angu])
-    card("Sexta - Jantar", [([4], J)], [bobo, angu])
-    card("Sábado - Almoço", [([5], A)], [lombo, mocoto])
-    card("Sábado - Jantar", [([5], J)], [mocoto])
+    # Cardápios específicos
+    card("Segunda - Almoço e Jantar", [([0], A + J)], [mocoto, lombo])
+    card("Terça - Almoço e Jantar", [([1], A + J)], [bife_role, estrogonofe, pure_bat])
+    card("Quarta - Almoço e Jantar", [([2], A + J)], [lombo, pure_abo, couve])
+    card("Quinta - Almoço e Jantar", [([3], A + J)], [lingua, frango_quiabo, pure_bat, quiabo])
+    card("Sexta - Almoço e Jantar", [([4], A + J)], [peixe, bobo, angu])
+    card("Sábado - Almoço e Jantar", [([5], A + J)], [mocoto, lombo])
 
-    # Exemplo de cardápio ESPECIAL (Dia das Mães) — exclusivo, por data.
-    carne = Produto.objects.get(nome="Carne Assada")
-    esp, _ = Cardapio.objects.get_or_create(nome="Dia das Mães")
-    esp.tipo = Cardapio.Tipo.ESPECIAL
-    esp.exclusivo = True
-    esp.ativo = True
-    esp.data_inicio = "2026-05-10"
-    esp.data_fim = "2026-05-10"
-    esp.save()
-    esp.agenda.all().delete()
-    esp.produtos.set([carne, bobo, mocoto])
-
-    print(f"Cardápio: {Produto.objects.count()} produtos, {Cardapio.objects.count()} cardápios.")
+    print(f"Cardápio atualizado: {Produto.objects.count()} produtos, {Cardapio.objects.count()} cardápios.")
 
 
 def criar_pedidos_exemplo():
@@ -200,7 +205,7 @@ def criar_pedidos_exemplo():
     c3, _ = Cliente.objects.get_or_create(telefone="5521966665555", defaults={"nome_whatsapp": "Ana Lima"})
 
     carne = Produto.objects.get(nome="Carne Assada")
-    frango = Produto.objects.get(nome='Frango Ensopado "Caipira"')
+    frango = Produto.objects.get(nome='Frango Escopado "Caipira"')
     arroz = Produto.objects.get(nome="Arroz Branco")
     feijao = Produto.objects.get(nome="Feijão Preto (sem carne)")
     farofa = Produto.objects.get(nome="Farofa Crocante")
@@ -255,7 +260,7 @@ def criar_personalizacao_exemplo():
         cliente=maria, chave="BOAS_VINDAS",
         defaults={"texto": "Oi, Maria! 💛 Que bom te ver de novo no Big Kilo!"},
     )
-    sand = Produto.objects.filter(nome="Sanduíche de Carne Assada no Pão Brioche").first()
+    sand = Produto.objects.filter(nome="Sanduiche de Carne Assada no Pão Brioche").first()
     if sand:
         PromocaoExclusiva.objects.get_or_create(
             cliente=maria, produto=sand,
