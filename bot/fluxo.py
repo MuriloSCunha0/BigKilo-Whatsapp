@@ -648,7 +648,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         # Fora do horário avisamos, mas deixamos continuar (encomenda futura funciona
         # mesmo fechado; o pedido para HOJE fica barrado no menu).
         avisos = ["📍 CEP confirmado!"]
-        if not cfg.esta_aberta and not cfg.aberto_forcado:
+        if not cfg.esta_aberta:
             avisos.append(
                 f"ℹ️ Estamos fechados agora (das {cfg.hora_abertura:%H:%M} às "
                 f"{cfg.hora_fechamento:%H:%M}). Você pode *agendar uma encomenda* "
@@ -660,7 +660,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     if estado == SessaoBot.Estado.MENU_PRINCIPAL:
         encomenda = bool(sessao.carrinho_json.get("encomenda", {}).get("data"))
-        loja_fechada = not cfg.esta_aberta and not cfg.aberto_forcado
+        loja_fechada = not cfg.esta_aberta
         # Opção 3: agendar encomenda para outro dia (permitida mesmo com a loja fechada).
         if low == "3":
             sessao.estado_atual = SessaoBot.Estado.ENCOMENDA_FUTURA

@@ -6,6 +6,7 @@ from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display
 
 from config.admin_mixins import LocalizedAdminMixin, LocalizedInlineMixin
+from adminsortable2.admin import SortableAdminMixin
 
 from .models import (
     Cardapio,
@@ -40,7 +41,7 @@ class CategoriaAdmin(ModelAdmin):
         return format_html(
             '<a href="#" onclick="event.preventDefault();event.stopPropagation();'
             'window.czOpenEdit&&window.czOpenEdit({});" '
-            'style="color:#b45309;font-weight:600;">Assistente</a>',
+            'style="color:#b45309;font-weight:600;">✏️ Editar</a>',
             obj.id,
         )
 
@@ -128,7 +129,7 @@ class ProdutoAdmin(LocalizedAdminMixin, ModelAdmin):
         return format_html(
             '<a href="#" onclick="event.preventDefault();event.stopPropagation();'
             'window.wzOpenEdit&&window.wzOpenEdit({});" '
-            'style="color:#b45309;font-weight:600;">Assistente</a>',
+            'style="color:#b45309;font-weight:600;">✏️ Editar</a>',
             obj.id,
         )
 
@@ -188,7 +189,7 @@ class CardapioAdmin(ModelAdmin):
         return format_html(
             '<a href="#" onclick="event.preventDefault();event.stopPropagation();'
             'window.cwOpenEdit&&window.cwOpenEdit({});" '
-            'style="color:#b45309;font-weight:600;">Assistente</a>',
+            'style="color:#b45309;font-weight:600;">✏️ Editar</a>',
             obj.id,
         )
 
@@ -198,7 +199,7 @@ class CardapioAdmin(ModelAdmin):
 
 
 @admin.register(Promocao)
-class PromocaoAdmin(LocalizedAdminMixin, ModelAdmin):
+class PromocaoAdmin(SortableAdminMixin, LocalizedAdminMixin, ModelAdmin):
     change_list_template = "admin/cardapio/promocao/change_list.html"
     list_display = ("nome", "categoria", "preco_de", "desconto_percentual", "preco_por", "vigencia", "status_badge", "assistente_link")
     search_fields = ("nome",)
@@ -252,7 +253,7 @@ class PromocaoAdmin(LocalizedAdminMixin, ModelAdmin):
         return format_html(
             '<a href="#" onclick="event.preventDefault();event.stopPropagation();'
             'window.pmOpenEdit&&window.pmOpenEdit({});" '
-            'style="color:#b45309;font-weight:600;">Assistente</a>',
+            'style="color:#b45309;font-weight:600;">✏️ Editar</a>',
             obj.id,
         )
 

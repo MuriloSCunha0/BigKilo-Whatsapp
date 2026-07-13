@@ -124,6 +124,11 @@ class Produto(models.Model):
         "Fim da promoção", null=True, blank=True, help_text="ℹ️ Opcional. Em branco = sem término.",
     )
 
+    ordem_promo = models.PositiveIntegerField(
+        "Ordem na Promoção", default=0,
+        help_text="ℹ️ Ordem de exibição na lista de promoções (arraste no painel).",
+    )
+
     criado_em = models.DateTimeField("Criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
 
@@ -346,3 +351,4 @@ class Promocao(Produto):
         proxy = True
         verbose_name = "Promoção"
         verbose_name_plural = "Promoções"
+        ordering = ["ordem_promo"]

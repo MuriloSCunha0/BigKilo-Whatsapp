@@ -54,11 +54,27 @@
       tr.style.cursor = 'pointer';
       tr.addEventListener('click', function (e) {
         if (e.target.closest('a, input, button, label, select, textarea, .fxChip')) return;
-        // não dispara ao selecionar texto
         if (window.getSelection && String(window.getSelection())) return;
         window.location.href = link.href;
       });
     });
+    
+    // Simplifica a barra de ações (Unfold) se houver apenas a ação de deletar.
+    var actSelect = document.querySelector('select[name="action"]');
+    if (actSelect) {
+      var validOpts = Array.from(actSelect.options).filter(function(o) { return o.value && o.value !== ''; });
+      if (validOpts.length === 1 && validOpts[0].value === 'delete_selected') {
+        actSelect.value = 'delete_selected';
+        actSelect.style.display = 'none';
+        var actBtn = document.querySelector('button[name="index"], button[type="submit"]');
+        if (actBtn && actBtn.closest('.actions, #changelist-form')) {
+          actBtn.textContent = '🗑️ Deletar selecionados';
+          actBtn.style.backgroundColor = '#dc2626';
+          actBtn.style.color = '#fff';
+          actBtn.style.width = '100%';
+        }
+      }
+    }
   });
 </script>
 {% endblock %}

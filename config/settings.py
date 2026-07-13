@@ -52,11 +52,11 @@ if DEBUG:
 
 # ==== Apps ====
 INSTALLED_APPS = [
-    # Tema moderno do admin — deve vir ANTES de django.contrib.admin.
     "unfold",
     "unfold.contrib.filters",
     "unfold.contrib.forms",
     "unfold.contrib.inlines",
+    "adminsortable2",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

@@ -68,10 +68,6 @@ class ConfiguracaoLoja(models.Model):
         "Dias de funcionamento", default=list, blank=True,
         help_text="Lista de dias (0=Seg ... 6=Dom). Vazio = todos os dias.",
     )
-    aberto_forcado = models.BooleanField(
-        "Forçar aberto (ignora horário)", default=False,
-        help_text="Use em casos excepcionais para aceitar pedidos fora do horário.",
-    )
 
     atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
 
@@ -93,8 +89,6 @@ class ConfiguracaoLoja(models.Model):
 
     @property
     def esta_aberta(self) -> bool:
-        if self.aberto_forcado:
-            return True
         agora = timezone.localtime()
         if self.dias_funcionamento and agora.weekday() not in self.dias_funcionamento:
             return False

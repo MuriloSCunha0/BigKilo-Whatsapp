@@ -86,7 +86,7 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
             "classes": ("collapse",),
             "description": _("Apenas anotação interna. A cobrança Pix é gerada pelo Asaas automaticamente."),
         }),
-        (_("Funcionamento"), {"fields": ("dias_funcionamento", "hora_abertura", "hora_fechamento", "aberto_forcado")}),
+        (_("Funcionamento"), {"fields": ("dias_funcionamento", "hora_abertura", "hora_fechamento")}),
     )
 
     @display(description=_("Editar mensagens do bot"))
