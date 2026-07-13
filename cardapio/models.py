@@ -76,7 +76,7 @@ class Produto(models.Model):
         help_text="ℹ️ A qual grupo do cardápio o item pertence (Proteínas, Acompanhamentos, Bebidas…).",
     )
     nome = models.CharField(
-        "Nome", max_length=120, help_text="ℹ️ Nome que o cliente vê no WhatsApp. Ex.: Carne Assada.",
+        "Nome", max_length=120, help_text="⚠️ Nome que o cliente vê. Limite ideal: 24 letras. Passando disso, o WhatsApp corta com '...'",
     )
     descricao = models.TextField(
         "Descrição", blank=True,
@@ -230,7 +230,7 @@ class Cardapio(models.Model):
     )
     produtos = models.ManyToManyField(
         Produto, related_name="cardapios", blank=True, verbose_name="Produtos",
-        help_text="ℹ️ Itens que aparecem quando este cardápio está no ar.",
+        help_text="ℹ️ Itens que aparecem quando este cardápio está no ar. ⚠️ DICA: Evite produtos com nomes maiores que 24 letras, pois o WhatsApp cortará o texto.",
     )
     criado_em = models.DateTimeField("Criado em", auto_now_add=True)
 
