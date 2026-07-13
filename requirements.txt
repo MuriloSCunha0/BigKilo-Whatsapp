@@ -25,3 +25,6 @@ python-dotenv==1.0.1
 #   PRINT_MODE=escpos   -> python-escpos (impressora ESC/POS em rede)
 # pywin32==308
 # python-escpos==3.1
+
+# Bibliotecas extras UI
+django-admin-sortable2==2.3.1
