@@ -141,7 +141,9 @@ class AreaEntrega(models.Model):
         return int(digitos) if digitos else None
 
     def cobre_cep(self, cep: str) -> bool:
-        ini, fim, alvo = self._cep_num(self.cep_inicio), self._cep_num(self.cep_fim), self._cep_num(cep)
+        ini, alvo = self._cep_num(self.cep_inicio), self._cep_num(cep)
+        fim = self._cep_num(self.cep_fim) or ini  # Se não preencheu o fim, considera igual ao início
+        
         if not (ini and fim and alvo):
             return False
         return ini <= alvo <= fim
