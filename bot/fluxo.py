@@ -201,6 +201,7 @@ def _tela_menu(sessao) -> list:
         total = sum(Decimal(str(i["subtotal"])) for i in itens)
         cab = f"🛒 Carrinho: {len(itens)} item(ns) - {_moeda(total)}\n\n"
 
+    cfg = ConfiguracaoLoja.get()
     linhas = [
         {"id": "1", "titulo": "Montar refeição completa"},
         {"id": "2", "titulo": "Grandes porções"},
@@ -209,6 +210,12 @@ def _tela_menu(sessao) -> list:
         {"id": "5", "titulo": "Sopas"},
         {"id": "fechar", "titulo": "Fechar pedido"},
     ]
+    if not cfg.esta_aberta:
+        linhas = [
+            {"id": "3", "titulo": "Encomenda outro dia"},
+            {"id": "fechar", "titulo": "Fechar pedido"},
+        ]
+        
     corpo = (
         cab
         + "O que você deseja?\n"
