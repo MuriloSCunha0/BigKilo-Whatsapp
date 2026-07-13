@@ -231,3 +231,12 @@
 })();
 </script>
 {% endblock %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  <li>
+    <a href="{% url 'admin:cardapio_produto_importar_planilha' %}" class="bg-primary-600 text-white font-medium px-3 py-2 rounded-md hover:bg-primary-700" style="margin-left: 0.5rem;">
+      📥 Importar Planilha
+    </a>
+  </li>
+{% endblock %}
