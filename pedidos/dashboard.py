@@ -46,12 +46,29 @@ def dashboard_callback(request, context):
     mostrar_menos = len(ranking) > 8
     ck = checklist_loja()
 
+    # --- MÊS ---
+    inicio_mes = hoje.replace(day=1)
+    pedidos_mes = Pedido.objects.filter(criado_em__date__gte=inicio_mes)
+    pagos_mes = pedidos_mes.filter(status__in=PAGOS)
+    fat_mes = pagos_mes.aggregate(t=Sum("valor_total"))["t"] or Decimal("0")
+    qtd_pagos_mes = pagos_mes.count()
+    ticket_mes = (fat_mes / qtd_pagos_mes) if qtd_pagos_mes else Decimal("0")
+
+    from .models import Cliente
+    novos_clientes_mes = Cliente.objects.filter(criado_em__date__gte=inicio_mes).count()
+
     context.update({
         "bk_cards": [
             {"titulo": "Pedidos hoje", "valor": pedidos_hoje.count(), "icone": "receipt_long"},
             {"titulo": "Faturamento hoje", "valor": _moeda(fat), "icone": "payments"},
             {"titulo": "Aguardando pagamento", "valor": aguardando, "icone": "hourglass_top"},
             {"titulo": "Em preparo (cozinha)", "valor": preparando, "icone": "restaurant"},
+        ],
+        "bk_cards_mes": [
+            {"titulo": "Pedidos (mês)", "valor": pedidos_mes.count(), "icone": "calendar_month"},
+            {"titulo": "Faturamento (mês)", "valor": _moeda(fat_mes), "icone": "account_balance_wallet"},
+            {"titulo": "Ticket médio (mês)", "valor": _moeda(ticket_mes), "icone": "analytics"},
+            {"titulo": "Novos clientes (mês)", "valor": novos_clientes_mes, "icone": "group_add"},
         ],
         "bk_mais_vendidos": ranking[:8],
         "bk_menos_vendidos": list(reversed(ranking))[:5] if mostrar_menos else [],
