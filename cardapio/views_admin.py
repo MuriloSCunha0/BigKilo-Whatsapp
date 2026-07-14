@@ -124,14 +124,20 @@ def importar_planilha_view(request):
             criados = 0
             existentes = 0
 
+            import re
+            
             for row in ws.iter_rows(min_row=2, values_only=True):
-                nome_prod = str(row[idx_prod]).strip() if len(row) > idx_prod and row[idx_prod] else ""
-                nome_cat = str(row[idx_cat]).strip() if len(row) > idx_cat and row[idx_cat] else ""
+                raw_prod = str(row[idx_prod]) if len(row) > idx_prod and row[idx_prod] else ""
+                raw_cat = str(row[idx_cat]) if len(row) > idx_cat and row[idx_cat] else ""
+                
+                # Normalização: remove espaços sobrando no começo/fim e reduz espaços duplos
+                nome_prod = re.sub(r'\s+', ' ', raw_prod.strip())
+                nome_cat = re.sub(r'\s+', ' ', raw_cat.strip())
 
                 if not nome_prod or not nome_cat or nome_prod == "None" or nome_cat == "None":
                     continue
 
-                # 2. Categoria (get or create)
+                # 2. Categoria (get or create - usando iexact para ignorar case)
                 tipo_cat = str(row[idx_tipo]).strip().upper() if idx_tipo >= 0 and row[idx_tipo] else "OUTRO"
                 if tipo_cat not in dict(Categoria.Tipo.choices).keys():
                     tipo_cat = "OUTRO"
@@ -141,7 +147,7 @@ def importar_planilha_view(request):
                     defaults={"nome": nome_cat, "tipo": tipo_cat},
                 )
 
-                # 3. Produto — se já existe, apenas vincula; se não, cria
+                # 3. Produto — se já existe (ignorando case), apenas vincula; se não, cria
                 produto_existente = Produto.objects.filter(nome__iexact=nome_prod).first()
 
                 if produto_existente:
