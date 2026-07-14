@@ -279,11 +279,15 @@ def cardapio_salvar(request):
         for r in dados.get("agenda", []):
             try:
                 periodo = r["periodo"]
-                campos_ag = {"cardapio": cardapio, "dia_semana": int(r["dia"]), "periodo": periodo}
-                if periodo == "CUSTOM":
-                    campos_ag["hora_inicio"] = r.get("hora_inicio") or "00:00"
-                    campos_ag["hora_fim"] = r.get("hora_fim") or "23:59"
-                DisponibilidadeCardapio.objects.create(**campos_ag)
+                if periodo == "DIA_INTEIRO":
+                    DisponibilidadeCardapio.objects.create(cardapio=cardapio, dia_semana=int(r["dia"]), periodo="ALMOCO")
+                    DisponibilidadeCardapio.objects.create(cardapio=cardapio, dia_semana=int(r["dia"]), periodo="JANTAR")
+                else:
+                    campos_ag = {"cardapio": cardapio, "dia_semana": int(r["dia"]), "periodo": periodo}
+                    if periodo == "CUSTOM":
+                        campos_ag["hora_inicio"] = r.get("hora_inicio") or "00:00"
+                        campos_ag["hora_fim"] = r.get("hora_fim") or "23:59"
+                    DisponibilidadeCardapio.objects.create(**campos_ag)
             except (KeyError, ValueError, TypeError):
                 continue
 

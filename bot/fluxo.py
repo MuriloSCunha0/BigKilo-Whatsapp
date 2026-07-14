@@ -208,12 +208,10 @@ def _tela_menu(sessao) -> list:
         {"id": "3", "titulo": "Encomenda outro dia"},
         {"id": "4", "titulo": "Sanduíches"},
         {"id": "5", "titulo": "Sopas"},
-        {"id": "fechar", "titulo": "Fechar pedido"},
     ]
     if not cfg.esta_aberta:
         linhas = [
             {"id": "3", "titulo": "Encomenda outro dia"},
-            {"id": "fechar", "titulo": "Fechar pedido"},
         ]
         
     corpo = (
@@ -316,9 +314,8 @@ def _tela_confirmacao(sessao) -> list:
         botoes(
             corpo,
             [
-                {"id": "1", "titulo": "Sim, adicionar"},
+                {"id": "1", "titulo": "Sim, está correto"},
                 {"id": "2", "titulo": "Corrigir"},
-                {"id": "3", "titulo": "Menu"},
             ],
         )
     ]
@@ -327,7 +324,7 @@ def _tela_confirmacao(sessao) -> list:
 def _tela_resumo_carrinho(sessao, perfil=None) -> list:
     itens = sessao.carrinho_json.get("itens") or []
     sessao.estado_atual = SessaoBot.Estado.RESUMO_CARRINHO
-    _set_menu(sessao, {"corrigir": "corrigir", "adicionar": "adicionar", "fechar": "fechar"})
+    _set_menu(sessao, {"adicionar": "adicionar", "fechar": "fechar"})
     cab = mensagem("RESUMO_CARRINHO", _cliente(sessao), perfil=perfil)
     linhas = [cab, "", "🛒 *Seu pedido:*"]
     for it in itens:
@@ -339,8 +336,7 @@ def _tela_resumo_carrinho(sessao, perfil=None) -> list:
         botoes(
             corpo,
             [
-                {"id": "corrigir", "titulo": "Corrigir último"},
-                {"id": "adicionar", "titulo": "Adicionar mais"},
+                {"id": "adicionar", "titulo": "Adicionar mais itens"},
                 {"id": "fechar", "titulo": "Fechar pedido"},
             ],
         )
@@ -349,13 +345,13 @@ def _tela_resumo_carrinho(sessao, perfil=None) -> list:
 
 def _tela_perguntar_adicionar(sessao, perfil=None) -> list:
     sessao.estado_atual = SessaoBot.Estado.PERGUNTANDO_ADICIONAR
-    _set_menu(sessao, {"bebida": "bebida", "sobremesa": "sobremesa", "refeicao": "menu", "voltar": "resumo"})
+    _set_menu(sessao, {"bebida": "bebida", "sobremesa": "sobremesa", "refeicao": "menu", "fechar": "fechar"})
     corpo = mensagem("PERGUNTAR_ADICIONAR", _cliente(sessao), perfil=perfil)
     linhas = [
+        {"id": "refeicao", "titulo": "Nova refeição", "descricao": "Voltar ao cardápio"},
         {"id": "bebida", "titulo": "Bebida", "descricao": "Refrigerante, suco..."},
         {"id": "sobremesa", "titulo": "Sobremesa", "descricao": "Doces e sobremesas"},
-        {"id": "refeicao", "titulo": "Outra refeição", "descricao": "Voltar ao cardápio"},
-        {"id": "voltar", "titulo": "Só isso", "descricao": "Voltar ao resumo"},
+        {"id": "fechar", "titulo": "Só isso", "descricao": "Finalizar pedido agora"},
     ]
     return [lista(corpo, "Ver opções", linhas)]
 
@@ -637,7 +633,12 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     if estado == SessaoBot.Estado.PEDINDO_CEP:
         digitos = "".join(c for c in texto if c.isdigit())
         if len(digitos) != 8:
-            out["mensagens"] = [mensagem("CEP_INVALIDO", _cliente(sessao), perfil=perfil)]
+            if texto.strip().isdigit() and len(texto.strip()) < 8:
+                from bot.mensagens import T
+                msg = "⚠️ Por favor, digite primeiro o seu *CEP (8 números)* para iniciarmos o atendimento."
+                out["mensagens"] = [T(msg)]
+            else:
+                out["mensagens"] = [mensagem("CEP_INVALIDO", _cliente(sessao), perfil=perfil)]
             sessao.save()
             return out
         cep = _normalizar_cep(digitos)
@@ -765,9 +766,6 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         elif low in _CORRIGIR or texto.strip() == "2":
             sessao.carrinho_json["montagem"]["acompanhamentos"] = []
             out["mensagens"] = _tela_acompanhamentos(sessao, perfil)
-        elif texto.strip() == "3" or low in {"menu", "voltar"}:
-            sessao.carrinho_json["montagem"] = {}
-            out["mensagens"] = _tela_menu(sessao)
         else:
             out["mensagens"] = [_ERR_BOTOES] + _tela_confirmacao(sessao)
         sessao.save()
@@ -775,18 +773,9 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     if estado == SessaoBot.Estado.RESUMO_CARRINHO:
         acao = _resolver(sessao, texto) or low
-        if acao == "corrigir" or low in {"corrigir", "2"}:
-            itens = sessao.carrinho_json.get("itens") or []
-            if itens:
-                removido = itens.pop()
-                prod = Produto.objects.filter(id=removido.get("produto_id")).first()
-                nome = prod.nome if prod else "item"
-                out["mensagens"] = [f"Removido: {nome}."] + _tela_resumo_carrinho(sessao, perfil)
-            else:
-                out["mensagens"] = ["Seu carrinho está vazio."] + _tela_menu(sessao)
-        elif acao == "adicionar" or low in {"adicionar", "1"}:
+        if acao == "adicionar" or low in {"adicionar", "1"}:
             out["mensagens"] = _tela_perguntar_adicionar(sessao, perfil)
-        elif acao == "fechar" or low in {"fechar", "finalizar", "3"}:
+        elif acao == "fechar" or low in {"fechar", "finalizar", "2"}:
             pid, msgs = _iniciar_fechamento(sessao, perfil)
             out["mensagens"], out["checkout_pedido_id"] = msgs, pid
         else:
@@ -802,8 +791,9 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             out["mensagens"] = _tela_lista_extra(sessao, Categoria.Tipo.SOBREMESA, "Sobremesa")
         elif acao in {"refeicao", "menu"} or low in {"refeicao", "menu"}:
             out["mensagens"] = _tela_menu(sessao)
-        elif acao == "resumo" or low in {"voltar", "resumo"}:
-            out["mensagens"] = _tela_resumo_carrinho(sessao, perfil)
+        elif acao == "fechar" or low in {"fechar", "voltar", "resumo"}:
+            pid, msgs = _iniciar_fechamento(sessao, perfil)
+            out["mensagens"], out["checkout_pedido_id"] = msgs, pid
         else:
             out["mensagens"] = [_ERR_LISTA] + _tela_perguntar_adicionar(sessao, perfil)
         sessao.save()

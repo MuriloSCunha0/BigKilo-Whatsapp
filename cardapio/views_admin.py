@@ -139,11 +139,15 @@ def importar_planilha_view(request):
                 dias = request.POST.getlist("dias")
                 periodo = request.POST.get("periodo", "ALMOCO")
                 for dia in dias:
-                    DisponibilidadeCardapio.objects.create(
-                        cardapio=cardapio_obj,
-                        dia_semana=int(dia),
-                        periodo=periodo
-                    )
+                    if periodo == "DIA_INTEIRO":
+                        DisponibilidadeCardapio.objects.create(cardapio=cardapio_obj, dia_semana=int(dia), periodo="ALMOCO")
+                        DisponibilidadeCardapio.objects.create(cardapio=cardapio_obj, dia_semana=int(dia), periodo="JANTAR")
+                    else:
+                        DisponibilidadeCardapio.objects.create(
+                            cardapio=cardapio_obj,
+                            dia_semana=int(dia),
+                            periodo=periodo
+                        )
 
             criados = 0
             existentes = 0

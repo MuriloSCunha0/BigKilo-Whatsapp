@@ -74,7 +74,7 @@
         <div class="st">Passo 2 de 4</div><h2 id="cwQuandoTit">Quando este cardápio fica no ar?</h2>
         <div id="cwSemanal">
           <div class="hint">Marque os dias e períodos. Almoço 11–15h · Jantar 15–19h30.</div>
-          <div class="grid" id="cwGrade"><div class="gh"></div><div class="gh">Almoço</div><div class="gh">Jantar</div></div>
+          <div class="grid" id="cwGrade" style="grid-template-columns: 1fr auto auto auto;"><div class="gh"></div><div class="gh">Almoço</div><div class="gh">Jantar</div><div class="gh">Dia Todo</div></div>
           <div style="margin-top:1rem;font-weight:600;font-size:.85rem;">Horários personalizados (opcional)</div>
           <div class="hint">Para um horário diferente num dia específico (ex.: quinta das 11:00 às 14:00).</div>
           <div id="cwCustom"></div>
@@ -175,6 +175,7 @@
                     <select name="periodo" style="padding: 0.4rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem;">
                         <option value="ALMOCO">Almoço (11h às 15h)</option>
                         <option value="JANTAR">Jantar (15h às 19:30)</option>
+                        <option value="DIA_INTEIRO">O dia todo (Almoço e Jantar)</option>
                     </select>
                 </div>
             </div>
@@ -224,7 +225,7 @@
 
   const grade=$('cwGrade');
   DIAS.forEach(([d,n])=>grade.insertAdjacentHTML('beforeend',
-    `<div>${n}</div><div class="chk"><input type="checkbox" data-dia="${d}" data-per="ALMOCO"></div><div class="chk"><input type="checkbox" data-dia="${d}" data-per="JANTAR"></div>`));
+    `<div>${n}</div><div class="chk"><input type="checkbox" data-dia="${d}" data-per="ALMOCO"></div><div class="chk"><input type="checkbox" data-dia="${d}" data-per="JANTAR"></div><div class="chk"><input type="checkbox" data-dia="${d}" data-per="DIA_INTEIRO"></div>`));
 
   window.cwFiltrar=()=>{
     const q=$('cwBusca').value.toLowerCase();
