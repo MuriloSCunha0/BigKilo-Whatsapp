@@ -15,6 +15,7 @@ COLUNAS_ESPERADAS = [
     "Modo de Venda",
     "Preço",
     "Preço por KG",
+    "Horário Específico",
     "Ativo",
 ]
 
@@ -43,7 +44,7 @@ def baixar_planilha_exemplo(request):
     # Linha de exemplo 1
     exemplo1 = [
         "Bebidas", "BEBIDA", "Coca-Cola 2L", "Gelada",
-        "UNIDADE", "12.00", "0.00", "SIM",
+        "UNIDADE", "12.00", "0.00", "", "SIM",
     ]
     for col_num, val in enumerate(exemplo1, 1):
         ws.cell(row=2, column=col_num, value=val)
@@ -51,15 +52,15 @@ def baixar_planilha_exemplo(request):
     # Linha de exemplo 2
     exemplo2 = [
         "Proteínas", "PROTEINA", "Lombo (Madeira)", "Ao molho madeira",
-        "MONTAGEM", "0.00", "0.00", "SIM",
+        "MONTAGEM", "0.00", "0.00", "", "SIM",
     ]
     for col_num, val in enumerate(exemplo2, 1):
         ws.cell(row=3, column=col_num, value=val)
 
-    # Linha de exemplo 3
+    # Linha de exemplo 3 (Sopa à noite)
     exemplo3 = [
-        "Acompanhamentos", "ACOMPANHAMENTO", "Arroz Branco", "",
-        "MONTAGEM", "0.00", "0.00", "SIM",
+        "Caldos", "ACOMPANHAMENTO", "Caldo de Feijão", "",
+        "UNIDADE", "15.00", "0.00", "18:00-23:00", "SIM",
     ]
     for col_num, val in enumerate(exemplo3, 1):
         ws.cell(row=4, column=col_num, value=val)
@@ -112,6 +113,7 @@ def importar_planilha_view(request):
             idx_preco = header.index("Preço") if "Preço" in header else -1
             idx_kg = header.index("Preço por KG") if "Preço por KG" in header else -1
             idx_ativo = header.index("Ativo") if "Ativo" in header else -1
+            idx_horario = header.index("Horário Específico") if "Horário Específico" in header else -1
 
             tipo_cardapio = request.POST.get("tipo_cardapio", "NORMAL")
             
@@ -147,6 +149,7 @@ def importar_planilha_view(request):
             existentes = 0
 
             import re
+            from datetime import datetime
             
             for row in ws.iter_rows(min_row=2, values_only=True):
                 raw_prod = str(row[idx_prod]) if len(row) > idx_prod and row[idx_prod] else ""
@@ -168,12 +171,36 @@ def importar_planilha_view(request):
                     nome__iexact=nome_cat,
                     defaults={"nome": nome_cat, "tipo": tipo_cat},
                 )
+                
+                # Tratar Horário Específico
+                h_inicio = None
+                h_fim = None
+                if idx_horario >= 0 and row[idx_horario]:
+                    horario_str = str(row[idx_horario]).strip()
+                    if "-" in horario_str:
+                        partes = horario_str.split("-")
+                        try:
+                            h_inicio = datetime.strptime(partes[0].strip(), "%H:%M").time()
+                            h_fim = datetime.strptime(partes[1].strip(), "%H:%M").time()
+                        except ValueError:
+                            pass # ignora formato inválido
 
                 # 3. Produto — se já existe (ignorando case), apenas vincula; se não, cria
                 produto_existente = Produto.objects.filter(nome__iexact=nome_prod).first()
 
                 if produto_existente:
                     produto = produto_existente
+                    
+                    # Atualiza os horários se vieram na planilha
+                    update_fields = []
+                    if h_inicio and h_fim:
+                        produto.horario_inicio = h_inicio
+                        produto.horario_fim = h_fim
+                        update_fields.extend(["horario_inicio", "horario_fim"])
+                    
+                    if update_fields:
+                        produto.save(update_fields=update_fields)
+                        
                     existentes += 1
                 else:
                     desc = str(row[idx_desc]).strip() if idx_desc >= 0 and row[idx_desc] and row[idx_desc] != "None" else ""
@@ -205,6 +232,8 @@ def importar_planilha_view(request):
                         preco=preco,
                         preco_kg=preco_kg,
                         ativo=ativo,
+                        horario_inicio=h_inicio,
+                        horario_fim=h_fim,
                     )
                     criados += 1
 

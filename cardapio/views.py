@@ -63,6 +63,8 @@ def wizard_carregar(request, produto_id):
             "preco": str(p.preco).replace(".", ","),
             "preco_kg": str(p.preco_kg).replace(".", ",") if p.preco_kg else "",
             "sempre_disponivel": p.sempre_disponivel,
+            "horario_inicio": p.horario_inicio.strftime("%H:%M") if p.horario_inicio else None,
+            "horario_fim": p.horario_fim.strftime("%H:%M") if p.horario_fim else None,
             "faixas": [{"rotulo": f.rotulo, "preco": str(f.preco).replace(".", ",")} for f in p.faixas.all()],
             "cardapios": list(p.cardapios.values_list("id", flat=True)),
         },
@@ -87,6 +89,22 @@ def wizard_salvar(request):
         return JsonResponse({"ok": False, "erro": "Categoria inválida."})
 
     modo = dados.get("modo_venda") or Produto.ModoVenda.UNIDADE
+    
+    from datetime import datetime
+    
+    h_inicio = None
+    if dados.get("horario_inicio"):
+        try:
+            h_inicio = datetime.strptime(dados["horario_inicio"], "%H:%M").time()
+        except ValueError:
+            pass
+            
+    h_fim = None
+    if dados.get("horario_fim"):
+        try:
+            h_fim = datetime.strptime(dados["horario_fim"], "%H:%M").time()
+        except ValueError:
+            pass
 
     if produto_id:
         try:
@@ -100,6 +118,8 @@ def wizard_salvar(request):
         produto.preco = _dec(dados.get("preco"))
         produto.preco_kg = _dec(dados.get("preco_kg"))
         produto.sempre_disponivel = bool(dados.get("sempre_disponivel"))
+        produto.horario_inicio = h_inicio
+        produto.horario_fim = h_fim
         produto.save()
         produto.faixas.all().delete()
     else:
@@ -111,6 +131,8 @@ def wizard_salvar(request):
             preco=_dec(dados.get("preco")),
             preco_kg=_dec(dados.get("preco_kg")),
             sempre_disponivel=bool(dados.get("sempre_disponivel")),
+            horario_inicio=h_inicio,
+            horario_fim=h_fim,
         )
 
     if modo == Produto.ModoVenda.FAIXA:

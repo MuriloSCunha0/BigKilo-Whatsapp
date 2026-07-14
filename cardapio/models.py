@@ -129,6 +129,15 @@ class Produto(models.Model):
         help_text="ℹ️ Ordem de exibição na lista de promoções (arraste no painel).",
     )
 
+    horario_inicio = models.TimeField(
+        "Disponível a partir das", null=True, blank=True,
+        help_text="ℹ️ Opcional. Se preenchido, este produto só aparece a partir deste horário, mesmo se o cardápio estiver ativo.",
+    )
+    horario_fim = models.TimeField(
+        "Disponível até as", null=True, blank=True,
+        help_text="ℹ️ Opcional. Se preenchido, este produto só aparece até este horário.",
+    )
+
     criado_em = models.DateTimeField("Criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
 
@@ -153,9 +162,19 @@ class Produto(models.Model):
     def disponivel_em(self, momento=None) -> bool:
         if not self.ativo or self.esgotado:
             return False
+            
+        momento = momento or timezone.localtime()
+        agora_hora = momento.time()
+        
+        # Verifica horário específico do produto (se definido)
+        if self.horario_inicio and agora_hora < self.horario_inicio:
+            return False
+        if self.horario_fim and agora_hora > self.horario_fim:
+            return False
+            
         if self.sempre_disponivel:
             return True
-        momento = momento or timezone.localtime()
+            
         # Se houver um cardápio exclusivo no ar, só os exclusivos contam.
         exclusivo_ativo = Cardapio.existe_exclusivo_ativo(momento)
         for card in self.cardapios.filter(ativo=True).prefetch_related("agenda"):

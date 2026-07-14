@@ -103,6 +103,22 @@
           <div class="muted">Nenhum cardápio cadastrado ainda. Crie em <b>Cardápios</b> ou deixe como "sempre disponível".</div>
           {% endfor %}
         </div>
+        
+        <div style="margin-top: 1.5rem; padding-top: 1.2rem; border-top: 1px solid #e5e7eb;">
+            <label style="margin-bottom: 0.5rem; font-weight: 600;">Horário Específico (Opcional)</label>
+            <div class="hint" style="margin-bottom: 0.75rem;">Se preenchido, o produto só aparecerá entre esses horários (ex: sopa só de noite), mesmo se o cardápio ficar ativo o dia todo.</div>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div>
+                    <label style="font-size: 0.8rem; margin-bottom: 0.2rem;">Das:</label>
+                    <input type="time" id="wzHoraIn" style="width: 130px; padding: 0.4rem; border: 1px solid #d1d5db; border-radius: 6px;">
+                </div>
+                <div style="padding-top: 1.2rem;">até</div>
+                <div>
+                    <label style="font-size: 0.8rem; margin-bottom: 0.2rem;">Às:</label>
+                    <input type="time" id="wzHoraFim" style="width: 130px; padding: 0.4rem; border: 1px solid #d1d5db; border-radius: 6px;">
+                </div>
+            </div>
+        </div>
       </section>
       <section data-step="4" style="display:none">
         <div class="st">Passo 4 de 4</div><h2>Revisão</h2><div class="review" id="wzReview"></div>
@@ -145,12 +161,18 @@
     return {produto_id:editId, categoria_id:$('wzCat').value, nome:$('wzNome').value.trim(), descricao:$('wzDesc').value.trim(),
       modo_venda:modo, preco:$('wzPreco').value, preco_kg:$('wzKg').value,
       faixas:[...$('wzFaixas').querySelectorAll('.faixa')].map(f=>({rotulo:f.children[0].value,preco:f.children[1].value})),
-      sempre_disponivel:$('wzSempre').checked, cardapios:cards};
+      sempre_disponivel:$('wzSempre').checked, cardapios:cards,
+      horario_inicio:$('wzHoraIn').value||null, horario_fim:$('wzHoraFim').value||null};
   }
   function valida(){
     if(step===1){ if(!$('wzCat').value)return'Escolha a categoria.'; if(!$('wzNome').value.trim())return'Informe o nome.'; if(!modo)return'Escolha como o item é vendido.'; }
     if(step===2){ if((modo==='UNIDADE'||modo==='ADICIONAL')&&!$('wzPreco').value.trim())return'Informe o preço.';
       if(modo==='FAIXA'&&![...$('wzFaixas').querySelectorAll('.faixa')].some(f=>f.children[0].value.trim()))return'Adicione ao menos um tamanho.'; }
+    if(step===3){
+      if(($('wzHoraIn').value && !$('wzHoraFim').value) || (!$('wzHoraIn').value && $('wzHoraFim').value)){
+        return 'Preencha o horário de início E de fim, ou deixe ambos em branco.';
+      }
+    }
     return'';
   }
   function review(){
@@ -165,7 +187,8 @@
       const nomes=[...document.querySelectorAll('.wzCardChk:checked')].map(c=>c.parentNode.textContent.trim().split(' (')[0]);
       ag = nomes.length ? ('Cardápios: '+nomes.join(', ')) : '⚠️ nenhum cardápio selecionado';
     }
-    $('wzReview').innerHTML=`<b>${d.nome}</b><br>Categoria: ${tipo}<br>Tipo: ${nm[modo]}<br>Preço: ${preco}<br>Disponível: ${ag}`;
+    let h_esp = (d.horario_inicio && d.horario_fim) ? `<br>Horário Específico: ${d.horario_inicio} às ${d.horario_fim}` : '';
+    $('wzReview').innerHTML=`<b>${d.nome}</b><br>Categoria: ${tipo}<br>Tipo: ${nm[modo]}<br>Preço: ${preco}<br>Disponível: ${ag}${h_esp}`;
   }
   function show(){
     document.querySelectorAll('#wzCard section[data-step]').forEach(s=>s.style.display=(+s.dataset.step===step)?'block':'none');
@@ -191,6 +214,7 @@
   window.wzOpen=()=>{ editId=null; document.querySelector('#wzCard .h h1').textContent='➕ Novo produto'; step=1; modo=''; err('');
     $('wzCat').value=''; $('wzNome').value=''; $('wzDesc').value=''; $('wzPreco').value=''; $('wzKg').value='';
     $('wzFaixas').innerHTML=''; $('wzSempre').checked=true; $('wzCards').style.display='none';
+    $('wzHoraIn').value=''; $('wzHoraFim').value='';
     document.querySelectorAll('.wzCardChk:checked').forEach(c=>c.checked=false);
     document.querySelectorAll('#wzModos .opt').forEach(x=>x.classList.remove('sel'));
     $('wzNext').disabled=false; show(); $('wzOverlay').classList.add('open'); };
@@ -214,6 +238,8 @@
       document.querySelectorAll('.wzCardChk').forEach(c=>{
         c.checked=(p.cardapios||[]).includes(parseInt(c.value,10));
       });
+      $('wzHoraIn').value=p.horario_inicio?p.horario_inicio.substring(0,5):'';
+      $('wzHoraFim').value=p.horario_fim?p.horario_fim.substring(0,5):'';
       $('wzNext').disabled=false; show(); $('wzOverlay').classList.add('open');
     }catch(e){ alert('Falha ao carregar produto.'); }
   };
