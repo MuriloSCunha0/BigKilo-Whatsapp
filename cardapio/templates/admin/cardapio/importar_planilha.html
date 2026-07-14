@@ -1,42 +1,61 @@
 {% extends "admin/base_site.html" %}
 
-{% block title %}Importar Planilha de Produtos{% endblock %}
+{% block title %}Importar Cardápio via Planilha{% endblock %}
 
 {% block content %}
-<div class="bg-white rounded-md shadow-sm p-6 max-w-3xl mx-auto dark:bg-gray-800 dark:text-gray-200 mt-8" style="margin: 2rem auto; max-width: 800px; font-family: ui-sans-serif, system-ui, sans-serif;">
-    <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">Importar Produtos via Planilha</h1>
-    
+<div style="margin: 2rem auto; max-width: 800px; font-family: ui-sans-serif, system-ui, sans-serif;">
+    <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">📥 Importar Novo Cardápio via Planilha</h1>
+
     <p style="margin-bottom: 1.5rem; color: #4b5563;">
-        Você pode cadastrar ou atualizar vários produtos e cardápios de uma só vez fazendo o upload de um arquivo Excel (.xlsx).
-        Certifique-se de que a planilha segue a estrutura padrão antes de enviá-la.
+        Crie um cardápio completo de uma só vez! Basta preencher a planilha com os produtos e fazer o upload.
+        <br>Se o produto já existir no sistema, ele será apenas vinculado ao novo cardápio. Se não existir, será criado automaticamente.
     </p>
 
     <div style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: flex-start;">
         <span style="font-size: 1.5rem;">📄</span>
         <div>
-            <h3 style="font-weight: 700; margin-bottom: 0.25rem;">Como formatar a planilha?</h3>
-            <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">Para evitar erros, baixe a planilha de exemplo, preencha as linhas com os seus produtos e faça o upload abaixo.</p>
-            <a href="{% url 'admin:cardapio_produto_baixar_planilha_exemplo' %}" style="background: #fff; color: #1d4ed8; border: 1px solid #93c5fd; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; text-decoration: none; display: inline-block;">
+            <h3 style="font-weight: 700; margin-bottom: 0.25rem;">1º Passo: Baixe a planilha modelo</h3>
+            <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">Baixe o modelo, preencha com os produtos do seu cardápio e depois faça o upload abaixo.</p>
+            <a href="{% url 'admin:cardapio_cardapio_baixar_planilha_exemplo' %}" style="background: #fff; color: #1d4ed8; border: 1px solid #93c5fd; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; text-decoration: none; display: inline-block;">
                 📥 Baixar Planilha de Exemplo
             </a>
         </div>
     </div>
 
+    <div style="background: #fefce8; border: 1px solid #fde68a; color: #854d0e; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.85rem;">
+        ⚠️ <strong>Lembre-se:</strong> o nome dos produtos deve ter no máximo <strong>24 caracteres</strong> para aparecer completo no WhatsApp.
+    </div>
+
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
+
+        <div style="margin-bottom: 1.25rem;">
+            <label style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.95rem;">Nome do novo Cardápio *</label>
+            <input type="text" name="nome_cardapio" required placeholder="Ex.: Almoço de Segunda, Especial Dia das Mães..." style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem;">
+            <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.3rem;">Esse será o nome que aparecerá na listagem de cardápios do sistema.</p>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.95rem; cursor: pointer;">
+                <input type="checkbox" name="exclusivo" style="width: auto;">
+                Cardápio Exclusivo
+            </label>
+            <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.3rem;">Se marcado, quando este cardápio estiver no ar ele substituirá os cardápios normais (ideal para datas comemorativas).</p>
+        </div>
+
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Arquivo (.xlsx)</label>
+            <label style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.95rem;">Arquivo da Planilha (.xlsx) *</label>
             <div style="border: 2px dashed #d1d5db; border-radius: 8px; padding: 1.5rem; text-align: center; background: #f9fafb;">
                 <input type="file" name="planilha" accept=".xlsx" required style="width: 100%;">
             </div>
-            <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.5rem;">Apenas arquivos no formato Excel (.xlsx) são suportados.</p>
+            <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.3rem;">Apenas arquivos no formato Excel (.xlsx) são suportados.</p>
         </div>
 
         <div style="display: flex; align-items: center; gap: 1rem; padding-top: 1rem; border-top: 1px solid #f3f4f6;">
-            <button type="submit" style="background: #10b981; color: #fff; border: none; padding: 0.5rem 1.25rem; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                🚀 Iniciar Importação
+            <button type="submit" style="background: #d97706; color: #fff; border: none; padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem;">
+                🚀 Criar Cardápio e Importar Produtos
             </button>
-            <a href="{% url 'admin:cardapio_produto_changelist' %}" style="color: #4b5563; text-decoration: none; font-weight: 600;">
+            <a href="{% url 'admin:cardapio_cardapio_changelist' %}" style="color: #4b5563; text-decoration: none; font-weight: 600;">
                 Cancelar
             </a>
         </div>

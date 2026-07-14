@@ -138,23 +138,6 @@ class ProdutoAdmin(LocalizedAdminMixin, ModelAdmin):
         return redirect(url)
 
 
-    def get_urls(self):
-        from django.urls import path
-        from . import views_admin
-        urls = super().get_urls()
-        custom_urls = [
-            path(
-                "importar-planilha/",
-                self.admin_site.admin_view(views_admin.importar_planilha_view),
-                name="cardapio_produto_importar_planilha",
-            ),
-            path(
-                "baixar-planilha-exemplo/",
-                self.admin_site.admin_view(views_admin.baixar_planilha_exemplo),
-                name="cardapio_produto_baixar_planilha_exemplo",
-            ),
-        ]
-        return custom_urls + urls
 
 class DisponibilidadeCardapioInline(TabularInline):
     model = DisponibilidadeCardapio
@@ -214,6 +197,24 @@ class CardapioAdmin(ModelAdmin):
     def change_view(self, request, object_id, form_url="", extra_context=None):
         url = reverse("admin:cardapio_cardapio_changelist") + f"?assistente={object_id}"
         return redirect(url)
+
+    def get_urls(self):
+        from django.urls import path
+        from . import views_admin
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "importar-planilha/",
+                self.admin_site.admin_view(views_admin.importar_planilha_view),
+                name="cardapio_cardapio_importar_planilha",
+            ),
+            path(
+                "baixar-planilha-exemplo/",
+                self.admin_site.admin_view(views_admin.baixar_planilha_exemplo),
+                name="cardapio_cardapio_baixar_planilha_exemplo",
+            ),
+        ]
+        return custom_urls + urls
 
 
 @admin.register(Promocao)

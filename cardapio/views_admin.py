@@ -3,7 +3,6 @@ from decimal import Decimal
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
-from django.urls import path
 from django.views.decorators.http import require_http_methods
 
 from cardapio.models import Categoria, Produto, Cardapio
@@ -17,63 +16,94 @@ COLUNAS_ESPERADAS = [
     "Preço",
     "Preço por KG",
     "Ativo",
-    "Cardápios",
 ]
+
 
 def baixar_planilha_exemplo(request):
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Produtos"
-    
+    ws.title = "Cardápio"
+
     # Cabeçalho
     for col_num, nome in enumerate(COLUNAS_ESPERADAS, 1):
         cell = ws.cell(row=1, column=col_num, value=nome)
         cell.font = openpyxl.styles.Font(bold=True)
-    
+        cell.fill = openpyxl.styles.PatternFill("solid", fgColor="FFEFD5")
+
+    # Ajustar larguras para ficar legível
+    ws.column_dimensions["A"].width = 18
+    ws.column_dimensions["B"].width = 22
+    ws.column_dimensions["C"].width = 24
+    ws.column_dimensions["D"].width = 25
+    ws.column_dimensions["E"].width = 16
+    ws.column_dimensions["F"].width = 10
+    ws.column_dimensions["G"].width = 14
+    ws.column_dimensions["H"].width = 8
+
     # Linha de exemplo 1
     exemplo1 = [
-        "Bebidas", "BEBIDA", "Coca-Cola 2L", "Gelada", 
-        "UNIDADE", "12.00", "0.00", "SIM", "Almoço Diário"
+        "Bebidas", "BEBIDA", "Coca-Cola 2L", "Gelada",
+        "UNIDADE", "12.00", "0.00", "SIM",
     ]
     for col_num, val in enumerate(exemplo1, 1):
         ws.cell(row=2, column=col_num, value=val)
 
     # Linha de exemplo 2
     exemplo2 = [
-        "Proteínas", "PROTEINA", "Lombo (Madeira)", "Ao molho", 
-        "MONTAGEM", "0.00", "0.00", "SIM", "Almoço Diário, Jantar de Domingo"
+        "Proteínas", "PROTEINA", "Lombo (Madeira)", "Ao molho madeira",
+        "MONTAGEM", "0.00", "0.00", "SIM",
     ]
     for col_num, val in enumerate(exemplo2, 1):
         ws.cell(row=3, column=col_num, value=val)
-        
+
+    # Linha de exemplo 3
+    exemplo3 = [
+        "Acompanhamentos", "ACOMPANHAMENTO", "Arroz Branco", "",
+        "MONTAGEM", "0.00", "0.00", "SIM",
+    ]
+    for col_num, val in enumerate(exemplo3, 1):
+        ws.cell(row=4, column=col_num, value=val)
+
     response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response["Content-Disposition"] = 'attachment; filename="modelo_cardapio_bigkilo.xlsx"'
     wb.save(response)
     return response
 
+
 @require_http_methods(["GET", "POST"])
 def importar_planilha_view(request):
     if request.method == "POST":
         arquivo = request.FILES.get("planilha")
+        nome_cardapio = request.POST.get("nome_cardapio", "").strip()
+        exclusivo = request.POST.get("exclusivo") == "on"
+
+        if not nome_cardapio:
+            messages.error(request, "Informe o nome do novo cardápio.")
+            return redirect("admin:cardapio_cardapio_importar_planilha")
+
         if not arquivo:
             messages.error(request, "Nenhum arquivo enviado.")
-            return redirect("admin:cardapio_produto_changelist")
-            
+            return redirect("admin:cardapio_cardapio_importar_planilha")
+
         if not arquivo.name.endswith(".xlsx"):
             messages.error(request, "O arquivo deve ser um Excel (.xlsx).")
-            return redirect("admin:cardapio_produto_changelist")
-            
+            return redirect("admin:cardapio_cardapio_importar_planilha")
+
         try:
             wb = openpyxl.load_workbook(arquivo, data_only=True)
             ws = wb.active
-            
-            # Valida cabeçalho (simplificado)
+
+            # Valida cabeçalho
             header = [str(cell.value).strip() if cell.value else "" for cell in ws[1]]
-            
+
             if "Produto" not in header or "Categoria" not in header:
-                messages.error(request, "A planilha não possui as colunas 'Produto' e 'Categoria'. Use a planilha de exemplo.")
-                return redirect("admin:cardapio_produto_changelist")
-                
+                messages.error(
+                    request,
+                    "A planilha não possui as colunas 'Produto' e 'Categoria'. "
+                    "Use a planilha de exemplo.",
+                )
+                return redirect("admin:cardapio_cardapio_importar_planilha")
+
             idx_cat = header.index("Categoria")
             idx_tipo = header.index("Tipo da Categoria") if "Tipo da Categoria" in header else -1
             idx_prod = header.index("Produto")
@@ -82,82 +112,86 @@ def importar_planilha_view(request):
             idx_preco = header.index("Preço") if "Preço" in header else -1
             idx_kg = header.index("Preço por KG") if "Preço por KG" in header else -1
             idx_ativo = header.index("Ativo") if "Ativo" in header else -1
-            idx_card = header.index("Cardápios") if "Cardápios" in header else -1
-            
+
+            # 1. Criar o Cardápio
+            cardapio_obj = Cardapio.objects.create(
+                nome=nome_cardapio,
+                tipo=Cardapio.Tipo.NORMAL,
+                exclusivo=exclusivo,
+                ativo=True,
+            )
+
             criados = 0
-            atualizados = 0
-            
+            existentes = 0
+
             for row in ws.iter_rows(min_row=2, values_only=True):
                 nome_prod = str(row[idx_prod]).strip() if len(row) > idx_prod and row[idx_prod] else ""
                 nome_cat = str(row[idx_cat]).strip() if len(row) > idx_cat and row[idx_cat] else ""
-                
+
                 if not nome_prod or not nome_cat or nome_prod == "None" or nome_cat == "None":
                     continue
-                    
-                # 1. Categoria
+
+                # 2. Categoria (get or create)
                 tipo_cat = str(row[idx_tipo]).strip().upper() if idx_tipo >= 0 and row[idx_tipo] else "OUTRO"
                 if tipo_cat not in dict(Categoria.Tipo.choices).keys():
                     tipo_cat = "OUTRO"
-                    
+
                 categoria, _ = Categoria.objects.get_or_create(
                     nome__iexact=nome_cat,
-                    defaults={"nome": nome_cat, "tipo": tipo_cat}
+                    defaults={"nome": nome_cat, "tipo": tipo_cat},
                 )
-                
-                # 2. Produto
-                desc = str(row[idx_desc]).strip() if idx_desc >= 0 and row[idx_desc] and row[idx_desc] != "None" else ""
-                modo = str(row[idx_modo]).strip().upper() if idx_modo >= 0 and row[idx_modo] and row[idx_modo] != "None" else "UNIDADE"
-                if modo not in dict(Produto.ModoVenda.choices).keys():
-                    modo = "UNIDADE"
-                
-                try:
-                    preco = Decimal(str(row[idx_preco]).replace(",", ".").strip()) if idx_preco >= 0 and row[idx_preco] else Decimal("0.00")
-                except:
-                    preco = Decimal("0.00")
-                    
-                try:
-                    preco_kg = Decimal(str(row[idx_kg]).replace(",", ".").strip()) if idx_kg >= 0 and row[idx_kg] else Decimal("0.00")
-                except:
-                    preco_kg = Decimal("0.00")
-                
-                ativo = True
-                if idx_ativo >= 0 and row[idx_ativo]:
-                    val_ativo = str(row[idx_ativo]).strip().upper()
-                    if val_ativo in ["NÃO", "NAO", "NO", "FALSE", "0"]:
-                        ativo = False
-                
-                produto, created = Produto.objects.update_or_create(
-                    nome__iexact=nome_prod,
-                    defaults={
-                        "nome": nome_prod,
-                        "categoria": categoria,
-                        "descricao": desc,
-                        "modo_venda": modo,
-                        "preco": preco,
-                        "preco_kg": preco_kg,
-                        "ativo": ativo
-                    }
-                )
-                
-                if created:
-                    criados += 1
+
+                # 3. Produto — se já existe, apenas vincula; se não, cria
+                produto_existente = Produto.objects.filter(nome__iexact=nome_prod).first()
+
+                if produto_existente:
+                    produto = produto_existente
+                    existentes += 1
                 else:
-                    atualizados += 1
-                    
-                # 3. Cardápios
-                if idx_card >= 0 and row[idx_card] and row[idx_card] != "None":
-                    nomes_cards = [c.strip() for c in str(row[idx_card]).split(",") if c.strip()]
-                    for nc in nomes_cards:
-                        card_obj, _ = Cardapio.objects.get_or_create(
-                            nome__iexact=nc,
-                            defaults={"nome": nc, "tipo": Cardapio.Tipo.NORMAL}
-                        )
-                        card_obj.produtos.add(produto)
-            
-            messages.success(request, f"Planilha importada com sucesso! {criados} produtos criados, {atualizados} atualizados.")
+                    desc = str(row[idx_desc]).strip() if idx_desc >= 0 and row[idx_desc] and row[idx_desc] != "None" else ""
+                    modo = str(row[idx_modo]).strip().upper() if idx_modo >= 0 and row[idx_modo] and row[idx_modo] != "None" else "UNIDADE"
+                    if modo not in dict(Produto.ModoVenda.choices).keys():
+                        modo = "UNIDADE"
+
+                    try:
+                        preco = Decimal(str(row[idx_preco]).replace(",", ".").strip()) if idx_preco >= 0 and row[idx_preco] else Decimal("0.00")
+                    except Exception:
+                        preco = Decimal("0.00")
+
+                    try:
+                        preco_kg = Decimal(str(row[idx_kg]).replace(",", ".").strip()) if idx_kg >= 0 and row[idx_kg] else Decimal("0.00")
+                    except Exception:
+                        preco_kg = Decimal("0.00")
+
+                    ativo = True
+                    if idx_ativo >= 0 and row[idx_ativo]:
+                        val_ativo = str(row[idx_ativo]).strip().upper()
+                        if val_ativo in ["NÃO", "NAO", "NO", "FALSE", "0"]:
+                            ativo = False
+
+                    produto = Produto.objects.create(
+                        nome=nome_prod,
+                        categoria=categoria,
+                        descricao=desc,
+                        modo_venda=modo,
+                        preco=preco,
+                        preco_kg=preco_kg,
+                        ativo=ativo,
+                    )
+                    criados += 1
+
+                # 4. Vincular ao Cardápio
+                cardapio_obj.produtos.add(produto)
+
+            total = criados + existentes
+            messages.success(
+                request,
+                f'Cardápio "{nome_cardapio}" criado com {total} produto(s)! '
+                f"{criados} novo(s) criado(s), {existentes} já existente(s) vinculado(s).",
+            )
         except Exception as e:
             messages.error(request, f"Erro ao processar a planilha: {str(e)}")
-            
-        return redirect("admin:cardapio_produto_changelist")
-        
+
+        return redirect("admin:cardapio_cardapio_changelist")
+
     return render(request, "admin/cardapio/importar_planilha.html")
