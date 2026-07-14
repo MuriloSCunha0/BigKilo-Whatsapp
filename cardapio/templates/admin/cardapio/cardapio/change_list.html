@@ -119,6 +119,101 @@
   </div>
 </div>
 
+<div id="importOverlay" style="display:none; position:fixed; inset:0; background:rgba(17,24,39,.55); z-index:9999; align-items:flex-start; justify-content:center; padding:2.5rem 1rem; overflow-y:auto;" onclick="if(event.target===this)window.importClose()">
+  <div id="importCard" style="width:100%; max-width:640px; background:#fff; color:#111827; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden;">
+    <div class="h" style="background:#d97706; color:#fff; padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center;">
+      <h1 style="font-size:1.1rem; margin:0;">📥 Importar Cardápio</h1>
+      <button type="button" onclick="window.importClose()" style="background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer;">✕</button>
+    </div>
+    <div class="bd" style="padding:1.25rem;">
+      <div style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: flex-start;">
+          <span style="font-size: 1.5rem;">📄</span>
+          <div>
+              <h3 style="font-weight: 700; margin-bottom: 0.25rem; font-size:1rem;">1º Passo: Baixe a planilha modelo</h3>
+              <p style="font-size: 0.85rem; margin-bottom: 0.75rem;">Baixe o modelo, preencha com os produtos do seu cardápio e depois faça o upload abaixo.</p>
+              <a href="{% url 'admin:cardapio_cardapio_baixar_planilha_exemplo' %}" style="background: #fff; color: #1d4ed8; border: 1px solid #93c5fd; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; display: inline-block;">
+                  📥 Baixar Planilha de Exemplo
+              </a>
+          </div>
+      </div>
+      <div style="background: #fefce8; border: 1px solid #fde68a; color: #854d0e; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.85rem;">
+          ⚠️ <strong>Lembre-se:</strong> o nome dos produtos deve ter no máximo <strong>24 caracteres</strong> para aparecer completo no WhatsApp.
+      </div>
+      
+      <form action="{% url 'admin:cardapio_cardapio_importar_planilha' %}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="margin-bottom: 1.25rem;">
+            <label style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.95rem;">Nome do novo Cardápio *</label>
+            <input type="text" name="nome_cardapio" required placeholder="Ex.: Almoço de Segunda, Especial Dia das Mães..." style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem;">
+        </div>
+
+        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+            <h3 style="font-weight: 700; margin-bottom: 1rem; font-size: 1.05rem;">🗓️ Quando este cardápio será exibido?</h3>
+            <div style="display: flex; gap: 1.5rem; margin-bottom: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600;">
+                    <input type="radio" name="tipo_cardapio" value="NORMAL" checked onclick="document.getElementById('import_conf_normal').style.display='block'; document.getElementById('import_conf_especial').style.display='none';">
+                    Normal (Semanal)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600;">
+                    <input type="radio" name="tipo_cardapio" value="ESPECIAL" onclick="document.getElementById('import_conf_normal').style.display='none'; document.getElementById('import_conf_especial').style.display='block';">
+                    Especial (Por Data)
+                </label>
+            </div>
+            <div id="import_conf_normal">
+                <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.75rem;">Selecione os dias da semana em que ele se repete:</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+                    <label><input type="checkbox" name="dias" value="0"> Seg</label>
+                    <label><input type="checkbox" name="dias" value="1"> Ter</label>
+                    <label><input type="checkbox" name="dias" value="2"> Qua</label>
+                    <label><input type="checkbox" name="dias" value="3"> Qui</label>
+                    <label><input type="checkbox" name="dias" value="4"> Sex</label>
+                    <label><input type="checkbox" name="dias" value="5"> Sáb</label>
+                    <label><input type="checkbox" name="dias" value="6"> Dom</label>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <label style="font-size: 0.9rem; font-weight: 600;">Período:</label>
+                    <select name="periodo" style="padding: 0.4rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem;">
+                        <option value="ALMOCO">Almoço (11h às 15h)</option>
+                        <option value="JANTAR">Jantar (15h às 19:30)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="import_conf_especial" style="display: none;">
+                <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.75rem;">Para feriados e datas comemorativas.</p>
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">De *</label>
+                        <input type="date" name="data_inicio" style="width: 100%; padding: 0.4rem; border: 1px solid #d1d5db; border-radius: 6px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Até</label>
+                        <input type="date" name="data_fim" style="width: 100%; padding: 0.4rem; border: 1px solid #d1d5db; border-radius: 6px;">
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 1.25rem; border-top: 1px solid #e5e7eb; padding-top: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.95rem; cursor: pointer; color: #b45309;">
+                    <input type="checkbox" name="exclusivo" style="width: auto; accent-color: #d97706;">
+                    Exclusivo (oculta outros cardápios no período)
+                </label>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.95rem;">Arquivo da Planilha (.xlsx) *</label>
+            <div style="border: 2px dashed #d1d5db; border-radius: 8px; padding: 1.5rem; text-align: center; background: #f9fafb;">
+                <input type="file" name="planilha" accept=".xlsx" required style="width: 100%;">
+            </div>
+        </div>
+        
+        <div style="text-align:right;">
+          <button type="submit" style="background:#d97706; color:#fff; border:none; border-radius:9px; padding:.6rem 1.1rem; font-size:.92rem; font-weight:600; cursor:pointer;">✓ Fazer Upload e Criar Cardápio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   const DIAS=[[0,'Segunda'],[1,'Terça'],[2,'Quarta'],[3,'Quinta'],[4,'Sexta'],[5,'Sábado']];
@@ -256,6 +351,9 @@
   const params=new URLSearchParams(window.location.search);
   const aid=params.get('assistente');
   if(aid){ params.delete('assistente'); history.replaceState({},'',window.location.pathname+(params.toString()?'?'+params:'')); cwOpenEdit(aid); }
+  
+  window.importOpen = () => { document.getElementById('importOverlay').style.display = 'flex'; };
+  window.importClose = () => { document.getElementById('importOverlay').style.display = 'none'; };
 })();
 </script>
 {% endblock %}
@@ -263,8 +361,8 @@
 {% block object-tools-items %}
   {{ block.super }}
   <li>
-    <a href="{% url 'admin:cardapio_cardapio_importar_planilha' %}" style="background:#d97706; color:#fff; font-weight:600; padding:.45rem .9rem; border-radius:8px; text-decoration:none; display:inline-block;">
+    <button type="button" onclick="window.importOpen()" style="background:#d97706; color:#fff; font-weight:600; padding:.45rem .9rem; border-radius:8px; border:none; text-decoration:none; display:inline-block; cursor:pointer; font-size: 0.875rem;">
       📥 Importar Planilha
-    </a>
+    </button>
   </li>
 {% endblock %}

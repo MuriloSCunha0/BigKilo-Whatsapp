@@ -80,15 +80,15 @@ def importar_planilha_view(request):
 
         if not nome_cardapio:
             messages.error(request, "Informe o nome do novo cardápio.")
-            return redirect("admin:cardapio_cardapio_importar_planilha")
+            return redirect("admin:cardapio_cardapio_changelist")
 
         if not arquivo:
             messages.error(request, "Nenhum arquivo enviado.")
-            return redirect("admin:cardapio_cardapio_importar_planilha")
+            return redirect("admin:cardapio_cardapio_changelist")
 
         if not arquivo.name.endswith(".xlsx"):
             messages.error(request, "O arquivo deve ser um Excel (.xlsx).")
-            return redirect("admin:cardapio_cardapio_importar_planilha")
+            return redirect("admin:cardapio_cardapio_changelist")
 
         try:
             wb = openpyxl.load_workbook(arquivo, data_only=True)
