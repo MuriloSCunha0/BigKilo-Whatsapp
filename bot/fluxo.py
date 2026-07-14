@@ -28,8 +28,15 @@ def _ha_promo_global() -> bool:
 
 
 CENTAVO = Decimal("0.01")
-PESOS_COMPLETA = {"1": 300, "2": 500, "3": 700}
-PESOS_PROTEINA = {"1": 300, "2": 500, "3": 700, "4": 1000}
+CENTAVO = Decimal("0.01")
+
+def _get_tabela_pesos(modo: str, encomenda: bool) -> dict:
+    if encomenda:
+        return {"1": 1000}
+    if modo == ItemPedido.Modo.COMPLETA:
+        return {"1": 300, "2": 500, "3": 700}
+    # Modo.PROTEINA or GUARNICAO (Grandes porções)
+    return {"1": 700, "2": 1000}
 
 SAUDACOES = {
     "oi", "oii", "olá", "ola", "opa", "eai", "e ai", "menu", "início", "inicio",
@@ -116,8 +123,12 @@ def _resolver(sessao, texto: str):
     return sessao.carrinho_json.get("_menu", {}).get(texto.strip())
 
 
-def _disponiveis(tipo: str):
+def _disponiveis(tipo: str, encomenda_data: str = None):
     qs = Produto.objects.filter(categoria__tipo=tipo, ativo=True).select_related("categoria")
+    if encomenda_data:
+        from datetime import date
+        dt = date.fromisoformat(encomenda_data[:10])
+        return [p for p in qs if p.disponivel_na_data(dt)]
     return [p for p in qs if p.disponivel_agora]
 
 
@@ -192,7 +203,7 @@ def _avisos_promo(cliente, perfil=None) -> list[str]:
 
 
 
-def _tela_menu(sessao) -> list:
+def _tela_menu(sessao, perfil=None) -> list:
     sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
     _set_menu(sessao, {})
     itens = sessao.carrinho_json["itens"]
@@ -202,17 +213,25 @@ def _tela_menu(sessao) -> list:
         cab = f"🛒 Carrinho: {len(itens)} item(ns) - {_moeda(total)}\n\n"
 
     cfg = ConfiguracaoLoja.get()
-    linhas = [
-        {"id": "1", "titulo": "Montar refeição completa"},
-        {"id": "2", "titulo": "Grandes porções"},
-        {"id": "3", "titulo": "Encomenda outro dia"},
-        {"id": "4", "titulo": "Sanduíches"},
-        {"id": "5", "titulo": "Sopas"},
-    ]
-    if not cfg.esta_aberta:
+    encomenda = bool(sessao.carrinho_json.get("encomenda"))
+    cliente = _cliente(sessao)
+    if encomenda:
         linhas = [
-            {"id": "3", "titulo": "Encomenda outro dia"},
+            {"id": "1", "titulo": mensagem("BTN_MENU_REFEICAO_ENC", cliente, perfil)},
+            {"id": "2", "titulo": mensagem("BTN_MENU_GRANDES_ENC", cliente, perfil)},
         ]
+    else:
+        linhas = [
+            {"id": "1", "titulo": mensagem("BTN_MENU_REFEICAO", cliente, perfil)},
+            {"id": "2", "titulo": mensagem("BTN_MENU_GRANDES", cliente, perfil)},
+            {"id": "3", "titulo": mensagem("BTN_MENU_ENCOMENDA", cliente, perfil)},
+            {"id": "4", "titulo": mensagem("BTN_MENU_SANDUICHES", cliente, perfil)},
+            {"id": "5", "titulo": mensagem("BTN_MENU_SOPAS", cliente, perfil)},
+        ]
+        if not cfg.esta_aberta:
+            linhas = [
+                {"id": "3", "titulo": mensagem("BTN_MENU_ENCOMENDA", cliente, perfil)},
+            ]
         
     corpo = (
         cab
@@ -224,7 +243,7 @@ def _tela_menu(sessao) -> list:
 
 def _entrar_menu(sessao, perfil=None) -> list[str]:
     cliente = _cliente(sessao)
-    return _avisos_promo(cliente, perfil) + _tela_menu(sessao)
+    return _avisos_promo(cliente, perfil) + _tela_menu(sessao, perfil)
 
 
 def _preco_proteina(cfg, produto, peso_g):
@@ -237,10 +256,14 @@ def _tela_peso(sessao, modo, produto=None, perfil=None) -> list:
     cfg = ConfiguracaoLoja.get()
     sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_PESO
     cliente = _cliente(sessao)
+    encomenda = bool(sessao.carrinho_json.get("encomenda"))
+    tabela = _get_tabela_pesos(modo, encomenda)
+    linhas = []
+
     if modo == ItemPedido.Modo.COMPLETA:
-        tabela = PESOS_COMPLETA
         titulo = mensagem("MONTAR_REFEICAO", cliente, perfil=perfil)
-        linhas = []
+        if encomenda:
+            titulo = "📦 " + titulo + " (Encomenda - Mínimo 1kg)"
         for k, g in tabela.items():
             linhas.append(
                 {
@@ -251,23 +274,36 @@ def _tela_peso(sessao, modo, produto=None, perfil=None) -> list:
             )
     else:
         nome = f" — {produto.nome}" if produto else ""
-        tabela = PESOS_PROTEINA
         titulo = f"Grandes porções{nome}"
-        linhas = []
+        if encomenda:
+            titulo = "📦 " + titulo + " (Encomenda - Mínimo 1kg)"
         for k, g in tabela.items():
+            preco = _moeda(cfg.preco_proteina(g) if modo == ItemPedido.Modo.PROTEINA else cfg.preco_guarnicao(g))
             linhas.append(
                 {
                     "id": k,
                     "titulo": f"{g}g",
-                    "descricao": _moeda(_preco_proteina(cfg, produto, g)),
+                    "descricao": preco,
                 }
             )
     _set_menu(sessao, {k: g for k, g in tabela.items()})
     return [lista(titulo, "Escolher peso", linhas)]
 
 
+def _tela_tipo_grande_porcao(sessao, perfil=None) -> list:
+    sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_TIPO_GRANDE_PORCAO
+    _set_menu(sessao, {"1": "proteina", "2": "guarnicao"})
+    cliente = _cliente(sessao)
+    linhas = [
+        {"id": "1", "titulo": mensagem("BTN_TIPO_PROTEINA", cliente, perfil)},
+        {"id": "2", "titulo": mensagem("BTN_TIPO_GUARNICAO", cliente, perfil)},
+    ]
+    return [lista("Você deseja uma grande porção de Proteína ou Guarnição/Acompanhamento?", "Ver opções", linhas)]
+
+
 def _tela_proteinas(sessao, perfil=None) -> list:
-    proteinas = _disponiveis(Categoria.Tipo.PROTEINA)
+    encomenda = sessao.carrinho_json.get("encomenda", {}).get("data") if sessao.carrinho_json.get("encomenda") else None
+    proteinas = _disponiveis(Categoria.Tipo.PROTEINA, encomenda)
     if not proteinas:
         return [T("No momento não há proteínas disponíveis.")] + _tela_menu(sessao)
     sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_ITENS
@@ -277,11 +313,24 @@ def _tela_proteinas(sessao, perfil=None) -> list:
     return [lista(prefixo, "Ver proteínas", rows)]
 
 
+def _tela_guarnicoes(sessao, perfil=None) -> list:
+    encomenda = sessao.carrinho_json.get("encomenda", {}).get("data") if sessao.carrinho_json.get("encomenda") else None
+    acomps = _disponiveis(Categoria.Tipo.ACOMPANHAMENTO, encomenda)
+    if not acomps:
+        return [T("No momento não há guarnições disponíveis.")] + _tela_menu(sessao)
+    sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_ITENS
+    rows, mapa = _rows_produtos(acomps)
+    _set_menu(sessao, mapa)
+    prefixo = "Opções de Guarnição/Acompanhamento. Qual você deseja?"
+    return [lista(prefixo, "Ver guarnições", rows)]
+
+
 def _tela_acompanhamentos(sessao, perfil=None) -> list:
     cfg = ConfiguracaoLoja.get()
     peso = sessao.carrinho_json["montagem"]["peso_g"]
     lim = cfg.lim_acomp(peso)
-    acomps = _disponiveis(Categoria.Tipo.ACOMPANHAMENTO)
+    encomenda = sessao.carrinho_json.get("encomenda", {}).get("data") if sessao.carrinho_json.get("encomenda") else None
+    acomps = _disponiveis(Categoria.Tipo.ACOMPANHAMENTO, encomenda)
     sessao.estado_atual = SessaoBot.Estado.MONTANDO_PRATO
     rows, mapa = _rows_produtos(acomps)
     opcoes = [
@@ -295,7 +344,7 @@ def _tela_acompanhamentos(sessao, perfil=None) -> list:
     if token:
         sessao.carrinho_json.setdefault("_flow", {})["acom_token"] = token
     return [msg]
-def _tela_confirmacao(sessao) -> list:
+def _tela_confirmacao(sessao, perfil=None) -> list:
     m = sessao.carrinho_json["montagem"]
     prot = Produto.objects.filter(id=m.get("produto_id")).first()
     prot_nome = prot.nome if prot else "Proteína"
@@ -310,12 +359,13 @@ def _tela_confirmacao(sessao) -> list:
     if nomes_ac:
         linhas.append("• Acompanhamentos: " + ", ".join(nomes_ac))
     corpo = "\n".join(linhas)
+    cliente = _cliente(sessao)
     return [
         botoes(
             corpo,
             [
-                {"id": "1", "titulo": "Sim, está correto"},
-                {"id": "2", "titulo": "Corrigir"},
+                {"id": "1", "titulo": mensagem("BTN_CONFIRMAR_SIM", cliente, perfil)},
+                {"id": "2", "titulo": mensagem("BTN_CONFIRMAR_CORRIGIR", cliente, perfil)},
             ],
         )
     ]
@@ -332,12 +382,13 @@ def _tela_resumo_carrinho(sessao, perfil=None) -> list:
     total = sum(Decimal(str(i["subtotal"])) for i in itens)
     linhas.append(f"\n*Subtotal:* {_moeda(total)}")
     corpo = "\n".join(linhas)
+    cliente = _cliente(sessao)
     return [
         botoes(
             corpo,
             [
-                {"id": "adicionar", "titulo": "Adicionar mais itens"},
-                {"id": "fechar", "titulo": "Fechar pedido"},
+                {"id": "adicionar", "titulo": mensagem("BTN_CARRINHO_ADICIONAR", cliente, perfil)},
+                {"id": "fechar", "titulo": mensagem("BTN_CARRINHO_FECHAR", cliente, perfil)},
             ],
         )
     ]
@@ -345,14 +396,28 @@ def _tela_resumo_carrinho(sessao, perfil=None) -> list:
 
 def _tela_perguntar_adicionar(sessao, perfil=None) -> list:
     sessao.estado_atual = SessaoBot.Estado.PERGUNTANDO_ADICIONAR
-    _set_menu(sessao, {"bebida": "bebida", "sobremesa": "sobremesa", "refeicao": "menu", "fechar": "fechar"})
-    corpo = mensagem("PERGUNTAR_ADICIONAR", _cliente(sessao), perfil=perfil)
-    linhas = [
-        {"id": "refeicao", "titulo": "Nova refeição", "descricao": "Voltar ao cardápio"},
-        {"id": "bebida", "titulo": "Bebida", "descricao": "Refrigerante, suco..."},
-        {"id": "sobremesa", "titulo": "Sobremesa", "descricao": "Doces e sobremesas"},
-        {"id": "fechar", "titulo": "Só isso", "descricao": "Finalizar pedido agora"},
-    ]
+    itens = sessao.carrinho_json.get("itens", [])
+    has_grande = any(i.get("modo") in (ItemPedido.Modo.PROTEINA, ItemPedido.Modo.GUARNICAO) for i in itens)
+    
+    cliente = _cliente(sessao)
+    if has_grande:
+        _set_menu(sessao, {"bebida": "bebida", "sobremesa": "sobremesa", "refeicao": "grande_porcao", "fechar": "fechar"})
+        linhas = [
+            {"id": "refeicao", "titulo": mensagem("BTN_ADD_OUTRA_GRANDE", cliente, perfil), "descricao": mensagem("DESC_ADD_OUTRA_GRANDE", cliente, perfil)},
+            {"id": "bebida", "titulo": mensagem("BTN_ADD_BEBIDA", cliente, perfil), "descricao": mensagem("DESC_ADD_BEBIDA", cliente, perfil)},
+            {"id": "sobremesa", "titulo": mensagem("BTN_ADD_SOBREMESA", cliente, perfil), "descricao": mensagem("DESC_ADD_SOBREMESA", cliente, perfil)},
+            {"id": "fechar", "titulo": mensagem("BTN_ADD_FECHAR", cliente, perfil), "descricao": mensagem("DESC_ADD_FECHAR", cliente, perfil)},
+        ]
+    else:
+        _set_menu(sessao, {"bebida": "bebida", "sobremesa": "sobremesa", "refeicao": "menu", "fechar": "fechar"})
+        linhas = [
+            {"id": "refeicao", "titulo": mensagem("BTN_ADD_REFEICAO", cliente, perfil), "descricao": mensagem("DESC_ADD_REFEICAO", cliente, perfil)},
+            {"id": "bebida", "titulo": mensagem("BTN_ADD_BEBIDA", cliente, perfil), "descricao": mensagem("DESC_ADD_BEBIDA", cliente, perfil)},
+            {"id": "sobremesa", "titulo": mensagem("BTN_ADD_SOBREMESA", cliente, perfil), "descricao": mensagem("DESC_ADD_SOBREMESA", cliente, perfil)},
+            {"id": "fechar", "titulo": mensagem("BTN_ADD_FECHAR", cliente, perfil), "descricao": mensagem("DESC_ADD_FECHAR", cliente, perfil)},
+        ]
+
+    corpo = mensagem("PERGUNTAR_ADICIONAR", cliente, perfil=perfil)
     return [lista(corpo, "Ver opções", linhas)]
 
 
@@ -413,18 +478,24 @@ def _finalizar_completa(sessao) -> list[str]:
     return [f"✅ Adicionado: {prot.nome} {m['peso_g']}g — {_moeda(preco)}"]
 
 
-def _finalizar_proteina(sessao) -> list[str]:
+def _finalizar_grande_porcao(sessao) -> list[str]:
     cfg = ConfiguracaoLoja.get()
     m = sessao.carrinho_json["montagem"]
+    modo = m.get("modo", ItemPedido.Modo.PROTEINA)
     prot = Produto.objects.get(id=m["produto_id"])
-    preco = _preco_proteina(cfg, prot, m["peso_g"])
+    if modo == ItemPedido.Modo.PROTEINA:
+        preco = _preco_proteina(cfg, prot, m["peso_g"])
+        tipo_nome = "só proteína"
+    else:
+        preco = cfg.preco_guarnicao(m["peso_g"])
+        tipo_nome = "só guarnição"
     sessao.carrinho_json["itens"].append({
-        "modo": ItemPedido.Modo.PROTEINA, "produto_id": m["produto_id"], "peso_g": m["peso_g"],
+        "modo": modo, "produto_id": m["produto_id"], "peso_g": m["peso_g"],
         "variacao": f"{m['peso_g']}g", "acompanhamentos": [],
         "preco_unitario": str(preco), "quantidade": 1, "subtotal": str(preco),
     })
     sessao.carrinho_json["montagem"] = {}
-    return [f"✅ Adicionado: {prot.nome} {m['peso_g']}g (só proteína) — {_moeda(preco)}"]
+    return [f"✅ Adicionado: {prot.nome} {m['peso_g']}g ({tipo_nome}) — {_moeda(preco)}"]
 
 
 def _add_unidade(sessao, produto) -> list[str]:
@@ -692,12 +763,27 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             sessao.carrinho_json["montagem"] = {"modo": ItemPedido.Modo.COMPLETA, "acompanhamentos": []}
             out["mensagens"] = _tela_peso(sessao, ItemPedido.Modo.COMPLETA, perfil=perfil)
         elif low == "2":
-            sessao.carrinho_json["montagem"] = {"modo": ItemPedido.Modo.PROTEINA, "acompanhamentos": []}
-            out["mensagens"] = _tela_proteinas(sessao, perfil)
+            out["mensagens"] = _tela_tipo_grande_porcao(sessao, perfil)
         elif low in MENU_CATEGORIAS:
-            out["mensagens"] = _tela_categoria(sessao, *MENU_CATEGORIAS[low])
+            # Block sandwiches and soups if it's an encomenda
+            if encomenda:
+                out["mensagens"] = ["Opção inválida para Encomendas."] + _tela_menu(sessao)
+            else:
+                out["mensagens"] = _tela_categoria(sessao, *MENU_CATEGORIAS[low])
         else:
             out["mensagens"] = ["Opção inválida."] + _tela_menu(sessao)
+        sessao.save()
+        return out
+
+    if estado == SessaoBot.Estado.ESCOLHENDO_TIPO_GRANDE_PORCAO:
+        if low == "1" or low == "proteina" or low == "proteína":
+            sessao.carrinho_json["montagem"] = {"modo": ItemPedido.Modo.PROTEINA, "acompanhamentos": []}
+            out["mensagens"] = _tela_proteinas(sessao, perfil)
+        elif low == "2" or low == "guarnicao" or low == "guarnição" or low == "acompanhamento":
+            sessao.carrinho_json["montagem"] = {"modo": ItemPedido.Modo.GUARNICAO, "acompanhamentos": []}
+            out["mensagens"] = _tela_guarnicoes(sessao, perfil)
+        else:
+            out["mensagens"] = [_ERR_LISTA] + _tela_tipo_grande_porcao(sessao, perfil)
         sessao.save()
         return out
 
@@ -715,11 +801,12 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     if estado == SessaoBot.Estado.ESCOLHENDO_PESO:
         modo = sessao.carrinho_json["montagem"]["modo"]
-        tabela = PESOS_COMPLETA if modo == ItemPedido.Modo.COMPLETA else PESOS_PROTEINA
+        encomenda = bool(sessao.carrinho_json.get("encomenda"))
+        tabela = _get_tabela_pesos(modo, encomenda)
         peso = tabela.get(texto.strip())
         if not peso:
             produto = None
-            if modo == ItemPedido.Modo.PROTEINA:
+            if modo in (ItemPedido.Modo.PROTEINA, ItemPedido.Modo.GUARNICAO):
                 pid = sessao.carrinho_json["montagem"].get("produto_id")
                 produto = Produto.objects.filter(id=pid).first() if pid else None
             out["mensagens"] = [_ERR_LISTA] + _tela_peso(sessao, modo, produto, perfil=perfil)
@@ -728,7 +815,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             if modo == ItemPedido.Modo.COMPLETA:
                 out["mensagens"] = _tela_proteinas(sessao, perfil)
             else:
-                msgs = _finalizar_proteina(sessao)
+                msgs = _finalizar_grande_porcao(sessao)
                 out["mensagens"] = _pos_item_adicionado(sessao, msgs, perfil)
         sessao.save()
         return out
@@ -736,14 +823,19 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     if estado == SessaoBot.Estado.ESCOLHENDO_ITENS:
         pid = _resolver(sessao, texto)
         if not pid:
-            out["mensagens"] = [_ERR_LISTA] + _tela_proteinas(sessao, perfil)
+            modo = sessao.carrinho_json["montagem"]["modo"]
+            if modo == ItemPedido.Modo.GUARNICAO:
+                out["mensagens"] = [_ERR_LISTA] + _tela_guarnicoes(sessao, perfil)
+            else:
+                out["mensagens"] = [_ERR_LISTA] + _tela_proteinas(sessao, perfil)
         else:
             sessao.carrinho_json["montagem"]["produto_id"] = pid
-            if sessao.carrinho_json["montagem"]["modo"] == ItemPedido.Modo.COMPLETA:
+            modo = sessao.carrinho_json["montagem"]["modo"]
+            if modo == ItemPedido.Modo.COMPLETA:
                 out["mensagens"] = _tela_acompanhamentos(sessao, perfil)
             else:
                 out["mensagens"] = _tela_peso(
-                    sessao, ItemPedido.Modo.PROTEINA, Produto.objects.get(id=pid), perfil=perfil
+                    sessao, modo, Produto.objects.get(id=pid), perfil=perfil
                 )
         sessao.save()
         return out
@@ -789,8 +881,10 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             out["mensagens"] = _tela_lista_extra(sessao, Categoria.Tipo.BEBIDA, "Bebida")
         elif acao == "sobremesa" or low == "sobremesa":
             out["mensagens"] = _tela_lista_extra(sessao, Categoria.Tipo.SOBREMESA, "Sobremesa")
+        elif acao == "grande_porcao":
+            out["mensagens"] = _tela_tipo_grande_porcao(sessao, perfil)
         elif acao in {"refeicao", "menu"} or low in {"refeicao", "menu"}:
-            out["mensagens"] = _tela_menu(sessao)
+            out["mensagens"] = _tela_menu(sessao, perfil)
         elif acao == "fechar" or low in {"fechar", "voltar", "resumo"}:
             pid, msgs = _iniciar_fechamento(sessao, perfil)
             out["mensagens"], out["checkout_pedido_id"] = msgs, pid

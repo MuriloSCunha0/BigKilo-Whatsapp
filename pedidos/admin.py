@@ -65,6 +65,7 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
                 ("completa_300", "lim_acomp_300", "lim_prot_300"),
                 ("completa_500", "lim_acomp_500", "lim_prot_500"),
                 ("completa_700", "lim_acomp_700", "lim_prot_700"),
+                ("completa_1000", "lim_acomp_1000", "lim_prot_1000"),
             ),
             "description": _("Preço do prato montado por tamanho e quantos acompanhamentos/proteínas "
                              "cada tamanho permite. Vale para todas as proteínas."),
@@ -76,6 +77,12 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
             ),
             "description": _("Preço padrão da proteína sozinha por tamanho. Uma carne específica pode ter "
                              "preço próprio em Produtos (campo 'Preço por kg')."),
+        }),
+        (_("Preços — Só guarnição"), {
+            "fields": (
+                ("guarnicao_700", "guarnicao_1000"),
+            ),
+            "description": _("Preço padrão das grandes porções de guarnição (700g e 1kg)."),
         }),
         (_("Entrega"), {
             "fields": ("taxa_entrega",),

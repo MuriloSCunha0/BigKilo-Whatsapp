@@ -184,6 +184,21 @@ class Produto(models.Model):
                 return True
         return False
 
+    def disponivel_na_data(self, data) -> bool:
+        if not self.ativo or self.esgotado:
+            return False
+            
+        if self.sempre_disponivel:
+            return True
+            
+        exclusivo_ativo = Cardapio.existe_exclusivo_ativo_na_data(data)
+        for card in self.cardapios.filter(ativo=True).prefetch_related("agenda"):
+            if exclusivo_ativo and not card.exclusivo:
+                continue
+            if card.ativo_na_data(data):
+                return True
+        return False
+
     @property
     def disponivel_agora(self) -> bool:
         return self.disponivel_em()
@@ -287,12 +302,33 @@ class Cardapio(models.Model):
         dia, agora = momento.weekday(), momento.time()
         return any(r.dia_semana == dia and r.hora_inicio <= agora <= r.hora_fim for r in self.agenda.all())
 
+    def ativo_na_data(self, data) -> bool:
+        if not self.ativo:
+            return False
+        if self.tipo == self.Tipo.ESPECIAL:
+            if not self.data_inicio:
+                return False
+            if data < self.data_inicio:
+                return False
+            if self.data_fim and data > self.data_fim:
+                return False
+            return True
+        dia = data.weekday()
+        return any(r.dia_semana == dia for r in self.agenda.all())
+
     @classmethod
     def existe_exclusivo_ativo(cls, momento=None) -> bool:
         """True se há algum cardápio exclusivo no ar agora (suprime os normais)."""
         momento = momento or timezone.localtime()
         for c in cls.objects.filter(ativo=True, exclusivo=True).prefetch_related("agenda"):
             if c.ativo_em(momento):
+                return True
+        return False
+
+    @classmethod
+    def existe_exclusivo_ativo_na_data(cls, data) -> bool:
+        for c in cls.objects.filter(ativo=True, exclusivo=True).prefetch_related("agenda"):
+            if c.ativo_na_data(data):
                 return True
         return False
 

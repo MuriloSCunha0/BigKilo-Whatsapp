@@ -35,19 +35,26 @@ class ConfiguracaoLoja(models.Model):
     completa_300 = models.DecimalField("Completa 300g", max_digits=8, decimal_places=2, default=Decimal("31.97"))
     completa_500 = models.DecimalField("Completa 500g", max_digits=8, decimal_places=2, default=Decimal("50.95"))
     completa_700 = models.DecimalField("Completa 700g", max_digits=8, decimal_places=2, default=Decimal("69.93"))
+    completa_1000 = models.DecimalField("Completa 1kg", max_digits=8, decimal_places=2, default=Decimal("90.00"))
     # Limites de acompanhamentos / proteínas por faixa
     lim_acomp_300 = models.PositiveSmallIntegerField("Máx. acomp. 300g", default=2)
     lim_acomp_500 = models.PositiveSmallIntegerField("Máx. acomp. 500g", default=3)
     lim_acomp_700 = models.PositiveSmallIntegerField("Máx. acomp. 700g", default=4)
+    lim_acomp_1000 = models.PositiveSmallIntegerField("Máx. acomp. 1kg", default=5)
     lim_prot_300 = models.PositiveSmallIntegerField("Máx. proteína 300g", default=1)
     lim_prot_500 = models.PositiveSmallIntegerField("Máx. proteína 500g", default=1)
     lim_prot_700 = models.PositiveSmallIntegerField("Máx. proteína 700g", default=2)
+    lim_prot_1000 = models.PositiveSmallIntegerField("Máx. proteína 1kg", default=3)
 
     # Preços de SÓ PROTEÍNA por faixa de peso
     proteina_300 = models.DecimalField("Só proteína 300g", max_digits=8, decimal_places=2, default=Decimal("42.47"))
     proteina_500 = models.DecimalField("Só proteína 500g", max_digits=8, decimal_places=2, default=Decimal("68.45"))
     proteina_700 = models.DecimalField("Só proteína 700g", max_digits=8, decimal_places=2, default=Decimal("94.43"))
     proteina_1000 = models.DecimalField("Só proteína 1kg", max_digits=8, decimal_places=2, default=Decimal("133.40"))
+
+    # Preços de SÓ GUARNIÇÃO por faixa de peso
+    guarnicao_700 = models.DecimalField("Só guarnição 700g", max_digits=8, decimal_places=2, default=Decimal("40.00"))
+    guarnicao_1000 = models.DecimalField("Só guarnição 1kg", max_digits=8, decimal_places=2, default=Decimal("60.00"))
 
     # Entrega e pagamento
     taxa_entrega = models.DecimalField(
@@ -96,7 +103,7 @@ class ConfiguracaoLoja(models.Model):
 
     # ---- Tabela de preços por faixa de peso ----
     def preco_completa(self, peso_g: int) -> Decimal:
-        return {300: self.completa_300, 500: self.completa_500, 700: self.completa_700}[peso_g]
+        return {300: self.completa_300, 500: self.completa_500, 700: self.completa_700, 1000: getattr(self, 'completa_1000', Decimal("90.00"))}[peso_g]
 
     def preco_proteina(self, peso_g: int) -> Decimal:
         return {
@@ -104,11 +111,16 @@ class ConfiguracaoLoja(models.Model):
             700: self.proteina_700, 1000: self.proteina_1000,
         }[peso_g]
 
+    def preco_guarnicao(self, peso_g: int) -> Decimal:
+        return {
+            700: self.guarnicao_700, 1000: self.guarnicao_1000,
+        }[peso_g]
+
     def lim_acomp(self, peso_g: int) -> int:
-        return {300: self.lim_acomp_300, 500: self.lim_acomp_500, 700: self.lim_acomp_700}[peso_g]
+        return {300: self.lim_acomp_300, 500: self.lim_acomp_500, 700: self.lim_acomp_700, 1000: self.lim_acomp_1000}[peso_g]
 
     def lim_prot(self, peso_g: int) -> int:
-        return {300: self.lim_prot_300, 500: self.lim_prot_500, 700: self.lim_prot_700}[peso_g]
+        return {300: self.lim_prot_300, 500: self.lim_prot_500, 700: self.lim_prot_700, 1000: self.lim_prot_1000}[peso_g]
 
 
 class AreaEntrega(models.Model):
@@ -196,6 +208,7 @@ class SessaoBot(models.Model):
         PEDINDO_CEP = "PEDINDO_CEP", "Pedindo CEP"
         ESCOLHENDO_PESO = "ESCOLHENDO_PESO", "Escolhendo peso"
         ESCOLHENDO_ITENS = "ESCOLHENDO_ITENS", "Escolhendo proteína"
+        ESCOLHENDO_TIPO_GRANDE_PORCAO = "ESCOLHENDO_TIPO_GRANDE_PORCAO", "Escolhendo tipo G.P."
         MONTANDO_PRATO = "MONTANDO_PRATO", "Montando prato"
         ESCOLHENDO_FIXO = "ESCOLHENDO_FIXO", "Escolhendo item"
         ESCOLHENDO_FAIXA = "ESCOLHENDO_FAIXA", "Escolhendo tamanho"
@@ -312,6 +325,7 @@ class ItemPedido(models.Model):
     class Modo(models.TextChoices):
         COMPLETA = "COMPLETA", "Refeição completa"
         PROTEINA = "PROTEINA", "Só proteína"
+        GUARNICAO = "GUARNICAO", "Só guarnição"
         FIXO = "FIXO", "Item avulso (preço fixo)"
 
     pedido = models.ForeignKey(
@@ -403,6 +417,30 @@ class ChaveMensagem(models.TextChoices):
     PEDIR_DATA_ENCOMENDA = "PEDIR_DATA_ENCOMENDA", "Pedir data da encomenda"
     ENCOMENDA_AGENDADA = "ENCOMENDA_AGENDADA", "Encomenda agendada"
     DATA_INVALIDA = "DATA_INVALIDA", "Data inválida"
+    # Novos botões e menus
+    BTN_MENU_REFEICAO = "BTN_MENU_REFEICAO", "Menu: Montar refeição"
+    BTN_MENU_REFEICAO_ENC = "BTN_MENU_REFEICAO_ENC", "Menu: Montar refeição (Encomenda)"
+    BTN_MENU_GRANDES = "BTN_MENU_GRANDES", "Menu: Grandes porções"
+    BTN_MENU_GRANDES_ENC = "BTN_MENU_GRANDES_ENC", "Menu: Grandes porções (Encomenda)"
+    BTN_MENU_ENCOMENDA = "BTN_MENU_ENCOMENDA", "Menu: Encomenda outro dia"
+    BTN_MENU_SANDUICHES = "BTN_MENU_SANDUICHES", "Menu: Sanduíches"
+    BTN_MENU_SOPAS = "BTN_MENU_SOPAS", "Menu: Sopas"
+    BTN_TIPO_PROTEINA = "BTN_TIPO_PROTEINA", "Botão: Grande porção de Proteína"
+    BTN_TIPO_GUARNICAO = "BTN_TIPO_GUARNICAO", "Botão: Grande porção de Guarnição"
+    BTN_ADD_OUTRA_GRANDE = "BTN_ADD_OUTRA_GRANDE", "Botão: Outra grande porção"
+    DESC_ADD_OUTRA_GRANDE = "DESC_ADD_OUTRA_GRANDE", "Desc: Outra grande porção"
+    BTN_ADD_REFEICAO = "BTN_ADD_REFEICAO", "Botão: Nova refeição"
+    DESC_ADD_REFEICAO = "DESC_ADD_REFEICAO", "Desc: Nova refeição"
+    BTN_ADD_BEBIDA = "BTN_ADD_BEBIDA", "Botão: Bebida"
+    DESC_ADD_BEBIDA = "DESC_ADD_BEBIDA", "Desc: Bebida"
+    BTN_ADD_SOBREMESA = "BTN_ADD_SOBREMESA", "Botão: Sobremesa"
+    DESC_ADD_SOBREMESA = "DESC_ADD_SOBREMESA", "Desc: Sobremesa"
+    BTN_ADD_FECHAR = "BTN_ADD_FECHAR", "Botão: Finalizar pedido"
+    DESC_ADD_FECHAR = "DESC_ADD_FECHAR", "Desc: Finalizar pedido"
+    BTN_CARRINHO_ADICIONAR = "BTN_CARRINHO_ADICIONAR", "Botão: Carrinho Adicionar"
+    BTN_CARRINHO_FECHAR = "BTN_CARRINHO_FECHAR", "Botão: Carrinho Fechar"
+    BTN_CONFIRMAR_SIM = "BTN_CONFIRMAR_SIM", "Botão: Confirmar Sim"
+    BTN_CONFIRMAR_CORRIGIR = "BTN_CONFIRMAR_CORRIGIR", "Botão: Confirmar Corrigir"
 
 
 # Textos padrão (fallback) caso não haja cadastro no banco. {bairro} é substituído.
@@ -451,6 +489,29 @@ MENSAGENS_PADRAO = {
         "A taxa de entrega é paga diretamente ao entregador. Já já chega aí! 🍽️"
     ),
     "ANUNCIO_PROMO": "🎁 Temos promoções hoje! Confira no cardápio.",
+    "BTN_MENU_REFEICAO": "Montar refeição completa",
+    "BTN_MENU_REFEICAO_ENC": "Montar refeição completa (Mínimo 1kg)",
+    "BTN_MENU_GRANDES": "Grandes porções",
+    "BTN_MENU_GRANDES_ENC": "Grandes porções (1kg)",
+    "BTN_MENU_ENCOMENDA": "Encomenda outro dia",
+    "BTN_MENU_SANDUICHES": "Sanduíches",
+    "BTN_MENU_SOPAS": "Sopas",
+    "BTN_TIPO_PROTEINA": "Proteína",
+    "BTN_TIPO_GUARNICAO": "Guarnição / Acompanhamento",
+    "BTN_ADD_OUTRA_GRANDE": "Outra grande porção",
+    "DESC_ADD_OUTRA_GRANDE": "Adicionar mais porções",
+    "BTN_ADD_REFEICAO": "Nova refeição",
+    "DESC_ADD_REFEICAO": "Voltar ao cardápio",
+    "BTN_ADD_BEBIDA": "Bebida",
+    "DESC_ADD_BEBIDA": "Refrigerante, suco...",
+    "BTN_ADD_SOBREMESA": "Sobremesa",
+    "DESC_ADD_SOBREMESA": "Doces e sobremesas",
+    "BTN_ADD_FECHAR": "Só isso",
+    "DESC_ADD_FECHAR": "Finalizar pedido agora",
+    "BTN_CARRINHO_ADICIONAR": "Adicionar mais itens",
+    "BTN_CARRINHO_FECHAR": "Fechar pedido",
+    "BTN_CONFIRMAR_SIM": "Sim, está correto",
+    "BTN_CONFIRMAR_CORRIGIR": "Corrigir",
 }
 
 
@@ -473,6 +534,29 @@ FLUXO_ETAPAS = [
     ("ENCOMENDA_AGENDADA", "Depois que o cliente informa a data da encomenda."),
     ("AGUARDANDO_PAGAMENTO", "Enquanto aguarda o pagamento do Pix."),
     ("PAGAMENTO_CONFIRMADO", "Quando o pagamento é confirmado."),
+    ("BTN_MENU_REFEICAO", "Botão no menu principal: Montar refeição."),
+    ("BTN_MENU_REFEICAO_ENC", "Botão no menu principal: Montar refeição (p/ Encomenda)."),
+    ("BTN_MENU_GRANDES", "Botão no menu principal: Grandes porções."),
+    ("BTN_MENU_GRANDES_ENC", "Botão no menu principal: Grandes porções (p/ Encomenda)."),
+    ("BTN_MENU_ENCOMENDA", "Botão no menu principal: Encomenda outro dia."),
+    ("BTN_MENU_SANDUICHES", "Botão no menu principal: Sanduíches."),
+    ("BTN_MENU_SOPAS", "Botão no menu principal: Sopas."),
+    ("BTN_TIPO_PROTEINA", "Botão: Escolher grande porção de proteína."),
+    ("BTN_TIPO_GUARNICAO", "Botão: Escolher grande porção de guarnição."),
+    ("BTN_ADD_OUTRA_GRANDE", "Botão adicionar: Outra grande porção."),
+    ("DESC_ADD_OUTRA_GRANDE", "Descrição no adicionar: Outra grande porção."),
+    ("BTN_ADD_REFEICAO", "Botão adicionar: Nova refeição."),
+    ("DESC_ADD_REFEICAO", "Descrição no adicionar: Nova refeição."),
+    ("BTN_ADD_BEBIDA", "Botão adicionar: Bebida."),
+    ("DESC_ADD_BEBIDA", "Descrição no adicionar: Bebida."),
+    ("BTN_ADD_SOBREMESA", "Botão adicionar: Sobremesa."),
+    ("DESC_ADD_SOBREMESA", "Descrição no adicionar: Sobremesa."),
+    ("BTN_ADD_FECHAR", "Botão adicionar: Só isso/Finalizar."),
+    ("DESC_ADD_FECHAR", "Descrição no adicionar: Só isso/Finalizar."),
+    ("BTN_CARRINHO_ADICIONAR", "Botão resumo carrinho: Adicionar mais."),
+    ("BTN_CARRINHO_FECHAR", "Botão resumo carrinho: Fechar pedido."),
+    ("BTN_CONFIRMAR_SIM", "Botão confirmação: Sim, está correto."),
+    ("BTN_CONFIRMAR_CORRIGIR", "Botão confirmação: Corrigir."),
 ]
 # Variáveis obrigatórias por mensagem (não podem ser removidas pelo lojista).
 VARIAVEIS_MENSAGEM = {
@@ -497,6 +581,18 @@ FLUXO_GRUPOS = [
     ("carrinho", "Carrinho e fechamento", ["RESUMO_CARRINHO", "PERGUNTAR_ADICIONAR", "PEDIR_MAIS", "PEDIR_ENDERECO_COMPLETO"]),
     ("encomenda", "Encomenda futura", ["PEDIR_DATA_ENCOMENDA", "ENCOMENDA_AGENDADA"]),
     ("pagamento", "Pagamento", ["AGUARDANDO_PAGAMENTO", "PAGAMENTO_CONFIRMADO"]),
+    ("botoes_menu", "Títulos dos Menus e Botões Principais", [
+        "BTN_MENU_REFEICAO", "BTN_MENU_REFEICAO_ENC", "BTN_MENU_GRANDES", "BTN_MENU_GRANDES_ENC",
+        "BTN_MENU_ENCOMENDA", "BTN_MENU_SANDUICHES", "BTN_MENU_SOPAS", "BTN_TIPO_PROTEINA", "BTN_TIPO_GUARNICAO"
+    ]),
+    ("botoes_add", "Títulos de Carrinho e Adicionais", [
+        "BTN_CARRINHO_ADICIONAR", "BTN_CARRINHO_FECHAR", "BTN_ADD_OUTRA_GRANDE", "DESC_ADD_OUTRA_GRANDE",
+        "BTN_ADD_REFEICAO", "DESC_ADD_REFEICAO", "BTN_ADD_BEBIDA", "DESC_ADD_BEBIDA",
+        "BTN_ADD_SOBREMESA", "DESC_ADD_SOBREMESA", "BTN_ADD_FECHAR", "DESC_ADD_FECHAR"
+    ]),
+    ("botoes_confirma", "Botões de Confirmação", [
+        "BTN_CONFIRMAR_SIM", "BTN_CONFIRMAR_CORRIGIR"
+    ])
 ]
 
 
