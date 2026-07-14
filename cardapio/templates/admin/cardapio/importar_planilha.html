@@ -32,15 +32,65 @@
         <div style="margin-bottom: 1.25rem;">
             <label style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.95rem;">Nome do novo Cardápio *</label>
             <input type="text" name="nome_cardapio" required placeholder="Ex.: Almoço de Segunda, Especial Dia das Mães..." style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem;">
-            <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.3rem;">Esse será o nome que aparecerá na listagem de cardápios do sistema.</p>
         </div>
 
-        <div style="margin-bottom: 1.25rem;">
-            <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.95rem; cursor: pointer;">
-                <input type="checkbox" name="exclusivo" style="width: auto;">
-                Cardápio Exclusivo
-            </label>
-            <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.3rem;">Se marcado, quando este cardápio estiver no ar ele substituirá os cardápios normais (ideal para datas comemorativas).</p>
+        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+            <h3 style="font-weight: 700; margin-bottom: 1rem; font-size: 1.05rem;">🗓️ Quando este cardápio será exibido?</h3>
+            
+            <div style="display: flex; gap: 1.5rem; margin-bottom: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600;">
+                    <input type="radio" name="tipo_cardapio" value="NORMAL" checked onclick="document.getElementById('conf_normal').style.display='block'; document.getElementById('conf_especial').style.display='none';">
+                    Normal (Semanal)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600;">
+                    <input type="radio" name="tipo_cardapio" value="ESPECIAL" onclick="document.getElementById('conf_normal').style.display='none'; document.getElementById('conf_especial').style.display='block';">
+                    Especial (Por Data)
+                </label>
+            </div>
+
+            <!-- Configuração Normal -->
+            <div id="conf_normal">
+                <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.75rem;">Selecione os dias da semana em que ele se repete:</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+                    <label><input type="checkbox" name="dias" value="0"> Seg</label>
+                    <label><input type="checkbox" name="dias" value="1"> Ter</label>
+                    <label><input type="checkbox" name="dias" value="2"> Qua</label>
+                    <label><input type="checkbox" name="dias" value="3"> Qui</label>
+                    <label><input type="checkbox" name="dias" value="4"> Sex</label>
+                    <label><input type="checkbox" name="dias" value="5"> Sáb</label>
+                    <label><input type="checkbox" name="dias" value="6"> Dom</label>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <label style="font-size: 0.9rem; font-weight: 600;">Período:</label>
+                    <select name="periodo" style="padding: 0.4rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem;">
+                        <option value="ALMOCO">Almoço (11h às 15h)</option>
+                        <option value="JANTAR">Jantar (15h às 19:30)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Configuração Especial -->
+            <div id="conf_especial" style="display: none;">
+                <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.75rem;">Para feriados e datas comemorativas (Ex: Dia das Mães).</p>
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Data de Início</label>
+                        <input type="date" name="data_inicio" style="width: 100%; padding: 0.4rem; border: 1px solid #d1d5db; border-radius: 6px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Data de Fim</label>
+                        <input type="date" name="data_fim" style="width: 100%; padding: 0.4rem; border: 1px solid #d1d5db; border-radius: 6px;">
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1.25rem; border-top: 1px solid #e5e7eb; padding-top: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.95rem; cursor: pointer; color: #b45309;">
+                    <input type="checkbox" name="exclusivo" style="width: auto; accent-color: #d97706;">
+                    Tornar este cardápio Exclusivo
+                </label>
+                <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.3rem;">Quando este cardápio estiver no ar, os cardápios normais serão ocultados.</p>
+            </div>
         </div>
 
         <div style="margin-bottom: 1.5rem;">

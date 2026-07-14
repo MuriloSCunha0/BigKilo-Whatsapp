@@ -113,13 +113,35 @@ def importar_planilha_view(request):
             idx_kg = header.index("Preço por KG") if "Preço por KG" in header else -1
             idx_ativo = header.index("Ativo") if "Ativo" in header else -1
 
+            tipo_cardapio = request.POST.get("tipo_cardapio", "NORMAL")
+            
             # 1. Criar o Cardápio
             cardapio_obj = Cardapio.objects.create(
                 nome=nome_cardapio,
-                tipo=Cardapio.Tipo.NORMAL,
+                tipo=tipo_cardapio,
                 exclusivo=exclusivo,
                 ativo=True,
             )
+            
+            # Aplicar horários ou datas
+            if tipo_cardapio == "ESPECIAL":
+                d_inicio = request.POST.get("data_inicio")
+                d_fim = request.POST.get("data_fim")
+                if d_inicio:
+                    cardapio_obj.data_inicio = d_inicio
+                if d_fim:
+                    cardapio_obj.data_fim = d_fim
+                cardapio_obj.save()
+            else:
+                from cardapio.models import DisponibilidadeCardapio
+                dias = request.POST.getlist("dias")
+                periodo = request.POST.get("periodo", "ALMOCO")
+                for dia in dias:
+                    DisponibilidadeCardapio.objects.create(
+                        cardapio=cardapio_obj,
+                        dia_semana=int(dia),
+                        periodo=periodo
+                    )
 
             criados = 0
             existentes = 0
