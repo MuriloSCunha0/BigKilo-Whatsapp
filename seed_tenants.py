@@ -23,7 +23,7 @@ def create_tenants():
 
     # Cria o tenant bigkilo
     if not Cliente.objects.filter(schema_name='bigkilo').exists():
-        tenant = Cliente(schema_name='bigkilo', nome='Big Kilo')
+        tenant = Cliente(schema_name='bigkilo', nome='Big Kilo', telefone_whatsapp='5521966263026')
         tenant.save()
 
         domain = Dominio()
