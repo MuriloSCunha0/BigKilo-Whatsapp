@@ -342,13 +342,13 @@ class ItemPedidoInline(TabularInline):
 
 @admin.register(Pedido)
 class PedidoAdmin(ModelAdmin):
-    list_display = ("id", "cliente", "status_badge", "valor_formatado", "bairro", "agendada_badge", "impressa_badge", "criado_em")
+    list_display = ("id", "cliente", "status_badge", "valor_formatado", "tipo_entrega", "bairro", "agendada_badge", "impressa_badge", "criado_em")
     list_filter = ("status", "comanda_impressa", "data_agendada", "criado_em")
     list_filter_submit = True
     search_fields = ("cliente__telefone", "cliente__nome_whatsapp", "asaas_cobranca_id", "bairro")
     # O pedido vem pronto do WhatsApp: o lojista só muda o Status.
     readonly_fields = (
-        "cliente", "valor_total", "data_agendada", "endereco_entrega", "bairro", "cep", "taxa_entrega",
+        "cliente", "valor_total", "data_agendada", "hora_agendada", "tipo_entrega", "endereco_entrega", "bairro", "cep", "taxa_entrega",
         "observacoes", "asaas_cobranca_id", "asaas_pix_copia_cola", "comanda_impressa",
         "impressa_em", "criado_em", "atualizado_em",
     )
@@ -360,8 +360,8 @@ class PedidoAdmin(ModelAdmin):
         # Pedidos entram somente pelo WhatsApp (bot). Nada de cadastro manual.
         return False
     fieldsets = (
-        (None, {"fields": ("cliente", "status", "valor_total", "data_agendada")}),
-        (_("Entrega"), {"fields": ("endereco_entrega", "bairro", "cep", "taxa_entrega", "observacoes")}),
+        (None, {"fields": ("cliente", "status", "valor_total", "tipo_entrega", "data_agendada", "hora_agendada")}),
+        (_("Endereço e Taxa"), {"fields": ("endereco_entrega", "bairro", "cep", "taxa_entrega", "observacoes")}),
         (_("Pagamento (Asaas)"), {"fields": ("asaas_cobranca_id", "asaas_pix_copia_cola")}),
         (_("Cozinha"), {"fields": ("comanda_impressa", "impressa_em")}),
         (_("Datas"), {"fields": ("criado_em", "atualizado_em"), "classes": ("collapse",)}),
@@ -384,9 +384,14 @@ class PedidoAdmin(ModelAdmin):
     def impressa_badge(self, obj):
         return "Impressa" if obj.comanda_impressa else "Pendente"
 
-    @display(description=_("Agendada"))
+    @display(description=_("Agendado para"), ordering="data_agendada", label={
+        True: "warning",
+    })
     def agendada_badge(self, obj):
-        return f"📅 {obj.data_agendada.strftime('%d/%m/%Y')}" if obj.data_agendada else "Hoje"
+        if obj.data_agendada:
+            hora_str = f" às {obj.hora_agendada.strftime('%H:%M')}" if obj.hora_agendada else ""
+            return f"{obj.data_agendada.strftime('%d/%m/%Y')}{hora_str}"
+        return "Hoje"
 
 
 @admin.register(PerfilFluxo)

@@ -221,7 +221,9 @@ class SessaoBot(models.Model):
         RESUMO_CARRINHO = "RESUMO_CARRINHO", "Resumo do carrinho"
         PERGUNTANDO_ADICIONAR = "PERGUNTANDO_ADICIONAR", "O que adicionar?"
         PEDINDO_ENDERECO_COMPLETO = "PEDINDO_ENDERECO_COMPLETO", "Pedindo endereço completo"
-        ENCOMENDA_FUTURA = "ENCOMENDA_FUTURA", "Encomenda futura"
+        ENCOMENDA_FUTURA = "ENCOMENDA_FUTURA", "Encomenda futura (Data)"
+        ENCOMENDA_HORARIO = "ENCOMENDA_HORARIO", "Encomenda futura (Horário)"
+        ESCOLHENDO_TIPO_ENTREGA = "ESCOLHENDO_TIPO_ENTREGA", "Escolhendo Entrega/Retirada"
 
     telefone = models.CharField("Telefone", max_length=20, primary_key=True)
     estado_atual = models.CharField(
@@ -266,6 +268,10 @@ class Pedido(models.Model):
         CONCLUIDO = "CONCLUIDO", "Concluído"
         CANCELADO = "CANCELADO", "Cancelado"
 
+    class TipoEntrega(models.TextChoices):
+        ENTREGA = "ENTREGA", "Entrega em domicílio"
+        RETIRADA = "RETIRADA", "Retirada na loja"
+
     cliente = models.ForeignKey(
         Cliente, on_delete=models.PROTECT, related_name="pedidos", verbose_name="Cliente"
     )
@@ -291,6 +297,13 @@ class Pedido(models.Model):
     data_agendada = models.DateField(
         "Agendada para", null=True, blank=True,
         help_text="Preenchido quando é uma encomenda para outro dia.",
+    )
+    hora_agendada = models.TimeField(
+        "Horário da encomenda", null=True, blank=True,
+        help_text="Preenchido com o horário solicitado pelo cliente.",
+    )
+    tipo_entrega = models.CharField(
+        "Como vai receber", max_length=20, choices=TipoEntrega.choices, default=TipoEntrega.ENTREGA
     )
 
     # Integração Asaas

@@ -186,7 +186,15 @@ def _linha_item_carrinho(it) -> str:
     qtd = int(it.get("quantidade") or 1)
     sub = _moeda(it.get("subtotal", "0"))
     prefix = f"{qtd}x " if qtd > 1 else ""
-    return f"• {prefix}{nome}{extra} — {sub}"
+    
+    ac_str = ""
+    ac_ids = it.get("acompanhamentos")
+    if ac_ids:
+        acs = Produto.objects.filter(id__in=ac_ids).values_list("nome", flat=True)
+        if acs:
+            ac_str = f"\n  └ Com: {', '.join(acs)}"
+            
+    return f"• {prefix}{nome}{extra} — {sub}{ac_str}"
 
 
 def _avisos_promo(cliente, perfil=None) -> list[str]:
@@ -221,17 +229,24 @@ def _tela_menu(sessao, perfil=None) -> list:
             {"id": "2", "titulo": mensagem("BTN_MENU_GRANDES_ENC", cliente, perfil)},
         ]
     else:
-        linhas = [
-            {"id": "1", "titulo": mensagem("BTN_MENU_REFEICAO", cliente, perfil)},
-            {"id": "2", "titulo": mensagem("BTN_MENU_GRANDES", cliente, perfil)},
-            {"id": "3", "titulo": mensagem("BTN_MENU_ENCOMENDA", cliente, perfil)},
-            {"id": "4", "titulo": mensagem("BTN_MENU_SANDUICHES", cliente, perfil)},
-            {"id": "5", "titulo": mensagem("BTN_MENU_SOPAS", cliente, perfil)},
-        ]
-        if not cfg.esta_aberta:
+        if itens:
             linhas = [
-                {"id": "3", "titulo": mensagem("BTN_MENU_ENCOMENDA", cliente, perfil)},
+                {"id": "1", "titulo": mensagem("BTN_MENU_REFEICAO", cliente, perfil)},
+                {"id": "4", "titulo": mensagem("BTN_MENU_SANDUICHES", cliente, perfil)},
+                {"id": "5", "titulo": mensagem("BTN_MENU_SOPAS", cliente, perfil)},
             ]
+        else:
+            linhas = [
+                {"id": "1", "titulo": mensagem("BTN_MENU_REFEICAO", cliente, perfil)},
+                {"id": "2", "titulo": mensagem("BTN_MENU_GRANDES", cliente, perfil)},
+                {"id": "3", "titulo": mensagem("BTN_MENU_ENCOMENDA", cliente, perfil)},
+                {"id": "4", "titulo": mensagem("BTN_MENU_SANDUICHES", cliente, perfil)},
+                {"id": "5", "titulo": mensagem("BTN_MENU_SOPAS", cliente, perfil)},
+            ]
+            if not cfg.esta_aberta:
+                linhas = [
+                    {"id": "3", "titulo": mensagem("BTN_MENU_ENCOMENDA", cliente, perfil)},
+                ]
         
     corpo = (
         cab
@@ -517,7 +532,7 @@ def _add_faixa(sessao, faixa) -> list[str]:
     return [f"✅ Adicionado: {faixa.produto.nome} ({faixa.rotulo}) — {_moeda(faixa.preco)}"]
 
 
-def _checkout(sessao):
+def _checkout(sessao, perfil=None):
     itens = sessao.carrinho_json["itens"]
     if not itens:
         return None, ["Seu carrinho está vazio."] + _tela_menu(sessao)
@@ -541,19 +556,32 @@ def _checkout(sessao):
     cfg = ConfiguracaoLoja.get()
     cliente, _ = Cliente.objects.get_or_create(telefone=sessao.telefone)
     end = sessao.carrinho_json.get("endereco", {})
+    tipo_entrega = sessao.carrinho_json.get("tipo_entrega", Pedido.TipoEntrega.ENTREGA)
+    
     data_enc = (sessao.carrinho_json.get("encomenda") or {}).get("data")
+    hora_enc = (sessao.carrinho_json.get("encomenda") or {}).get("hora")
     data_obj = None
+    hora_obj = None
     if data_enc:
-        from datetime import date
+        from datetime import date, time
         try:
-            data_obj = date.fromisoformat(data_enc)
+            data_obj = date.fromisoformat(data_enc[:10])
+            if hora_enc:
+                hora_obj = time.fromisoformat(hora_enc)
         except ValueError:
-            data_obj = None
+            pass
+
+    taxa = Decimal("0.00") if tipo_entrega == Pedido.TipoEntrega.RETIRADA else cfg.taxa_entrega
+
     pedido = Pedido.objects.create(
         cliente=cliente, status=Pedido.Status.AGUARDANDO_PAGAMENTO,
-        endereco_entrega=end.get("rua", ""), bairro=end.get("bairro", ""),
-        cep=end.get("cep", ""), taxa_entrega=cfg.taxa_entrega,
+        endereco_entrega=end.get("rua", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
+        bairro=end.get("bairro", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
+        cep=end.get("cep", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
+        taxa_entrega=taxa,
         data_agendada=data_obj,
+        hora_agendada=hora_obj,
+        tipo_entrega=tipo_entrega,
     )
     for it in itens:
         item = ItemPedido.objects.create(
@@ -574,26 +602,42 @@ def _checkout(sessao):
     total = (produtos + taxa).quantize(CENTAVO, rounding=ROUND_HALF_UP)
     linhas = [f"Pedido #{pedido.pk} confirmado! 🧾"]
     if pedido.data_agendada:
-        linhas.append(f"📅 Encomenda para {pedido.data_agendada.strftime('%d/%m/%Y')}")
-    linhas += [
-        f"Produtos: {_moeda(produtos)}",
-        f"Taxa de entrega: {_moeda(taxa)} (paga ao entregador na entrega)",
-        f"Total: {_moeda(total)}",
-        "",
-        f"💳 Agora pague os *{_moeda(produtos)}* dos produtos pelo Pix. "
-        f"A taxa de {_moeda(taxa)} você paga ao entregador. Gerando seu Pix...",
-    ]
+        hora_str = f" às {pedido.hora_agendada.strftime('%H:%M')}" if pedido.hora_agendada else ""
+        linhas.append(f"📅 Encomenda para {pedido.data_agendada.strftime('%d/%m/%Y')}{hora_str}")
+        
+    if pedido.tipo_entrega == Pedido.TipoEntrega.RETIRADA:
+        linhas.append("🏬 Método: Retirada na loja")
+        linhas += [
+            f"Produtos: {_moeda(produtos)}",
+            f"Total: {_moeda(total)}",
+            "",
+            f"💳 Agora pague os *{_moeda(total)}* pelo Pix. Gerando seu Pix...",
+        ]
+    else:
+        linhas.append("🛵 Método: Entrega em domicílio")
+        linhas += [
+            f"Produtos: {_moeda(produtos)}",
+            f"Taxa de entrega: {_moeda(taxa)} (paga ao entregador na entrega)",
+            f"Total: {_moeda(total)}",
+            "",
+            f"💳 Agora pague os *{_moeda(produtos)}* dos produtos pelo Pix. "
+            f"A taxa de {_moeda(taxa)} você paga ao entregador. Gerando seu Pix...",
+        ]
     return pedido.pk, avisos + ["\n".join(linhas)]
 
 
 def _iniciar_fechamento(sessao, perfil=None):
     if not sessao.carrinho_json.get("itens"):
         return None, ["Seu carrinho está vazio."] + _tela_menu(sessao)
-    end = sessao.carrinho_json.get("endereco") or {}
-    if not end.get("rua"):
-        sessao.estado_atual = SessaoBot.Estado.PEDINDO_ENDERECO_COMPLETO
-        return None, [mensagem("PEDIR_ENDERECO_COMPLETO", _cliente(sessao), perfil=perfil)]
-    return _checkout(sessao)
+    
+    sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_TIPO_ENTREGA
+    _set_menu(sessao, {"1": "entrega", "2": "retirada"})
+    linhas = [
+        {"id": "1", "titulo": "Entrega em domicílio", "descricao": "Cobrança da taxa de entrega"},
+        {"id": "2", "titulo": "Retirar na loja", "descricao": "Isento de taxa"},
+    ]
+    msgs = [lista("Como você deseja receber o pedido?", "Ver opções", linhas)]
+    return None, msgs
 
 
 _fechar_pedido = _iniciar_fechamento
@@ -742,9 +786,12 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         loja_fechada = not cfg.esta_aberta
         # Opção 3: agendar encomenda para outro dia (permitida mesmo com a loja fechada).
         if low == "3":
-            sessao.estado_atual = SessaoBot.Estado.ENCOMENDA_FUTURA
-            _set_menu(sessao, {})
-            out["mensagens"] = [mensagem("PEDIR_DATA_ENCOMENDA", _cliente(sessao), perfil=perfil)]
+            if sessao.carrinho_json.get("itens"):
+                out["mensagens"] = ["Opção inválida."] + _tela_menu(sessao)
+            else:
+                sessao.estado_atual = SessaoBot.Estado.ENCOMENDA_FUTURA
+                _set_menu(sessao, {})
+                out["mensagens"] = [mensagem("PEDIR_DATA_ENCOMENDA", _cliente(sessao), perfil=perfil)]
             sessao.save()
             return out
         # Pedido para HOJE fica barrado quando a loja está fechada (encomenda passa).
@@ -763,7 +810,10 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             sessao.carrinho_json["montagem"] = {"modo": ItemPedido.Modo.COMPLETA, "acompanhamentos": []}
             out["mensagens"] = _tela_peso(sessao, ItemPedido.Modo.COMPLETA, perfil=perfil)
         elif low == "2":
-            out["mensagens"] = _tela_tipo_grande_porcao(sessao, perfil)
+            if sessao.carrinho_json.get("itens"):
+                out["mensagens"] = ["Opção inválida."] + _tela_menu(sessao)
+            else:
+                out["mensagens"] = _tela_tipo_grande_porcao(sessao, perfil)
         elif low in MENU_CATEGORIAS:
             # Block sandwiches and soups if it's an encomenda
             if encomenda:
@@ -794,10 +844,53 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             sessao.save()
             return out
         sessao.carrinho_json["encomenda"] = {"data": data.isoformat()}
-        aviso = mensagem("ENCOMENDA_AGENDADA", _cliente(sessao), perfil=perfil, data=data.strftime("%d/%m/%Y"))
+        sessao.estado_atual = SessaoBot.Estado.ENCOMENDA_HORARIO
+        msg = f"Ótimo! A encomenda será para o dia {data.strftime('%d/%m/%Y')}.\n\nPara qual horário você deseja? (ex: 12:30)"
+        out["mensagens"] = [msg]
+        sessao.save()
+        return out
+        
+    if estado == SessaoBot.Estado.ENCOMENDA_HORARIO:
+        import re
+        match = re.search(r"(\d{1,2})[^\d](\d{2})", texto)
+        if not match:
+            out["mensagens"] = ["Formato de horário inválido. Por favor, digite no formato HH:MM (ex: 12:30)."]
+            sessao.save()
+            return out
+        hora, minuto = int(match.group(1)), int(match.group(2))
+        if not (0 <= hora <= 23 and 0 <= minuto <= 59):
+            out["mensagens"] = ["Horário inválido. Por favor, digite um horário real (ex: 12:30)."]
+            sessao.save()
+            return out
+        
+        hora_str = f"{hora:02d}:{minuto:02d}:00"
+        sessao.carrinho_json["encomenda"]["hora"] = hora_str
+        
+        data_str = sessao.carrinho_json["encomenda"]["data"]
+        from datetime import date
+        dt = date.fromisoformat(data_str[:10])
+        aviso = mensagem("ENCOMENDA_AGENDADA", _cliente(sessao), perfil=perfil, data=f"{dt.strftime('%d/%m/%Y')} às {hora:02d}:{minuto:02d}")
         out["mensagens"] = [aviso] + _tela_menu(sessao)
         sessao.save()
         return out
+
+    if estado == SessaoBot.Estado.ESCOLHENDO_TIPO_ENTREGA:
+        if low == "1" or "entrega" in low:
+            sessao.carrinho_json["tipo_entrega"] = "ENTREGA"
+            end = sessao.carrinho_json.get("endereco") or {}
+            if not end.get("rua"):
+                sessao.estado_atual = SessaoBot.Estado.PEDINDO_ENDERECO_COMPLETO
+                out["mensagens"] = [mensagem("PEDIR_ENDERECO_COMPLETO", _cliente(sessao), perfil=perfil)]
+                sessao.save()
+                return out
+            return _checkout(sessao, perfil)
+        elif low == "2" or "retirar" in low or "retirada" in low or "loja" in low:
+            sessao.carrinho_json["tipo_entrega"] = "RETIRADA"
+            return _checkout(sessao, perfil)
+        else:
+            out["mensagens"] = [_ERR_LISTA] + _iniciar_fechamento(sessao, perfil)[1]
+            sessao.save()
+            return out
 
     if estado == SessaoBot.Estado.ESCOLHENDO_PESO:
         modo = sessao.carrinho_json["montagem"]["modo"]
@@ -931,7 +1024,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     if estado == SessaoBot.Estado.PEDINDO_ENDERECO_COMPLETO:
         sessao.carrinho_json.setdefault("endereco", {})["rua"] = texto
-        pid, msgs = _checkout(sessao)
+        pid, msgs = _checkout(sessao, perfil)
         out["mensagens"], out["checkout_pedido_id"] = msgs, pid
         sessao.save()
         return out

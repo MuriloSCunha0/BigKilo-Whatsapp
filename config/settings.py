@@ -50,8 +50,9 @@ if DEBUG:
     ]
 
 
-# ==== Apps ====
-INSTALLED_APPS = [
+SHARED_APPS = [
+    "django_tenants",
+    "clientes",  # app de tenant
     "unfold",
     "unfold.contrib.filters",
     "unfold.contrib.forms",
@@ -63,14 +64,34 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Apps do projeto
+]
+
+TENANT_APPS = [
+    # Apps do tenant
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "unfold",
+    "unfold.contrib.filters",
+    "unfold.contrib.forms",
+    "unfold.contrib.inlines",
+    "adminsortable2",
+    "django.contrib.admin",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
     "cardapio",
     "pedidos.apps.PedidosConfig",
     "bot",
     "pagamentos",
 ]
 
+INSTALLED_APPS = list(set(SHARED_APPS + TENANT_APPS))
+
+TENANT_MODEL = "clientes.Cliente"
+TENANT_DOMAIN_MODEL = "clientes.Dominio"
+
 MIDDLEWARE = [
+    "django_tenants.middleware.main.TenantMainMiddleware",
     "django.middleware.security.SecurityMiddleware",
     # WhiteNoise serve os arquivos estáticos em produção (logo após o Security).
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -106,23 +127,21 @@ ASGI_APPLICATION = "config.asgi.application"
 WSGI_APPLICATION = "config.wsgi.application"
 
 
-# ==== Banco de Dados ====
-# Em produção (Railway), basta existir a variável DATABASE_URL — usamos ela.
-# Localmente, SQLite por padrão (demo) ou PostgreSQL manual (DJANGO_USE_SQLITE=False).
+# django-tenants requer PostgreSQL.
+DATABASE_ROUTERS = (
+    "django_tenants.routers.TenantSyncRouter",
+)
+
 if os.getenv("DATABASE_URL"):
-    DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
-elif env_bool("DJANGO_USE_SQLITE", True):
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+    db_config = dj_database_url.config(conn_max_age=600)
+    db_config["ENGINE"] = "django_tenants.postgresql_backend"
+    DATABASES = {"default": db_config}
 else:
+    # Local fallback
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("POSTGRES_DB", "restaurante"),
+            "ENGINE": "django_tenants.postgresql_backend",
+            "NAME": os.getenv("POSTGRES_DB", "railway"),
             "USER": os.getenv("POSTGRES_USER", "postgres"),
             "PASSWORD": os.getenv("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),

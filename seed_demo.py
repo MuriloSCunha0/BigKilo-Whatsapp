@@ -37,12 +37,19 @@ def D(c) -> Decimal:
     return Decimal(str(c))
 
 
+from django.db import connection
+from clientes.models import Cliente as TenantCliente
+
+def set_tenant_schema():
+    tenant = TenantCliente.objects.get(schema_name='bigkilo')
+    connection.set_tenant(tenant)
+
 def criar_admin():
-    if not User.objects.filter(username="admin").exists():
-        User.objects.create_superuser("admin", "admin@bigkilo.local", "admin")
-        print("Superusuário -> admin / admin")
+    if not User.objects.filter(username="big kilo").exists():
+        User.objects.create_superuser("big kilo", "admin@bigkilo.local", "bigkilo123")
+        print("Superusuário -> big kilo / bigkilo123")
     else:
-        print("Superusuário 'admin' já existe.")
+        print("Superusuário 'big kilo' já existe.")
 
 
 def criar_config():
@@ -271,6 +278,7 @@ def criar_personalizacao_exemplo():
 
 
 if __name__ == "__main__":
+    set_tenant_schema()
     criar_admin()
     criar_config()
     criar_areas()
