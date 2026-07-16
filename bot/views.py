@@ -50,7 +50,13 @@ def _extrair_mensagem(dados: dict):
         contatos = value.get("contacts") or []
         if contatos:
             nome = contatos[0].get("profile", {}).get("name", "")
-        return telefone, texto, nome, tipo
+            
+        bot_number = value.get("metadata", {}).get("display_phone_number", "")
+        if bot_number:
+            # limpa o número (remove +, -, espaços)
+            bot_number = "".join(filter(str.isdigit, bot_number))
+            
+        return telefone, texto, nome, tipo, bot_number
     except (KeyError, IndexError, TypeError):
         return None
 
@@ -79,7 +85,28 @@ async def webhook_whatsapp(request):
     if not extraido:
         return JsonResponse({"ok": True})  # status/sem mensagem
 
-    telefone, texto, nome, tipo = extraido
+    telefone, texto, nome, tipo, bot_number = extraido
+
+    if bot_number:
+        from clientes.models import Cliente
+        from django.db import connection
+        
+        # Como estamos no async handler, precisamos rodar queries síncronas usando sync_to_async
+        # Mas connection.set_tenant não é thread safe se misturado no async.
+        # Felizmente o bot inteiro processa chamadas de banco no sync_to_async ou threads.
+        # Vamos usar sync_to_async para buscar o tenant e setá-lo na connection local
+        @sync_to_async
+        def set_tenant_from_number(number):
+            tenant = Cliente.objects.filter(telefone_whatsapp=number).first()
+            if tenant:
+                connection.set_tenant(tenant)
+                return True
+            return False
+
+        has_tenant = await set_tenant_from_number(bot_number)
+        if not has_tenant:
+            logger.error("Nenhum inquilino encontrado para o número do bot: %s", bot_number)
+            return JsonResponse({"ok": True})
 
     if tipo not in ("text", "interactive"):
         try:
