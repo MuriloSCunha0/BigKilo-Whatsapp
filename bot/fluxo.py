@@ -99,6 +99,8 @@ def _parse_data_futura(texto: str):
 
 
 def _cep_validado(carrinho: dict) -> bool:
+    if (carrinho or {}).get("tipo_entrega") == "RETIRADA":
+        return True
     end = (carrinho or {}).get("endereco") or {}
     return bool(end.get("cep") and end.get("area_id"))
 
@@ -630,14 +632,14 @@ def _iniciar_fechamento(sessao, perfil=None):
     if not sessao.carrinho_json.get("itens"):
         return None, ["Seu carrinho está vazio."] + _tela_menu(sessao)
     
-    sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_TIPO_ENTREGA
-    _set_menu(sessao, {"1": "entrega", "2": "retirada"})
-    linhas = [
-        {"id": "1", "titulo": "Entrega em domicílio", "descricao": "Cobrança da taxa de entrega"},
-        {"id": "2", "titulo": "Retirar na loja", "descricao": "Isento de taxa"},
-    ]
-    msgs = [lista("Como você deseja receber o pedido?", "Ver opções", linhas)]
-    return None, msgs
+    tipo = sessao.carrinho_json.get("tipo_entrega", Pedido.TipoEntrega.ENTREGA)
+    if tipo == Pedido.TipoEntrega.ENTREGA:
+        end = sessao.carrinho_json.get("endereco") or {}
+        if not end.get("rua"):
+            sessao.estado_atual = SessaoBot.Estado.PEDINDO_ENDERECO_COMPLETO
+            return None, [mensagem("PEDIR_ENDERECO_COMPLETO", _cliente(sessao), perfil=perfil)]
+    
+    return _checkout(sessao, perfil)
 
 
 _fechar_pedido = _iniciar_fechamento
@@ -745,6 +747,32 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         sessao.save()
         return out
 
+    if estado == SessaoBot.Estado.TIPO_ENTREGA_INICIAL:
+        if low == "1" or "entrega" in low:
+            sessao.carrinho_json["tipo_entrega"] = "ENTREGA"
+            sessao.estado_atual = SessaoBot.Estado.PEDINDO_CEP
+            _set_menu(sessao, {})
+            out["mensagens"] = [mensagem('PEDIR_CEP', _cliente(sessao), perfil=perfil)]
+            sessao.save()
+            return out
+        elif low == "2" or "retirar" in low or "retirada" in low or "loja" in low:
+            sessao.carrinho_json["tipo_entrega"] = "RETIRADA"
+            # Pulamos o CEP e vamos pro menu
+            avisos = ["📍 Retirada na loja confirmada!"]
+            if not cfg.esta_aberta:
+                avisos.append(
+                    f"ℹ️ Estamos fechados agora (das {cfg.hora_abertura:%H:%M} às "
+                    f"{cfg.hora_fechamento:%H:%M}). Você pode *agendar uma encomenda* "
+                    "escolhendo *Encomenda outro dia* no menu."
+                )
+            out["mensagens"] = avisos + _entrar_menu(sessao, perfil)
+            sessao.save()
+            return out
+        else:
+            out["mensagens"] = [_ERR_LISTA] + _saudacao(sessao, perfil)
+            sessao.save()
+            return out
+
     if estado == SessaoBot.Estado.PEDINDO_CEP:
         digitos = "".join(c for c in texto if c.isdigit())
         if len(digitos) != 8:
@@ -843,7 +871,9 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             out["mensagens"] = [mensagem("DATA_INVALIDA", _cliente(sessao), perfil=perfil)]
             sessao.save()
             return out
-        sessao.carrinho_json["encomenda"] = {"data": data.isoformat()}
+        cjson = sessao.carrinho_json
+        cjson["encomenda"] = {"data": data.isoformat()}
+        sessao.carrinho_json = cjson
         sessao.estado_atual = SessaoBot.Estado.ENCOMENDA_HORARIO
         msg = f"Ótimo! A encomenda será para o dia {data.strftime('%d/%m/%Y')}.\n\nPara qual horário você deseja? (ex: 12:30)"
         out["mensagens"] = [msg]
@@ -864,7 +894,9 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             return out
         
         hora_str = f"{hora:02d}:{minuto:02d}:00"
-        sessao.carrinho_json["encomenda"]["hora"] = hora_str
+        cjson = sessao.carrinho_json
+        cjson["encomenda"]["hora"] = hora_str
+        sessao.carrinho_json = cjson
         
         data_str = sessao.carrinho_json["encomenda"]["data"]
         from datetime import date
@@ -873,24 +905,6 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         out["mensagens"] = [aviso] + _tela_menu(sessao)
         sessao.save()
         return out
-
-    if estado == SessaoBot.Estado.ESCOLHENDO_TIPO_ENTREGA:
-        if low == "1" or "entrega" in low:
-            sessao.carrinho_json["tipo_entrega"] = "ENTREGA"
-            end = sessao.carrinho_json.get("endereco") or {}
-            if not end.get("rua"):
-                sessao.estado_atual = SessaoBot.Estado.PEDINDO_ENDERECO_COMPLETO
-                out["mensagens"] = [mensagem("PEDIR_ENDERECO_COMPLETO", _cliente(sessao), perfil=perfil)]
-                sessao.save()
-                return out
-            return _checkout(sessao, perfil)
-        elif low == "2" or "retirar" in low or "retirada" in low or "loja" in low:
-            sessao.carrinho_json["tipo_entrega"] = "RETIRADA"
-            return _checkout(sessao, perfil)
-        else:
-            out["mensagens"] = [_ERR_LISTA] + _iniciar_fechamento(sessao, perfil)[1]
-            sessao.save()
-            return out
 
     if estado == SessaoBot.Estado.ESCOLHENDO_PESO:
         modo = sessao.carrinho_json["montagem"]["modo"]
@@ -1073,13 +1087,18 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
 def _saudacao(sessao, perfil=None) -> list[str]:
     cliente = _cliente(sessao)
-    sessao.estado_atual = SessaoBot.Estado.PEDINDO_CEP
-    _set_menu(sessao, {})
-    saudacao = (
-        f"{mensagem('BOAS_VINDAS', cliente, perfil=perfil)}\n\n"
-        f"{mensagem('PEDIR_CEP', cliente, perfil=perfil)}"
-    )
-    return [saudacao]
+    sessao.estado_atual = SessaoBot.Estado.TIPO_ENTREGA_INICIAL
+    _set_menu(sessao, {"1": "entrega", "2": "retirada"})
+    
+    linhas = [
+        {"id": "1", "titulo": "🛵 Entrega em domicílio", "descricao": "Calcularemos a taxa pelo CEP"},
+        {"id": "2", "titulo": "🏬 Vou retirar na loja", "descricao": "Sem taxa de frete"},
+    ]
+    
+    texto_boas_vindas = mensagem('BOAS_VINDAS', cliente, perfil=perfil)
+    corpo = f"{texto_boas_vindas}\n\nComo você deseja receber o seu pedido?"
+    
+    return [lista(corpo, "Opções de Entrega", linhas)]
 
 
 

@@ -223,6 +223,7 @@ class SessaoBot(models.Model):
         PEDINDO_ENDERECO_COMPLETO = "PEDINDO_ENDERECO_COMPLETO", "Pedindo endereço completo"
         ENCOMENDA_FUTURA = "ENCOMENDA_FUTURA", "Encomenda futura (Data)"
         ENCOMENDA_HORARIO = "ENCOMENDA_HORARIO", "Encomenda futura (Horário)"
+        TIPO_ENTREGA_INICIAL = "TIPO_ENTREGA_INICIAL", "Escolhendo Entrega/Retirada Inicial"
         ESCOLHENDO_TIPO_ENTREGA = "ESCOLHENDO_TIPO_ENTREGA", "Escolhendo Entrega/Retirada"
 
     telefone = models.CharField("Telefone", max_length=20, primary_key=True)
