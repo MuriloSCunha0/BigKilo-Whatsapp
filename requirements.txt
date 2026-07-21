@@ -23,4 +23,4 @@ python-dotenv==1.0.1
 # Bibliotecas extras UI
 django-admin-sortable2==2.3.1
 openpyxl==3.1.2
-django-tenants==3.7.0
+django-tenants>=3.7.0
