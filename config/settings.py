@@ -132,8 +132,9 @@ DATABASE_ROUTERS = (
     "django_tenants.routers.TenantSyncRouter",
 )
 
-if os.getenv("DATABASE_URL"):
-    db_config = dj_database_url.config(conn_max_age=600)
+db_url = os.getenv("DATABASE_URL") or os.getenv("DATABASE_PRIVATE_URL") or os.getenv("DATABASE_PUBLIC_URL")
+if db_url:
+    db_config = dj_database_url.parse(db_url, conn_max_age=600)
     db_config["ENGINE"] = "django_tenants.postgresql_backend"
     DATABASES = {"default": db_config}
 else:
