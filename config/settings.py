@@ -85,7 +85,10 @@ TENANT_APPS = [
     "pagamentos",
 ]
 
-INSTALLED_APPS = list(set(SHARED_APPS + TENANT_APPS))
+# IMPORTANTE: dedupe PRESERVANDO A ORDEM. `list(set(...))` embaralha os apps e o
+# Unfold PRECISA vir antes de "django.contrib.admin" (senão o admin volta ao tema
+# padrão do Django — some o visual). `dict.fromkeys` remove duplicados mantendo a ordem.
+INSTALLED_APPS = list(dict.fromkeys(SHARED_APPS + TENANT_APPS))
 
 TENANT_MODEL = "clientes.Cliente"
 TENANT_DOMAIN_MODEL = "clientes.Dominio"

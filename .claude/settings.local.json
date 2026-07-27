@@ -50,11 +50,19 @@
       "Bash(DJANGO_DEBUG=False python manage.py collectstatic --noinput)",
       "Bash(DJANGO_DEBUG=False uvicorn config.asgi:application --host 127.0.0.1 --port 8001)",
       "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://127.0.0.1:8001/admin/login/)",
-      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://127.0.0.1:8001/static/unfold/css/styles.css)"
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://127.0.0.1:8001/static/unfold/css/styles.css)",
+      "Bash(curl -s http://127.0.0.1:8000/admin/login/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8000/static/admin/css/base.css)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; $env:PYTHONPATH=\\(Get-Location\\).Path; python \"C:\\\\Users\\\\Suporte\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante\\\\7f92f7f5-1798-45a7-a08e-70585f1f19c9\\\\scratchpad\\\\ver_tenants.py\")",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; $env:PYTHONPATH=\\(Get-Location\\).Path; python \"C:\\\\Users\\\\Suporte\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante\\\\7f92f7f5-1798-45a7-a08e-70585f1f19c9\\\\scratchpad\\\\test_senha.py\")",
+      "Bash(curl -s -D - -o /dev/null https://web-production-51afd.up.railway.app/static/unfold/css/styles.css)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; $env:PYTHONPATH=\\(Get-Location\\).Path; python -c \"import django,os; os.environ.setdefault\\('DJANGO_SETTINGS_MODULE','config.settings'\\); django.setup\\(\\); from django.conf import settings as s; apps=list\\(s.INSTALLED_APPS\\); iu=apps.index\\('unfold'\\); ia=apps.index\\('django.contrib.admin'\\); print\\('unfold idx:', iu, '| admin idx:', ia, '| OK' if iu<ia else '| ERRO: unfold depois do admin'\\); print\\('primeiros:', apps[:8]\\)\"; python manage.py check 2>&1 | Select-Object -Last 2)",
+      "Bash(rm -f \"/c/Users/Suporte/AppData/Local/Temp/claude/c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante/7f92f7f5-1798-45a7-a08e-70585f1f19c9/scratchpad/ver_tenants.py\" \"/c/Users/Suporte/AppData/Local/Temp/claude/c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante/7f92f7f5-1798-45a7-a08e-70585f1f19c9/scratchpad/test_senha.py\" && echo \"limpo\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\Suporte\\OneDrive\\Área de Trabalho\\Cactec\\Restaurante\\cardapio\\migrations",
-      "c:\\Users\\Suporte\\.claude\\projects\\c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante\\memory"
+      "c:\\Users\\Suporte\\.claude\\projects\\c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante\\memory",
+      "C:\\Users\\Suporte\\AppData\\Local\\Temp\\claude\\c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante\\7f92f7f5-1798-45a7-a08e-70585f1f19c9\\scratchpad"
     ]
   }
 }
