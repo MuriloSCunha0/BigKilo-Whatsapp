@@ -57,7 +57,15 @@
       "PowerShell($env:PYTHONIOENCODING='utf-8'; $env:PYTHONPATH=\\(Get-Location\\).Path; python \"C:\\\\Users\\\\Suporte\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante\\\\7f92f7f5-1798-45a7-a08e-70585f1f19c9\\\\scratchpad\\\\test_senha.py\")",
       "Bash(curl -s -D - -o /dev/null https://web-production-51afd.up.railway.app/static/unfold/css/styles.css)",
       "PowerShell($env:PYTHONIOENCODING='utf-8'; $env:PYTHONPATH=\\(Get-Location\\).Path; python -c \"import django,os; os.environ.setdefault\\('DJANGO_SETTINGS_MODULE','config.settings'\\); django.setup\\(\\); from django.conf import settings as s; apps=list\\(s.INSTALLED_APPS\\); iu=apps.index\\('unfold'\\); ia=apps.index\\('django.contrib.admin'\\); print\\('unfold idx:', iu, '| admin idx:', ia, '| OK' if iu<ia else '| ERRO: unfold depois do admin'\\); print\\('primeiros:', apps[:8]\\)\"; python manage.py check 2>&1 | Select-Object -Last 2)",
-      "Bash(rm -f \"/c/Users/Suporte/AppData/Local/Temp/claude/c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante/7f92f7f5-1798-45a7-a08e-70585f1f19c9/scratchpad/ver_tenants.py\" \"/c/Users/Suporte/AppData/Local/Temp/claude/c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante/7f92f7f5-1798-45a7-a08e-70585f1f19c9/scratchpad/test_senha.py\" && echo \"limpo\")"
+      "Bash(rm -f \"/c/Users/Suporte/AppData/Local/Temp/claude/c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante/7f92f7f5-1798-45a7-a08e-70585f1f19c9/scratchpad/ver_tenants.py\" \"/c/Users/Suporte/AppData/Local/Temp/claude/c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante/7f92f7f5-1798-45a7-a08e-70585f1f19c9/scratchpad/test_senha.py\" && echo \"limpo\")",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; python manage.py makemigrations --check --dry-run 2>&1 | Select-Object -Last 20)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; python manage.py makemigrations pedidos 2>&1 | Select-Object -Last 8)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; $env:PYTHONPATH=\\(Get-Location\\).Path; python \"C:\\\\Users\\\\Suporte\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante\\\\7f92f7f5-1798-45a7-a08e-70585f1f19c9\\\\scratchpad\\\\ver_schema.py\")",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(rm -f \"/c/Users/Suporte/AppData/Local/Temp/claude/c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante/7f92f7f5-1798-45a7-a08e-70585f1f19c9/scratchpad/ver_schema.py\" && echo \"limpo\")",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; $env:PYTHONPATH=\\(Get-Location\\).Path; python \"C:\\\\Users\\\\Suporte\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante\\\\7f92f7f5-1798-45a7-a08e-70585f1f19c9\\\\scratchpad\\\\verifica_login.py\")",
+      "Bash(rm -f \"/c/Users/Suporte/AppData/Local/Temp/claude/c--Users-Suporte-OneDrive--rea-de-Trabalho-Cactec-Restaurante/7f92f7f5-1798-45a7-a08e-70585f1f19c9/scratchpad/verifica_login.py\" && echo \"limpo\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\Suporte\\OneDrive\\Área de Trabalho\\Cactec\\Restaurante\\cardapio\\migrations",
