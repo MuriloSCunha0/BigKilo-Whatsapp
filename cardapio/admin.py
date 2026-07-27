@@ -61,7 +61,7 @@ class FaixaPrecoInline(LocalizedInlineMixin, TabularInline):
 class ProdutoAdmin(LocalizedAdminMixin, ModelAdmin):
     change_list_template = "admin/cardapio/produto/change_list.html"
     list_display = ("nome", "categoria", "modo_venda", "preco_display", "disponibilidade", "disponivel_badge", "esgotado", "ativo", "assistente_link")
-    list_editable = ("esgotado",)
+    list_editable = ("esgotado", "ativo")
     list_filter = ("categoria", "modo_venda", "ativo", "esgotado", "sempre_disponivel")
     list_filter_submit = True
     search_fields = ("nome", "descricao")

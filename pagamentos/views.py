@@ -23,31 +23,34 @@ def _token_valido(request) -> bool:
     """Valida o token do webhook se ASAAS_WEBHOOK_TOKEN estiver configurado."""
     esperado = settings.ASAAS_WEBHOOK_TOKEN
     if not esperado:
-        return True  # sem token configurado, não valida (apenas dev)
+        return False
     return request.headers.get("asaas-access-token") == esperado
 
 
 @sync_to_async
 def _confirmar_pagamento(cobranca_id: str):
     """Pago = pedido CONCLUÍDO automaticamente (sem etapa manual). Retorna (id, telefone) ou None."""
-    pedido = (
-        Pedido.objects.select_related("cliente")
-        .filter(asaas_cobranca_id=cobranca_id)
-        .first()
-    )
-    if not pedido:
+    with transaction.atomic():
+        pedido = (
+            Pedido.objects.select_related("cliente")
+            .select_for_update()
+            .filter(asaas_cobranca_id=cobranca_id)
+            .first()
+        )
+        if not pedido:
+            return None
+        if pedido.status == Pedido.Status.AGUARDANDO_PAGAMENTO:
+            pedido.status = Pedido.Status.PREPARANDO
+            pedido.save(update_fields=["status", "atualizado_em"])
+            telefone = pedido.cliente.telefone
+            texto = mensagem("PAGAMENTO_CONFIRMADO", pedido.cliente)
+            # Conversa volta ao início e o aviso entra no histórico.
+            SessaoBot.objects.filter(telefone=telefone).update(
+                estado_atual=SessaoBot.Estado.MENU_PRINCIPAL, carrinho_json={}
+            )
+            LogMensagem.objects.create(telefone=telefone, direcao=LogMensagem.Direcao.SAIDA, texto=texto)
+            return (pedido.pk, telefone, texto)
         return None
-    if pedido.status == Pedido.Status.AGUARDANDO_PAGAMENTO:
-        pedido.status = Pedido.Status.PREPARANDO
-        pedido.save(update_fields=["status", "atualizado_em"])
-    telefone = pedido.cliente.telefone
-    texto = mensagem("PAGAMENTO_CONFIRMADO", pedido.cliente)
-    # Conversa volta ao início e o aviso entra no histórico.
-    SessaoBot.objects.filter(telefone=telefone).update(
-        estado_atual=SessaoBot.Estado.MENU_PRINCIPAL, carrinho_json={}
-    )
-    LogMensagem.objects.create(telefone=telefone, direcao=LogMensagem.Direcao.SAIDA, texto=texto)
-    return (pedido.pk, telefone, texto)
 
 
 @csrf_exempt

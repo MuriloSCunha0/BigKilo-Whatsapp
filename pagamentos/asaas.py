@@ -100,6 +100,10 @@ async def criar_cobranca_pix(pedido) -> dict:
             raise AsaasError(f"Falha ao criar cobrança: {resp.status_code} {resp.text}")
         cobranca_id = resp.json()["id"]
 
+        # Gravar a cobranca_id ANTES de pedir o QR code para evitar cobranças órfãs se der erro de rede a seguir
+        pedido.asaas_cobranca_id = cobranca_id
+        await sync_to_async(pedido.save)(update_fields=["asaas_cobranca_id"])
+
         # Obter o copia e cola (payload do QR Code dinâmico)
         qr = await http.get(
             f"{settings.ASAAS_BASE_URL}/payments/{cobranca_id}/pixQrCode", headers=_headers()
@@ -109,9 +113,8 @@ async def criar_cobranca_pix(pedido) -> dict:
         dados = qr.json()
         copia_cola = dados.get("payload", "")
 
-    pedido.asaas_cobranca_id = cobranca_id
     pedido.asaas_pix_copia_cola = copia_cola
-    await sync_to_async(pedido.save)(update_fields=["asaas_cobranca_id", "asaas_pix_copia_cola"])
+    await sync_to_async(pedido.save)(update_fields=["asaas_pix_copia_cola"])
 
     return {
         "cobranca_id": cobranca_id,

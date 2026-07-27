@@ -53,18 +53,31 @@
   <div class="lead" style="background:#dbeafe;color:#1e40af;border-radius:8px;padding:.55rem .85rem;font-weight:600;max-width:460px;text-align:center;">
     Ambiente de teste — mensagens aqui não vão para o WhatsApp real e não aparecem em Conversas.
   </div>
-  {% if perfil_preview_nome %}
-  <div class="lead" style="background:#fde9c8;color:#92400e;border-radius:8px;padding:.5rem .8rem;font-weight:600;max-width:460px;">
-    🧪 Testando o fluxo <b>{{ perfil_preview_nome }}</b> (pré-visualização, sem precisar ativar).
-  </div>
-  {% endif %}
-  <div class="lead">Converse como se fosse um cliente no WhatsApp e veja o bot respondendo. Use “💸 Simular pagamento” para testar o ciclo até a cozinha.</div>
+  <div class="lead">Converse como se fosse um cliente no WhatsApp e veja o bot respondendo. Escolha o fluxo desejado no menu abaixo.</div>
   <div id="sim">
     <div class="top">
       <div class="av">🍽️</div>
       <div><b>Big Kilo</b><small>simulador de atendimento (teste)</small></div>
     </div>
-    <div class="cfg">📱 <input id="simTel" value="{{ sim_tel|default:'5521999990000' }}" title="Telefone de teste"></div>
+    <div class="cfg" style="display:flex; flex-direction:column; gap:.4rem;">
+      <div style="display:flex; gap:.4rem; align-items:center; width:100%;">
+        <span style="font-size:.78rem; font-weight:600; color:#92400e;">⚡ Fluxo:</span>
+        <select id="simPerfilSelect" onchange="simMudarPerfil(this.value)" style="flex:1; padding:.3rem .5rem; border:1px solid #fdba74; border-radius:6px; font-size:.8rem; background:#fff; font-weight:600; color:#111;">
+          {% for p in perfis %}
+          <option value="{{ p.id }}" {% if p.id|slugify == perfil_preview_id|slugify %}selected{% endif %}>
+            {{ p.nome }}{% if p.ativo %} (★ Ativo no WhatsApp Meta){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+        <button onclick="window.location.href='/pedidos/fluxo/' + document.getElementById('simPerfilSelect').value + '/editar/'" style="padding:.3rem .6rem; border:none; background:#d97706; color:#fff; border-radius:6px; font-size:.75rem; cursor:pointer; font-weight:600;">
+          ✏️ Editar
+        </button>
+      </div>
+      <div style="display:flex; gap:.4rem; align-items:center; width:100%;">
+        <span style="font-size:.78rem; font-weight:600; color:#6b7280;">📱 Tel:</span>
+        <input id="simTel" value="{{ sim_tel|default:'5521999990000' }}" title="Telefone de teste">
+      </div>
+    </div>
     <div id="simChat"></div>
     <div class="acts">
       <button class="pay" onclick="simPagar()">💸 Simular pagamento PIX</button>
@@ -82,7 +95,12 @@
   const chat=document.getElementById('simChat');
   const tel=()=>document.getElementById('simTel').value.trim();
   const csrf=document.querySelector('[name=csrfmiddlewaretoken]').value;
-  const PERFIL_ID="{{ perfil_preview_id }}";
+  let PERFIL_ID="{{ perfil_preview_id }}";
+  
+  window.simMudarPerfil=(newId)=>{
+    PERFIL_ID=newId;
+    simReset();
+  };
   function fmtWa(t){ return (t||'').replace(/\*([^*]+)\*/g,'$1'); }
   function add(t,c){ const d=document.createElement('div'); d.className='sm '+c; d.textContent=fmtWa(t); chat.appendChild(d); chat.scrollTop=chat.scrollHeight; }
   function addBot(m){

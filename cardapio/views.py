@@ -15,7 +15,8 @@ from .models import Cardapio, Categoria, DisponibilidadeCardapio, FaixaPreco, Pe
 
 def _dec(valor) -> Decimal:
     try:
-        return Decimal(str(valor).replace(",", ".").strip() or "0")
+        v = str(valor).replace(".", "").replace(",", ".").strip()
+        return Decimal(v or "0")
     except (InvalidOperation, AttributeError):
         return Decimal("0")
 
@@ -121,7 +122,7 @@ def wizard_salvar(request):
         produto.horario_inicio = h_inicio
         produto.horario_fim = h_fim
         produto.save()
-        produto.faixas.all().delete()
+        produto.save()
     else:
         produto = Produto.objects.create(
             categoria=categoria,
@@ -136,10 +137,27 @@ def wizard_salvar(request):
         )
 
     if modo == Produto.ModoVenda.FAIXA:
+        faixas_enviadas = []
         for i, f in enumerate(dados.get("faixas", [])):
             rotulo = (f.get("rotulo") or "").strip()
             if rotulo:
-                FaixaPreco.objects.create(produto=produto, rotulo=rotulo, preco=_dec(f.get("preco")), ordem=i)
+                faixas_enviadas.append({"rotulo": rotulo, "preco": _dec(f.get("preco")), "ordem": i})
+        
+        ids_mantidos = []
+        for fb in faixas_enviadas:
+            try:
+                faixa = FaixaPreco.objects.get(produto=produto, rotulo=fb["rotulo"])
+                faixa.preco = fb["preco"]
+                faixa.ordem = fb["ordem"]
+                faixa.save(update_fields=["preco", "ordem"])
+                ids_mantidos.append(faixa.id)
+            except FaixaPreco.DoesNotExist:
+                faixa = FaixaPreco.objects.create(produto=produto, rotulo=fb["rotulo"], preco=fb["preco"], ordem=fb["ordem"])
+                ids_mantidos.append(faixa.id)
+        
+        produto.faixas.exclude(id__in=ids_mantidos).delete()
+    else:
+        produto.faixas.all().delete()
 
     # Se não for "sempre disponível", vincula aos cardápios escolhidos.
     if not produto.sempre_disponivel:
@@ -148,9 +166,14 @@ def wizard_salvar(request):
     else:
         produto.cardapios.clear()
 
+    aviso = ""
+    if not produto.sempre_disponivel and not produto.cardapios.exists():
+        aviso = "Atenção: O produto foi salvo, mas não aparecerá no WhatsApp porque não está vinculado a nenhum cardápio (e a opção 'Sempre Disponível' está desmarcada)."
+
     return JsonResponse({
         "ok": True,
         "produto": produto.id,
+        "aviso": aviso,
         "redirect": reverse("admin:cardapio_produto_changelist"),
     })
 

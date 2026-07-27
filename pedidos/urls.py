@@ -9,9 +9,12 @@ urlpatterns = [
     path("pedidos/areaentrega/assistente/salvar/", views.area_salvar, name="area_salvar"),
     path("pedidos/fluxo/<int:perfil_id>/editar/", views.fluxo_editar, name="fluxo_editar"),
     path("pedidos/fluxo/<int:perfil_id>/editar/salvar/", views.fluxo_editar_salvar, name="fluxo_editar_salvar"),
+    path("pedidos/fluxo/<int:perfil_id>/ativar/", views.fluxo_ativar, name="fluxo_ativar"),
+    path("pedidos/fluxo/<int:perfil_id>/desativar/", views.fluxo_desativar, name="fluxo_desativar"),
     path("pedidos/contato/<int:cliente_id>/mensagens/", views.contato_mensagens, name="contato_mensagens"),
     path("pedidos/contato/<int:cliente_id>/mensagens/salvar/", views.contato_mensagens_salvar, name="contato_mensagens_salvar"),
     path("pedidos/sessao/<str:telefone>/reiniciar/", views.sessao_reiniciar, name="sessao_reiniciar"),
+    path("pedidos/sessao/<str:telefone>/pausar/", views.sessao_pausar, name="sessao_pausar"),
     path("pedidos/sessao/<str:telefone>/enviar/", views.sessao_enviar_mensagem, name="sessao_enviar"),
     # API do agente de impressão (autenticada por token)
     path("pedidos/impressao/pendentes/", views.impressao_pendentes, name="impressao_pendentes"),

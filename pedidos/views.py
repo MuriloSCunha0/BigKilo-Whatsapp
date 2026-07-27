@@ -156,6 +156,26 @@ def fluxo_editar_salvar(request, perfil_id):
     return JsonResponse({"ok": True, "redirect": "/admin/pedidos/perfilfluxo/"})
 
 
+@staff_member_required
+def fluxo_ativar(request, perfil_id):
+    from django.contrib import messages
+    from django.shortcuts import redirect
+    perfil = get_object_or_404(PerfilFluxo, id=perfil_id)
+    perfil.ativo = True
+    perfil.save()
+    messages.success(request, f"O fluxo '{perfil.nome}' agora está ATIVO e sendo usado na API do WhatsApp Meta.")
+    return redirect("/admin/pedidos/perfilfluxo/")
+
+def fluxo_desativar(request, perfil_id):
+    from django.contrib import messages
+    from django.shortcuts import redirect
+    perfil = get_object_or_404(PerfilFluxo, id=perfil_id)
+    perfil.ativo = False
+    perfil.save()
+    messages.warning(request, f"O fluxo '{perfil.nome}' foi DESCONECTADO da API do WhatsApp Meta.")
+    return redirect("/admin/pedidos/perfilfluxo/")
+
+
 # ===================== Mensagens por contato =====================
 @staff_member_required
 def contato_mensagens(request, cliente_id):
@@ -215,6 +235,20 @@ def sessao_reiniciar(request, telefone):
         sessao.carrinho_json = {}
         sessao.save(update_fields=["estado_atual", "carrinho_json"])
         messages.success(request, f"Conversa de {telefone} reiniciada.")
+    return redirect("admin:pedidos_sessaobot_change", telefone)
+
+
+@staff_member_required
+def sessao_pausar(request, telefone):
+    """Pausa uma conversa do bot para atendimento humano."""
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    sessao = SessaoBot.objects.filter(telefone=telefone).first()
+    if sessao:
+        sessao.estado_atual = SessaoBot.Estado.ATENDIMENTO_HUMANO
+        sessao.save(update_fields=["estado_atual"])
+        messages.warning(request, f"O bot foi pausado para a conversa de {telefone}.")
     return redirect("admin:pedidos_sessaobot_change", telefone)
 
 

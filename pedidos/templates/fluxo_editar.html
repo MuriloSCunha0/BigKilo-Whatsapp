@@ -5,192 +5,298 @@
 {% block content %}
 {% csrf_token %}
 <style>
-  #fxHead{ display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; justify-content:space-between; margin-bottom:1rem; }
-  #fxHead .nome{ font-size:1.3rem; font-weight:700; }
-  #fxHead .badge{ font-size:.72rem; font-weight:700; padding:.2rem .6rem; border-radius:20px; background:#16a34a; color:#fff; }
-  #fxLayout{ display:grid; grid-template-columns:220px 1fr 300px; gap:1rem; align-items:start; }
-  @media(max-width:1100px){ #fxLayout{ grid-template-columns:1fr; } #fxPreview{ order:-1; position:relative!important; top:auto!important; } }
-  #fxRail{ display:flex; flex-direction:column; gap:.35rem; max-height:70vh; overflow-y:auto; padding-right:.25rem; }
-  .fxGrp{ font-size:.7rem; font-weight:700; color:#9ca3af; text-transform:uppercase; margin:.6rem 0 .25rem .2rem; }
-  .fxStepBtn{ text-align:left; border:1px solid #e5e7eb; background:#fff; border-radius:10px; padding:.45rem .55rem; cursor:pointer; font-size:.8rem; }
-  .fxStepBtn.active{ border-color:#d97706; background:#fff7ed; box-shadow:0 0 0 2px rgba(217,119,6,.15); }
-  .fxStepBtn small{ display:block; color:#6b7280; font-size:.68rem; margin-top:.1rem; }
-  #fxEditor{ border:1px solid #e5e7eb; border-radius:14px; padding:1.1rem; background:#fff; min-height:320px; }
-  #fxEditor h2{ margin:0 0 .2rem; font-size:1.1rem; }
-  #fxEditor .quando{ font-size:.8rem; color:#6b7280; margin:0 0 .8rem; }
-  #fxEditor textarea{ width:100%; min-height:140px; padding:.75rem; border:1px solid #d1d5db; border-radius:10px; font-size:1rem; line-height:1.45; resize:vertical; }
-  #fxEditor textarea.invalido{ border-color:#dc2626; background:#fef2f2; }
-  .fxVars{ display:flex; flex-wrap:wrap; gap:.4rem; margin:.6rem 0; }
-  .fxChip{ border:none; background:#fef3c7; color:#92400e; border-radius:8px; padding:.35rem .65rem; cursor:pointer; font-size:.8rem; font-weight:600; }
-  .fxChip:hover{ background:#fde68a; }
-  .fxHint{ font-size:.78rem; color:#6b7280; margin:.4rem 0; }
-  .fxErro{ color:#dc2626; font-size:.78rem; margin-top:.35rem; display:none; }
-  .fxBase{ font-size:.72rem; color:#9ca3af; margin-top:.5rem; padding:.5rem; background:#f9fafb; border-radius:8px; }
-  #fxPreview{ position:sticky; top:1rem; }
-  #fxPhone{ background:#ece5dd; border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,.12); border:1px solid rgba(0,0,0,.08); }
-  #fxPhone .top{ background:#d97706; color:#fff; padding:.6rem .8rem; font-size:.85rem; font-weight:600; }
-  #fxPhone .chat{ min-height:220px; max-height:360px; overflow-y:auto; padding:.7rem; }
-  #fxPhone .bubble{ background:#fff; border-radius:10px; padding:.55rem .7rem; font-size:.85rem; line-height:1.4; white-space:pre-wrap; box-shadow:0 1px 1px rgba(0,0,0,.06); }
-  #fxPhone .bubble b{ font-weight:700; }
-  #fxPhone .lbl{ font-size:.72rem; color:#6b7280; margin-top:.5rem; text-align:center; }
-  #fxBar{ position:sticky; bottom:0; background:rgba(255,255,255,.97); border-top:1px solid #e5e7eb; padding:.8rem 0; margin-top:1rem;
-          display:flex; gap:.6rem; align-items:center; justify-content:flex-end; }
-  #fxBar .msg{ margin-right:auto; font-size:.85rem; }
-  .fxbtn{ border:none; border-radius:9px; padding:.6rem 1.2rem; font-weight:600; cursor:pointer; font-size:.92rem; text-decoration:none; display:inline-block; }
-  .fxprim{ background:#d97706; color:#fff; } .fxsec{ background:#f3f4f6; color:#374151; }
-  .fxbtn:disabled{ opacity:.5; cursor:not-allowed; }
-  html.dark #fxEditor, html.dark .fxStepBtn{ background:#111827; border-color:#374151; color:#e5e7eb; }
-  html.dark #fxEditor textarea{ background:#0f172a; color:#e5e7eb; border-color:#374151; }
-  html.dark #fxPhone{ background:#1f2937; } html.dark #fxPhone .bubble{ background:#374151; color:#f3f4f6; }
-  html.dark #fxBar{ background:rgba(17,24,33,.97); border-top-color:#374151; }
+  #fxHeader { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; background: #fff; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  #fxHeader .title-box { display: flex; flex-direction: column; gap: .2rem; }
+  #fxHeader .nome { font-size: 1.35rem; font-weight: 700; color: #111827; }
+  #fxHeader .badge { font-size: .75rem; font-weight: 700; padding: .25rem .65rem; border-radius: 20px; background: #16a34a; color: #fff; display: inline-block; width: fit-content; }
+  
+  #fxWorkspace { display: grid; grid-template-columns: 340px 1fr 320px; gap: 1.25rem; align-items: start; }
+  @media(max-width: 1200px) { #fxWorkspace { grid-template-columns: 1fr; } #fxPreviewArea { order: -1; } }
+
+  /* Pipeline / Drag and Drop List */
+  #fxCanvas { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 1rem; max-height: calc(85vh - 100px); overflow-y: auto; display: flex; flex-direction: column; gap: .75rem; }
+  .fxGroupTitle { font-size: .72rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin: .5rem 0 .2rem .2rem; display: flex; align-items: center; gap: .4rem; }
+  
+  .fxNodeCard { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: .75rem .85rem; cursor: pointer; transition: all .15s ease; position: relative; user-select: none; }
+  .fxNodeCard:hover { border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,.12); transform: translateY(-1px); }
+  .fxNodeCard.active { border-color: #d97706; background: #fff7ed; box-shadow: 0 0 0 2px rgba(217,119,6,.2); }
+  .fxNodeCard.dragging { opacity: .4; border: 2px dashed #d97706; }
+  
+  .fxNodeCard .drag-handle { cursor: grab; color: #9ca3af; font-size: .9rem; margin-right: .4rem; font-weight: 700; display: inline-block; }
+  .fxNodeCard .node-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .2rem; }
+  .fxNodeCard .node-title { font-weight: 700; font-size: .88rem; color: #1f2937; }
+  .fxNodeCard .node-sub { font-size: .72rem; color: #6b7280; margin-top: .15rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .fxConnector { text-align: center; color: #d1d5db; font-size: .8rem; margin: -.4rem 0; pointer-events: none; }
+
+  /* Central Editor */
+  #fxMainEditor { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 1.25rem; min-height: 480px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  #fxMainEditor h2 { margin: 0 0 .25rem; font-size: 1.2rem; color: #111827; font-weight: 700; }
+  #fxMainEditor .when-text { font-size: .82rem; color: #4b5563; margin: 0 0 1rem; background: #f3f4f6; padding: .5rem .75rem; border-radius: 8px; display: flex; align-items: center; gap: .4rem; }
+  #fxMainEditor textarea { width: 100%; min-height: 180px; padding: .85rem; border: 1px solid #d1d5db; border-radius: 10px; font-size: .95rem; line-height: 1.5; resize: vertical; font-family: inherit; }
+  #fxMainEditor textarea:focus { outline: none; border-color: #d97706; box-shadow: 0 0 0 3px rgba(217,119,6,.15); }
+  #fxMainEditor textarea.invalido { border-color: #dc2626; background: #fef2f2; }
+
+  .fxChips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .75rem 0; }
+  .fxChipBtn { border: none; background: #fef3c7; color: #92400e; border-radius: 8px; padding: .4rem .75rem; cursor: pointer; font-size: .8rem; font-weight: 600; transition: background .15s; }
+  .fxChipBtn:hover { background: #fde68a; }
+  .fxErrBox { color: #dc2626; font-size: .8rem; margin-top: .4rem; background: #fef2f2; padding: .5rem .75rem; border-radius: 8px; border: 1px solid #fecaca; display: none; }
+  .fxBaseRef { font-size: .75rem; color: #6b7280; margin-top: .85rem; padding: .65rem; background: #f9fafb; border-radius: 8px; border-left: 3px solid #d97706; }
+
+  /* Phone Preview */
+  #fxPreviewArea { position: sticky; top: 1rem; }
+  #fxPhoneFrame { background: #ece5dd; border-radius: 20px; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.15); border: 1px solid rgba(0,0,0,.1); }
+  #fxPhoneFrame .header { background: #075e54; color: #fff; padding: .75rem 1rem; font-size: .9rem; font-weight: 600; display: flex; align-items: center; gap: .6rem; }
+  #fxPhoneFrame .chat-body { min-height: 260px; max-height: 380px; overflow-y: auto; padding: .85rem; display: flex; flex-direction: column; gap: .5rem; }
+  #fxPhoneFrame .bubble { background: #fff; border-radius: 10px; padding: .65rem .8rem; font-size: .85rem; line-height: 1.45; white-space: pre-wrap; box-shadow: 0 1px 2px rgba(0,0,0,.08); color: #111; }
+  #fxPhoneFrame .bubble b { font-weight: 700; color: #000; }
+  #fxPhoneFrame .footer-lbl { font-size: .72rem; color: #6b7280; margin-top: .5rem; text-align: center; font-weight: 500; }
+
+  /* Floating Bar */
+  #fxActionBar { position: sticky; bottom: 0; background: rgba(255,255,255,.98); backdrop-filter: blur(8px); border-top: 1px solid #e5e7eb; padding: .85rem 1.25rem; margin-top: 1.5rem; display: flex; gap: .75rem; align-items: center; justify-content: flex-end; border-radius: 12px; box-shadow: 0 -4px 16px rgba(0,0,0,.05); }
+  #fxActionBar .status-msg { margin-right: auto; font-size: .88rem; font-weight: 600; }
+  .fxBtn { border: none; border-radius: 9px; padding: .6rem 1.3rem; font-weight: 600; cursor: pointer; font-size: .9rem; text-decoration: none; display: inline-flex; align-items: center; gap: .4rem; }
+  .fxBtnPrimary { background: #d97706; color: #fff; }
+  .fxBtnPrimary:hover { background: #b45309; }
+  .fxBtnSecondary { background: #f3f4f6; color: #374151; }
+  .fxBtnSecondary:hover { background: #e5e7eb; }
+  .fxBtn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* Dark mode support */
+  html.dark #fxHeader, html.dark #fxMainEditor, html.dark #fxActionBar { background: #1f2937; border-color: #374151; color: #e5e7eb; }
+  html.dark #fxHeader .nome { color: #f3f4f6; }
+  html.dark #fxCanvas { background: #111827; border-color: #374151; }
+  html.dark .fxNodeCard { background: #1f2937; border-color: #374151; }
+  html.dark .fxNodeCard .node-title { color: #f3f4f6; }
+  html.dark #fxMainEditor textarea { background: #111827; color: #e5e7eb; border-color: #374151; }
+  html.dark #fxPhoneFrame { background: #111827; }
+  html.dark #fxPhoneFrame .bubble { background: #1f2937; color: #f3f4f6; }
 </style>
 
-<div id="fxHead">
-  <div>
-    <span class="nome">{{ titulo }}</span>
-    {% if mostrar_ativar and ativo %}<span class="badge">ATIVO</span>{% endif %}
-    <div style="font-size:.82rem;color:#6b7280;margin-top:.2rem;">{{ subtitulo }}</div>
+<div id="fxHeader">
+  <div class="title-box">
+    <div style="display:flex; align-items:center; gap:.6rem;">
+      <span class="nome">{{ titulo }}</span>
+      {% if mostrar_ativar and ativo %}<span class="badge">★ ATIVO NA META API</span>{% endif %}
+    </div>
+    <div style="font-size:.82rem; color:#6b7280;">{{ subtitulo }}</div>
   </div>
-  {% if mostrar_ativar %}<label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;">
-    <input type="checkbox" id="fxAtivar" {% if ativo %}checked{% endif %}> Usar este fluxo agora
-  </label>{% endif %}
+  {% if mostrar_ativar %}
+  <label style="display:flex; align-items:center; gap:.5rem; font-size:.88rem; font-weight:600; cursor:pointer;">
+    <input type="checkbox" id="fxAtivar" {% if ativo %}checked{% endif %} style="width:18px; height:18px;"> Usar este fluxo no WhatsApp Oficial (Meta)
+  </label>
+  {% endif %}
 </div>
 
-<div id="fxLayout">
-  <nav id="fxRail" aria-label="Etapas do fluxo">
+<div id="fxWorkspace">
+  <!-- Left Column: Visual Flow Nodes & Drag-and-Drop -->
+  <aside id="fxCanvas" aria-label="Pipeline visual de etapas">
+    <div style="font-size:.78rem; font-weight:700; color:#4b5563; margin-bottom:.2rem;">⚡ Fluxo de Atendimento (Arraste para reordenar)</div>
     {% for g in grupos %}
-    <div class="fxGrp">{{ g.titulo }}</div>
+    <div class="fxGroupTitle">📌 {{ g.titulo }}</div>
     {% for e in g.etapas %}
-    <button type="button" class="fxStepBtn" data-chave="{{ e.chave }}" onclick="fxSelecionar('{{ e.chave }}')">
-      {{ e.label }}
-      <small>{{ e.quando|truncatechars:50 }}</small>
-    </button>
+    <div class="fxNodeCard" id="node_{{ e.chave }}" data-chave="{{ e.chave }}" draggable="true" onclick="fxSelecionar('{{ e.chave }}')">
+      <div class="node-head">
+        <span class="node-title"><span class="drag-handle">⋮⋮</span> {{ e.label }}</span>
+      </div>
+      <div class="node-sub" id="sub_{{ e.chave }}">{{ e.texto|truncatechars:60 }}</div>
+    </div>
+    <div class="fxConnector">↓</div>
     {% endfor %}
     {% endfor %}
-  </nav>
+  </aside>
 
-  <div id="fxEditor">
+  <!-- Middle Column: Rich Text & Template Variable Editor -->
+  <main id="fxMainEditor">
     {% for e in etapas %}
     <div class="fxPanel" id="panel_{{ e.chave }}" style="display:none;">
       <h2>{{ e.label }}</h2>
-      <p class="quando">📍 {{ e.quando }}</p>
-      <p class="fxHint">Escreva como se estivesse falando com o cliente. Use os botões abaixo para inserir partes automáticas.</p>
+      <div class="when-text">📍 <strong>Gatilho:</strong> {{ e.quando }}</div>
+      <p style="font-size:.8rem; color:#6b7280; margin-bottom:.5rem;">Escreva a mensagem personalizada para esta etapa do atendimento. Clique nos botões amarelos para inserir variáveis automáticas.</p>
+      
       <textarea id="txt_{{ e.chave }}" data-chave="{{ e.chave }}"
                 data-vars='[{% for v in e.variaveis %}"{{ v.tok }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
                 oninput="fxAtualizar()">{{ e.texto }}</textarea>
+      
       {% if e.variaveis %}
-      <div class="fxVars">
+      <div class="fxChips">
         {% for v in e.variaveis %}
-        <button type="button" class="fxChip" onclick="fxInserir('{{ e.chave }}','{{ v.tok }}')">+ {{ v.label|default:v.tok }}</button>
+        <button type="button" class="fxChipBtn" onclick="fxInserir('{{ e.chave }}','{{ v.tok }}')">
+          + Inserir {{ v.label|default:v.tok }}
+        </button>
         {% endfor %}
       </div>
       {% endif %}
-      <div class="fxErro" id="err_{{ e.chave }}"></div>
-      <div class="fxBase"><strong>{{ base_label }}:</strong> {{ e.base|truncatechars:180 }}</div>
+      
+      <div class="fxErrBox" id="err_{{ e.chave }}"></div>
+      <div class="fxBaseRef"><strong>💡 Sugestão / Texto Padrão:</strong> {{ e.base|truncatechars:200 }}</div>
     </div>
     {% endfor %}
-  </div>
+  </main>
 
-  <aside id="fxPreview">
-    <div id="fxPhone">
-      <div class="top">📱 WhatsApp — prévia</div>
-      <div class="chat"><div class="bubble" id="fxBubble">Selecione uma etapa à esquerda para ver como fica.</div></div>
+  <!-- Right Column: Realtime WhatsApp Smartphone Preview -->
+  <aside id="fxPreviewArea">
+    <div id="fxPhoneFrame">
+      <div class="header">
+        <span>💬 Prévia WhatsApp</span>
+      </div>
+      <div class="chat-body">
+        <div class="bubble" id="fxBubble">Selecione uma etapa no fluxo para visualizar a mensagem.</div>
+      </div>
     </div>
-    <p class="lbl">Atualiza enquanto você digita</p>
+    <div class="footer-lbl">Preview em tempo real • Meta Cloud API</div>
   </aside>
 </div>
 
-<div id="fxBar">
-  <span class="msg" id="fxMsg"></span>
-  <a class="fxbtn fxsec" href="{{ voltar_url }}">Voltar</a>
-  {% if testar_url %}<button class="fxbtn fxsec" id="fxTestar" onclick="fxTestar()">🧪 Testar conversa</button>{% endif %}
-  <button class="fxbtn fxprim" id="fxSalvar" onclick="fxSalvar()">Salvar</button>
+<div id="fxActionBar">
+  <span class="status-msg" id="fxMsg"></span>
+  <a class="fxBtn fxBtnSecondary" href="{{ voltar_url }}">Voltar</a>
+  {% if testar_url %}<button class="fxBtn fxBtnSecondary" id="fxTestar" onclick="fxTestar()">🧪 Testar conversa no Simulador</button>{% endif %}
+  <button class="fxBtn fxBtnPrimary" id="fxSalvar" onclick="fxSalvar()">💾 Salvar Alterações</button>
 </div>
 
 <script>
 (function(){
-  const csrf=document.querySelector('[name=csrfmiddlewaretoken]').value;
-  const SAVE_URL="{{ save_url }}";
-  {% if testar_url %}const TESTAR_URL="{{ testar_url }}";{% endif %}
-  const MOSTRAR_ATIVAR={% if mostrar_ativar %}true{% else %}false{% endif %};
-  const AMOSTRAS={{ preview_amostras_json|safe }};
-  let chaveAtiva=null;
+  const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const SAVE_URL = "{{ save_url }}";
+  {% if testar_url %}const TESTAR_URL = "{{ testar_url }}";{% endif %}
+  const MOSTRAR_ATIVAR = {% if mostrar_ativar %}true{% else %}false{% endif %};
+  const AMOSTRAS = {{ preview_amostras_json|safe }};
+  let chaveAtiva = null;
 
-  function fxEsc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fxEsc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function fxPreviewTexto(raw){
-    let t=raw||'';
-    Object.keys(AMOSTRAS).forEach(k=>{ t=t.split(k).join(AMOSTRAS[k]); });
+    let t = raw || '';
+    Object.keys(AMOSTRAS).forEach(k => { t = t.split(k).join(AMOSTRAS[k]); });
     return fxEsc(t).replace(/\*([^*]+)\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
   }
-  window.fxSelecionar=(chave)=>{
-    chaveAtiva=chave;
-    document.querySelectorAll('.fxPanel').forEach(p=>p.style.display='none');
-    document.querySelectorAll('.fxStepBtn').forEach(b=>b.classList.remove('active'));
-    const panel=document.getElementById('panel_'+chave);
-    const btn=document.querySelector('.fxStepBtn[data-chave="'+chave+'"]');
-    if(panel) panel.style.display='block';
-    if(btn) btn.classList.add('active');
+
+  window.fxSelecionar = (chave) => {
+    chaveAtiva = chave;
+    document.querySelectorAll('.fxPanel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.fxNodeCard').forEach(b => b.classList.remove('active'));
+    
+    const panel = document.getElementById('panel_' + chave);
+    const node = document.getElementById('node_' + chave);
+    if(panel) panel.style.display = 'block';
+    if(node) node.classList.add('active');
     fxAtualizar();
   };
-  window.fxInserir=(chave,token)=>{
-    const t=document.getElementById('txt_'+chave);
-    const s=t.selectionStart||t.value.length;
-    t.value=t.value.slice(0,s)+token+t.value.slice(t.selectionEnd||s);
-    t.focus(); fxAtualizar();
+
+  window.fxInserir = (chave, token) => {
+    const t = document.getElementById('txt_' + chave);
+    const s = t.selectionStart || t.value.length;
+    t.value = t.value.slice(0, s) + token + t.value.slice(t.selectionEnd || s);
+    t.focus();
+    fxAtualizar();
   };
-  window.fxValidar=()=>{
-    let ok=true;
-    document.querySelectorAll('textarea[data-chave]').forEach(t=>{
-      const vars=JSON.parse(t.dataset.vars||'[]');
-      const faltando=vars.filter(v=>!t.value.includes(v));
-      const err=document.getElementById('err_'+t.dataset.chave);
-      if(faltando.length){ ok=false; t.classList.add('invalido');
-        err.style.display='block';
-        err.textContent='Esta mensagem precisa incluir: '+faltando.map(v=>{
-          if(v==='{bairro}') return 'nome do bairro';
-          if(v==='{lim}') return 'quantidade máxima';
-          if(v==='{data}') return 'data da encomenda';
-          return v;
-        }).join(', ')+'. Use os botões amarelos acima.';
-      } else{ t.classList.remove('invalido'); err.style.display='none'; }
+
+  window.fxValidar = () => {
+    let ok = true;
+    document.querySelectorAll('textarea[data-chave]').forEach(t => {
+      const vars = JSON.parse(t.dataset.vars || '[]');
+      const faltando = vars.filter(v => !t.value.includes(v));
+      const err = document.getElementById('err_' + t.dataset.chave);
+      if(faltando.length){
+        ok = false;
+        t.classList.add('invalido');
+        if(err) {
+          err.style.display = 'block';
+          err.textContent = 'Esta mensagem precisa conter as variáveis: ' + faltando.join(', ') + '.';
+        }
+      } else {
+        t.classList.remove('invalido');
+        if(err) err.style.display = 'none';
+      }
     });
-    document.getElementById('fxSalvar').disabled=!ok;
-    const bt=document.getElementById('fxTestar'); if(bt) bt.disabled=!ok;
+    document.getElementById('fxSalvar').disabled = !ok;
+    const bt = document.getElementById('fxTestar');
+    if(bt) bt.disabled = !ok;
     return ok;
   };
-  window.fxAtualizar=()=>{
+
+  window.fxAtualizar = () => {
     fxValidar();
     if(!chaveAtiva) return;
-    const t=document.getElementById('txt_'+chaveAtiva);
-    document.getElementById('fxBubble').innerHTML=fxPreviewTexto(t?t.value:'');
+    const t = document.getElementById('txt_' + chaveAtiva);
+    const sub = document.getElementById('sub_' + chaveAtiva);
+    if(t && sub) sub.textContent = t.value.length > 60 ? t.value.substring(0,60) + '...' : t.value;
+    document.getElementById('fxBubble').innerHTML = fxPreviewTexto(t ? t.value : '');
   };
+
   async function fxSave(){
-    const mensagens={};
-    document.querySelectorAll('textarea[data-chave]').forEach(t=>mensagens[t.dataset.chave]=t.value);
-    const body={mensagens};
-    if(MOSTRAR_ATIVAR) body.ativar=document.getElementById('fxAtivar').checked;
-    const r=await fetch(SAVE_URL,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf},body:JSON.stringify(body)});
+    const mensagens = {};
+    document.querySelectorAll('textarea[data-chave]').forEach(t => mensagens[t.dataset.chave] = t.value);
+    const body = { mensagens };
+    if(MOSTRAR_ATIVAR) body.ativar = document.getElementById('fxAtivar').checked;
+    const r = await fetch(SAVE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+      body: JSON.stringify(body)
+    });
     return r.json();
   }
-  window.fxSalvar=async()=>{
+
+  window.fxSalvar = async () => {
     if(!fxValidar()) return;
-    const msg=document.getElementById('fxMsg'); msg.textContent='';
-    const btn=document.getElementById('fxSalvar'); btn.disabled=true; btn.textContent='Salvando...';
-    try{
-      const d=await fxSave();
-      if(d.ok){ msg.style.color='#16a34a'; msg.textContent='Salvo!'; setTimeout(()=>window.location.href=d.redirect||"{{ voltar_url }}",500); }
-      else{ msg.style.color='#b91c1c'; msg.textContent=d.erro||'Erro ao salvar.'; btn.disabled=false; btn.textContent='Salvar'; }
-    }catch(e){ msg.style.color='#b91c1c'; msg.textContent='Falha de conexão.'; btn.disabled=false; btn.textContent='Salvar'; }
+    const msg = document.getElementById('fxMsg'); msg.textContent = '';
+    const btn = document.getElementById('fxSalvar'); btn.disabled = true; btn.textContent = 'Salvando...';
+    try {
+      const d = await fxSave();
+      if(d.ok){
+        msg.style.color = '#16a34a'; msg.textContent = 'Salvo com sucesso!';
+        setTimeout(() => window.location.href = d.redirect || "{{ voltar_url }}", 500);
+      } else {
+        msg.style.color = '#b91c1c'; msg.textContent = d.erro || 'Erro ao salvar.';
+        btn.disabled = false; btn.textContent = '💾 Salvar Alterações';
+      }
+    } catch(e) {
+      msg.style.color = '#b91c1c'; msg.textContent = 'Falha de conexão.';
+      btn.disabled = false; btn.textContent = '💾 Salvar Alterações';
+    }
   };
+
   {% if testar_url %}
-  window.fxTestar=async()=>{
+  window.fxTestar = async () => {
     if(!fxValidar()) return;
-    const d=await fxSave();
-    if(d.ok) window.location.href=TESTAR_URL;
-    else document.getElementById('fxMsg').textContent=d.erro||'Erro ao salvar.';
+    const d = await fxSave();
+    if(d.ok) window.location.href = TESTAR_URL;
+    else document.getElementById('fxMsg').textContent = d.erro || 'Erro ao salvar.';
   };
   {% endif %}
-  const first=document.querySelector('.fxStepBtn');
+
+  // HTML5 Drag and Drop Reordering
+  let draggedNode = null;
+  document.querySelectorAll('.fxNodeCard').forEach(card => {
+    card.addEventListener('dragstart', (e) => {
+      draggedNode = card;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      draggedNode = null;
+    });
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if(draggedNode && draggedNode !== card) {
+        const canvas = document.getElementById('fxCanvas');
+        const cards = Array.from(canvas.querySelectorAll('.fxNodeCard'));
+        const draggedIdx = cards.indexOf(draggedNode);
+        const targetIdx = cards.indexOf(card);
+        if(draggedIdx < targetIdx) {
+          card.after(draggedNode);
+        } else {
+          card.before(draggedNode);
+        }
+      }
+    });
+  });
+
+  const first = document.querySelector('.fxNodeCard');
   if(first) fxSelecionar(first.dataset.chave);
 })();
 </script>

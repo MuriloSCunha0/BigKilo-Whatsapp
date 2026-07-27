@@ -202,6 +202,7 @@ class Cliente(models.Model):
 
 class SessaoBot(models.Model):
     class Estado(models.TextChoices):
+        ATENDIMENTO_HUMANO = "ATENDIMENTO_HUMANO", "Atendimento Humano (Pausado)"
         MENU_PRINCIPAL = "MENU_PRINCIPAL", "Menu principal"
         PEDINDO_ENDERECO = "PEDINDO_ENDERECO", "Pedindo endereço (bairro)"
         PEDINDO_RUA = "PEDINDO_RUA", "Pedindo endereço (rua)"
@@ -266,6 +267,7 @@ class Pedido(models.Model):
     class Status(models.TextChoices):
         AGUARDANDO_PAGAMENTO = "AGUARDANDO_PAGAMENTO", "Aguardando pagamento"
         PREPARANDO = "PREPARANDO", "Preparando"
+        ENVIADO = "ENVIADO", "Saiu para Entrega"
         CONCLUIDO = "CONCLUIDO", "Concluído"
         CANCELADO = "CANCELADO", "Cancelado"
 
@@ -574,8 +576,6 @@ FLUXO_ETAPAS = [
 ]
 # Variáveis obrigatórias por mensagem (não podem ser removidas pelo lojista).
 VARIAVEIS_MENSAGEM = {
-    "PEDIR_RUA": ["{bairro}"],
-    "CEP_INVALIDO": ["{bairro}"],
     "ESCOLHER_ACOMPANHAMENTOS": ["{lim}"],
     "ENCOMENDA_AGENDADA": ["{data}"],
 }

@@ -159,24 +159,33 @@ class Produto(models.Model):
             return "Fora de cardápio"
         return "; ".join(c.nome for c in cards)
 
-    def disponivel_em(self, momento=None) -> bool:
-        if not self.ativo or self.esgotado:
+    def disponivel_em(self, momento=None, exclusivo_ativo=None) -> bool:
+        if not self.ativo or self.esgotado or not self.categoria.ativa:
             return False
             
         momento = momento or timezone.localtime()
         agora_hora = momento.time()
         
         # Verifica horário específico do produto (se definido)
-        if self.horario_inicio and agora_hora < self.horario_inicio:
+        if self.horario_inicio and self.horario_fim:
+            if self.horario_inicio < self.horario_fim:
+                if not (self.horario_inicio <= agora_hora <= self.horario_fim):
+                    return False
+            else: # cruza a meia-noite
+                if not (agora_hora >= self.horario_inicio or agora_hora <= self.horario_fim):
+                    return False
+        elif self.horario_inicio and agora_hora < self.horario_inicio:
             return False
-        if self.horario_fim and agora_hora > self.horario_fim:
+        elif self.horario_fim and agora_hora > self.horario_fim:
             return False
             
         if self.sempre_disponivel:
             return True
             
-        # Se houver um cardápio exclusivo no ar, só os exclusivos contam.
-        exclusivo_ativo = Cardapio.existe_exclusivo_ativo(momento)
+        # Se não foi passado como argumento, avalia agora
+        if exclusivo_ativo is None:
+            exclusivo_ativo = Cardapio.existe_exclusivo_ativo(momento)
+            
         for card in self.cardapios.filter(ativo=True).prefetch_related("agenda"):
             if exclusivo_ativo and not card.exclusivo:
                 continue
@@ -184,14 +193,15 @@ class Produto(models.Model):
                 return True
         return False
 
-    def disponivel_na_data(self, data) -> bool:
-        if not self.ativo or self.esgotado:
+    def disponivel_na_data(self, data, exclusivo_ativo=None) -> bool:
+        if not self.ativo or self.esgotado or not self.categoria.ativa:
             return False
-            
         if self.sempre_disponivel:
             return True
             
-        exclusivo_ativo = Cardapio.existe_exclusivo_ativo_na_data(data)
+        if exclusivo_ativo is None:
+            exclusivo_ativo = Cardapio.existe_exclusivo_ativo_na_data(data)
+            
         for card in self.cardapios.filter(ativo=True).prefetch_related("agenda"):
             if exclusivo_ativo and not card.exclusivo:
                 continue

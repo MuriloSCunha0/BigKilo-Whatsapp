@@ -214,7 +214,7 @@ class SessaoBotAdmin(ModelAdmin):
     list_display = ("telefone", "estado_badge", "atualizado_em")
     list_filter = ("estado_atual",)
     search_fields = ("telefone",)
-    actions = ("reiniciar_conversa",)
+    actions = ("reiniciar_conversa", "pausar_bot")
     # Tela somente leitura: o JSON cru não aparece (editar quebraria a conversa).
     readonly_fields = ("telefone", "estado_legivel", "atualizado_em", "historico", "resumo_carrinho", "acoes_conversa")
     fields = ("telefone", "estado_legivel", "atualizado_em", "acoes_conversa", "historico", "resumo_carrinho")
@@ -266,10 +266,12 @@ class SessaoBotAdmin(ModelAdmin):
     def acoes_conversa(self, obj):
         return format_html(
             '<a class="button" style="background:#d97706;color:#fff;border-radius:8px;padding:.4rem .9rem;'
-            'text-decoration:none;" href="/pedidos/sessao/{}/reiniciar/">↺ Reiniciar conversa</a>'
-            '<span style="color:#6b7280;font-size:.8rem;margin-left:.5rem;">'
-            'Limpa o carrinho; o cliente verá a saudação na próxima mensagem.</span>',
-            obj.telefone,
+            'text-decoration:none;" href="/pedidos/sessao/{}/reiniciar/">🔄 Reiniciar conversa</a>'
+            '<a class="button" style="background:#dc2626;color:#fff;border-radius:8px;padding:.4rem .9rem;'
+            'text-decoration:none;margin-left:5px;" href="/pedidos/sessao/{}/pausar/">⏸️ Pausar Bot</a>'
+            '<span style="color:#6b7280;font-size:.8rem;margin-left:.5rem;display:block;margin-top:5px;">'
+            'Reiniciar limpa o carrinho. Pausar desativa o bot (handoff para humano).</span>',
+            obj.telefone, obj.telefone
         )
 
     @display(description=_("Conversa (cliente x bot)"))
@@ -306,6 +308,15 @@ class SessaoBotAdmin(ModelAdmin):
             sessao.save(update_fields=["estado_atual", "carrinho_json"])
             n += 1
         self.message_user(request, f"{n} conversa(s) reiniciada(s). O cliente verá a saudação no próximo contato.")
+
+    @admin.action(description=_("Pausar Bot (Handoff humano)"))
+    def pausar_bot(self, request, queryset):
+        n = 0
+        for sessao in queryset:
+            sessao.estado_atual = SessaoBot.Estado.ATENDIMENTO_HUMANO
+            sessao.save(update_fields=["estado_atual"])
+            n += 1
+        self.message_user(request, f"{n} conversa(s) pausada(s). O bot irá ignorar as mensagens desses clientes.")
 
 
 # ===================== Pedidos =====================
@@ -370,6 +381,7 @@ class PedidoAdmin(ModelAdmin):
     @display(description=_("Status"), ordering="status", label={
         "Aguardando pagamento": "warning",
         "Preparando": "info",
+        "Saiu para Entrega": "primary",
         "Concluído": "success",
         "Cancelado": "danger",
     })
@@ -397,9 +409,26 @@ class PedidoAdmin(ModelAdmin):
 @admin.register(PerfilFluxo)
 class PerfilFluxoAdmin(ModelAdmin):
     change_list_template = "admin/pedidos/perfilfluxo/change_list.html"
-    list_display = ("nome", "ativo", "qtd_mensagens", "acoes")
-    list_editable = ("ativo",)
+    list_display = ("nome", "status_meta_api", "qtd_mensagens", "acoes")
     search_fields = ("nome",)
+
+    @display(description=_("Status WhatsApp (Meta API)"))
+    def status_meta_api(self, obj):
+        if obj.ativo:
+            return format_html(
+                '<div style="display:flex;gap:8px;align-items:center;">'
+                '<span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:12px;font-weight:bold;font-size:0.78rem;">'
+                '★ ATIVO NO WHATSAPP</span>'
+                '<a class="button" style="background:#dc2626;color:#fff;border-radius:12px;padding:3px 10px;text-decoration:none;font-size:0.78rem;" '
+                'href="/pedidos/fluxo/{}/desativar/">❌ Desconectar</a>'
+                '</div>',
+                obj.id,
+            )
+        return format_html(
+            '<a class="button" style="background:#4b5563;color:#fff;border-radius:12px;padding:3px 10px;text-decoration:none;font-size:0.78rem;" '
+            'href="/pedidos/fluxo/{}/ativar/">⚡ Usar na Meta API</a>',
+            obj.id,
+        )
 
     @display(description=_("Mensagens"))
     def qtd_mensagens(self, obj):
@@ -408,9 +437,9 @@ class PerfilFluxoAdmin(ModelAdmin):
     @display(description=_("Ações"))
     def acoes(self, obj):
         return format_html(
-            '<a class="button" style="background:#d97706;color:#fff;border-radius:6px;padding:.2rem .6rem;text-decoration:none;" '
-            'href="/pedidos/fluxo/{}/editar/">✏️ Editar</a> '
-            '<a class="button" style="background:#16a34a;color:#fff;border-radius:6px;padding:.2rem .6rem;text-decoration:none;" '
-            'href="/simulador/?perfil={}">🧪 Testar</a>',
+            '<a class="button" style="background:#d97706;color:#fff;border-radius:6px;padding:.25rem .65rem;text-decoration:none;" '
+            'href="/pedidos/fluxo/{}/editar/">✏️ Editar Fluxo</a> '
+            '<a class="button" style="background:#2563eb;color:#fff;border-radius:6px;padding:.25rem .65rem;text-decoration:none;" '
+            'href="/simulador/?perfil={}">🧪 Testar no Simulador</a>',
             obj.id, obj.id,
         )

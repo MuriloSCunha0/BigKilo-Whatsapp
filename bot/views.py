@@ -7,7 +7,11 @@ POST -> recepção de mensagens, processadas pela máquina de estados.
 import json
 import logging
 from pathlib import Path
+import hmac
+import hashlib
+import os
 
+from django.core.cache import cache
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib import admin
@@ -33,6 +37,7 @@ def _extrair_mensagem(dados: dict):
         msg = mensagens[0]
         telefone = msg["from"]
         tipo = msg.get("type", "")
+        msg_id = msg.get("id", "")
         texto = ""
         if tipo == "text":
             texto = msg.get("text", {}).get("body", "")
@@ -56,7 +61,7 @@ def _extrair_mensagem(dados: dict):
             # limpa o número (remove +, -, espaços)
             bot_number = "".join(filter(str.isdigit, bot_number))
             
-        return telefone, texto, nome, tipo, bot_number
+        return telefone, texto, nome, tipo, bot_number, msg_id
     except (KeyError, IndexError, TypeError):
         return None
 
@@ -75,6 +80,15 @@ async def webhook_whatsapp(request):
     if request.method != "POST":
         return HttpResponse(status=405)
 
+    app_secret = os.getenv("META_APP_SECRET", "")
+    if app_secret:
+        signature = request.headers.get("X-Hub-Signature-256", "")
+        if signature.startswith("sha256="):
+            signature = signature[7:]
+        expected = hmac.new(app_secret.encode(), request.body, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(signature, expected):
+            return HttpResponseForbidden("Assinatura invalida")
+
     # ---- Recepção (POST) ----
     try:
         dados = json.loads(request.body or b"{}")
@@ -85,7 +99,13 @@ async def webhook_whatsapp(request):
     if not extraido:
         return JsonResponse({"ok": True})  # status/sem mensagem
 
-    telefone, texto, nome, tipo, bot_number = extraido
+    telefone, texto, nome, tipo, bot_number, msg_id = extraido
+
+    if msg_id:
+        cache_key = f"wa_msg_{msg_id}"
+        if cache.get(cache_key):
+            return JsonResponse({"ok": True, "duplicada": True})
+        cache.set(cache_key, True, 3600)  # Deduplica por 1 hora
 
     if bot_number:
         from clientes.models import Cliente
@@ -138,16 +158,22 @@ async def webhook_whatsapp(request):
 def simulador(request):
     """Aba do simulador embutida no painel (testar o bot sem o WhatsApp real).
 
-    Com ?perfil=<id>, testa um fluxo específico (preview), sem precisar ativá-lo.
+    Permite selecionar qualquer fluxo cadastrado para testes em tempo real.
     """
     from pedidos.models import PerfilFluxo
 
     contexto = admin.site.each_context(request)
     contexto["title"] = "Simulador"
     PerfilFluxo.ensure_perfil_padrao()
-    perfil = PerfilFluxo.objects.filter(id=request.GET.get("perfil")).first() if request.GET.get("perfil") else None
-    contexto["perfil_preview_id"] = perfil.id if perfil else ""
-    contexto["perfil_preview_nome"] = perfil.nome if perfil else ""
+    perfis = list(PerfilFluxo.objects.all())
+    contexto["perfis"] = perfis
+    
+    perfil_req = PerfilFluxo.objects.filter(id=request.GET.get("perfil")).first() if request.GET.get("perfil") else None
+    perfil_ativo = PerfilFluxo.ativo_atual()
+    perfil_sel = perfil_req or perfil_ativo or (perfis[0] if perfis else None)
+
+    contexto["perfil_preview_id"] = perfil_sel.id if perfil_sel else ""
+    contexto["perfil_preview_nome"] = perfil_sel.nome if perfil_sel else ""
     contexto["sim_tel"] = request.GET.get("tel") or "5521999990000"
     return render(request, "simulador_embed.html", contexto)
 

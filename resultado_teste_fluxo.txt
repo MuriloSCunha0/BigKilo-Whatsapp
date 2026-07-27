@@ -1,0 +1,53 @@
+Usuario: oi
+Bot:
+{'tipo': 'lista', 'corpo': 'Olá! Que bom que você falou com o Big Kilo 🍽️\nVamos montar seu pedido com calma — eu te guio passo a passo.\n\nComo você deseja receber o seu pedido?', 'botao': 'Opções de Entrega', 'linhas': [{'id': '1', 'titulo': '🛵 Entrega em domicílio', 'descricao': 'Calcularemos a taxa pelo CEP'}, {'id': '2', 'titulo': '🏬 Vou retirar na loja', 'descricao': 'Sem taxa de frete'}]}
+Usuario: 1
+Bot:
+Para começarmos, informe seu *CEP* (só os números, ex.: 22790000):
+Usuario: 22640-101
+Bot:
+📍 CEP confirmado!
+Bot:
+ℹ️ Estamos fechados agora (das 11:00 às 19:30). Você pode *agendar uma encomenda* escolhendo *Encomenda outro dia* no menu.
+Bot:
+{'tipo': 'lista', 'corpo': 'O que você deseja?\nToque em *Ver opções* para escolher.\n\n*cancelar* recomeça o pedido.', 'botao': 'Ver opções', 'linhas': [{'id': '3', 'titulo': 'Encomenda outro dia'}]}
+Usuario: 1
+Bot:
+Estamos fechados agora (das 11:00 às 19:30). Para receber outro dia, escolha *Encomenda outro dia* no menu. 🙂
+Bot:
+{'tipo': 'lista', 'corpo': 'O que você deseja?\nToque em *Ver opções* para escolher.\n\n*cancelar* recomeça o pedido.', 'botao': 'Ver opções', 'linhas': [{'id': '3', 'titulo': 'Encomenda outro dia'}]}
+Usuario: hoje
+Bot:
+Opção inválida.
+Bot:
+{'tipo': 'lista', 'corpo': 'O que você deseja?\nToque em *Ver opções* para escolher.\n\n*cancelar* recomeça o pedido.', 'botao': 'Ver opções', 'linhas': [{'id': '3', 'titulo': 'Encomenda outro dia'}]}
+Usuario: 1
+Bot:
+Estamos fechados agora (das 11:00 às 19:30). Para receber outro dia, escolha *Encomenda outro dia* no menu. 🙂
+Bot:
+{'tipo': 'lista', 'corpo': 'O que você deseja?\nToque em *Ver opções* para escolher.\n\n*cancelar* recomeça o pedido.', 'botao': 'Ver opções', 'linhas': [{'id': '3', 'titulo': 'Encomenda outro dia'}]}
+Usuario: 1
+Bot:
+Estamos fechados agora (das 11:00 às 19:30). Para receber outro dia, escolha *Encomenda outro dia* no menu. 🙂
+Bot:
+{'tipo': 'lista', 'corpo': 'O que você deseja?\nToque em *Ver opções* para escolher.\n\n*cancelar* recomeça o pedido.', 'botao': 'Ver opções', 'linhas': [{'id': '3', 'titulo': 'Encomenda outro dia'}]}
+Usuario: multi:1,2,3
+Bot:
+Opção inválida.
+Bot:
+{'tipo': 'lista', 'corpo': 'O que você deseja?\nToque em *Ver opções* para escolher.\n\n*cancelar* recomeça o pedido.', 'botao': 'Ver opções', 'linhas': [{'id': '3', 'titulo': 'Encomenda outro dia'}]}
+Usuario: 2
+Bot:
+Estamos fechados agora (das 11:00 às 19:30). Para receber outro dia, escolha *Encomenda outro dia* no menu. 🙂
+Bot:
+{'tipo': 'lista', 'corpo': 'O que você deseja?\nToque em *Ver opções* para escolher.\n\n*cancelar* recomeça o pedido.', 'botao': 'Ver opções', 'linhas': [{'id': '3', 'titulo': 'Encomenda outro dia'}]}
+Usuario: Rua dos Testes, 123, Apto 404
+Bot:
+Opção inválida.
+Bot:
+{'tipo': 'lista', 'corpo': 'O que você deseja?\nToque em *Ver opções* para escolher.\n\n*cancelar* recomeça o pedido.', 'botao': 'Ver opções', 'linhas': [{'id': '3', 'titulo': 'Encomenda outro dia'}]}
+Usuario: pix
+Bot:
+Opção inválida.
+Bot:
+{'tipo': 'lista', 'corpo': 'O que você deseja?\nToque em *Ver opções* para escolher.\n\n*cancelar* recomeça o pedido.', 'botao': 'Ver opções', 'linhas': [{'id': '3', 'titulo': 'Encomenda outro dia'}]}

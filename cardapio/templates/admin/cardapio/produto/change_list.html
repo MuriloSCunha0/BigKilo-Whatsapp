@@ -206,7 +206,10 @@
       const r=await fetch('/cardapio/produto/assistente/salvar/',{method:'POST',
         headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(coleta())});
       const data=await r.json();
-      if(data.ok){ window.location.reload(); }
+      if(data.ok){ 
+        if(data.aviso){ alert(data.aviso); }
+        window.location.reload(); 
+      }
       else{ err(data.erro||'Erro ao salvar.'); $('wzNext').disabled=false; $('wzNext').textContent='✓ Salvar produto'; }
     }catch(ex){ err('Falha de conexão.'); $('wzNext').disabled=false; $('wzNext').textContent='✓ Salvar produto'; }
   };

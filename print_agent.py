@@ -85,15 +85,25 @@ def imprimir_escpos(texto, pid):
 
 IMPRESSORAS = {"file": imprimir_file, "windows": imprimir_windows, "escpos": imprimir_escpos}
 
+impressos_cache = set()
 
 def processar_pendentes():
     imprimir = IMPRESSORAS.get(PRINT_MODE, imprimir_file)
     for pedido in buscar_pendentes():
+        pid = pedido["id"]
+        if pid in impressos_cache:
+            try:
+                marcar_impresso(pid)
+            except Exception:
+                pass
+            continue
+            
         try:
-            imprimir(pedido["comanda"], pedido["id"])
-            marcar_impresso(pedido["id"])
+            imprimir(pedido["comanda"], pid)
+            impressos_cache.add(pid)
+            marcar_impresso(pid)
         except Exception as exc:
-            print(f"[erro] Falha ao imprimir pedido #{pedido.get('id')}: {exc}")
+            print(f"[erro] Falha ao imprimir pedido #{pid}: {exc}")
 
 
 def main():
@@ -102,14 +112,19 @@ def main():
         return
     print(f"Agente de impressão Big Kilo (api={API}, modo={PRINT_MODE}, intervalo={INTERVALO_S}s).")
     print("Aguardando pedidos pagos... (Ctrl+C para sair)")
+    intervalo_atual = INTERVALO_S
     while True:
         try:
             processar_pendentes()
+            intervalo_atual = INTERVALO_S  # reset backoff
         except urllib.error.URLError as exc:
-            print(f"[rede] Sem conexão com o servidor: {exc}")
+            print(f"[rede] Sem conexão com o servidor: {exc}. Retentando em {intervalo_atual}s...")
+            time.sleep(intervalo_atual)
+            intervalo_atual = min(intervalo_atual * 2, 60)
+            continue
         except Exception as exc:
             print(f"[erro] Loop: {exc}")
-        time.sleep(INTERVALO_S)
+        time.sleep(intervalo_atual)
 
 
 if __name__ == "__main__":

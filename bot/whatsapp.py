@@ -47,10 +47,13 @@ async def enviar_texto(telefone: str, texto: str) -> dict:
         "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
         "Content-Type": "application/json",
     }
-    async with httpx.AsyncClient(timeout=20) as http:
-        resp = await http.post(_url(), json=payload, headers=headers)
-    if resp.status_code >= 300:
-        raise WhatsAppError(f"Falha ao enviar WhatsApp: {resp.status_code} {resp.text}")
+    try:
+        async with httpx.AsyncClient(timeout=20) as http:
+            resp = await http.post(_url(), json=payload, headers=headers)
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar WhatsApp: {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f"Falha de rede: {exc}")
     return resp.json()
 
 
@@ -70,10 +73,13 @@ def enviar_texto_sync(telefone: str, texto: str) -> dict:
         "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
         "Content-Type": "application/json",
     }
-    with httpx.Client(timeout=20) as http:
-        resp = http.post(_url(), json=payload, headers=headers)
-    if resp.status_code >= 300:
-        raise WhatsAppError(f"Falha ao enviar WhatsApp: {resp.status_code} {resp.text}")
+    try:
+        with httpx.Client(timeout=20) as http:
+            resp = http.post(_url(), json=payload, headers=headers)
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar WhatsApp: {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f"Falha de rede: {exc}")
     return resp.json()
 
 
@@ -133,10 +139,13 @@ async def enviar_lista(telefone: str, corpo: str, botao: str, linhas: list[dict]
         "to": _so_digitos(telefone),
         **_payload_lista(corpo, botao, linhas),
     }
-    async with httpx.AsyncClient(timeout=20) as http:
-        resp = await http.post(_url(), json=payload, headers=_headers())
-    if resp.status_code >= 300:
-        raise WhatsAppError(f"Falha ao enviar lista WhatsApp: {resp.status_code} {resp.text}")
+    try:
+        async with httpx.AsyncClient(timeout=20) as http:
+            resp = await http.post(_url(), json=payload, headers=_headers())
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar lista WhatsApp: {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f'Falha de rede: {exc}')
     return resp.json()
 
 
@@ -149,10 +158,13 @@ async def enviar_botoes(telefone: str, corpo: str, opcoes: list[dict]) -> dict:
         "to": _so_digitos(telefone),
         **_payload_botoes(corpo, opcoes),
     }
-    async with httpx.AsyncClient(timeout=20) as http:
-        resp = await http.post(_url(), json=payload, headers=_headers())
-    if resp.status_code >= 300:
-        raise WhatsAppError(f"Falha ao enviar botões WhatsApp: {resp.status_code} {resp.text}")
+    try:
+        async with httpx.AsyncClient(timeout=20) as http:
+            resp = await http.post(_url(), json=payload, headers=_headers())
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar botões WhatsApp: {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f'Falha de rede: {exc}')
     return resp.json()
 
 
@@ -186,10 +198,13 @@ async def enviar_flow(telefone: str, corpo: str, flow_id: str, cta: str, payload
         "to": _so_digitos(telefone),
         **_payload_flow(corpo, flow_id, cta, payload),
     }
-    async with httpx.AsyncClient(timeout=20) as http:
-        resp = await http.post(_url(), json=body, headers=_headers())
-    if resp.status_code >= 300:
-        raise WhatsAppError(f"Falha ao enviar Flow WhatsApp: {resp.status_code} {resp.text}")
+    try:
+        async with httpx.AsyncClient(timeout=20) as http:
+            resp = await http.post(_url(), json=body, headers=_headers())
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar Flow WhatsApp: {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f'Falha de rede: {exc}')
     return resp.json()
 
 
@@ -216,10 +231,13 @@ async def enviar_pix_order(telefone: str, msg: dict) -> dict:
     }
     if settings.MODO_SIMULACAO or not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
         return _simulacao(telefone, msg)
-    async with httpx.AsyncClient(timeout=20) as http:
-        resp = await http.post(_url(), json=body, headers=_headers())
-    if resp.status_code >= 300:
-        raise WhatsAppError(f"Falha ao enviar Pix nativo: {resp.status_code} {resp.text}")
+    try:
+        async with httpx.AsyncClient(timeout=20) as http:
+            resp = await http.post(_url(), json=body, headers=_headers())
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar Pix nativo: {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f'Falha de rede: {exc}')
     return resp.json()
 
 async def enviar_mensagem(telefone: str, msg: dict) -> dict:
@@ -237,7 +255,13 @@ async def enviar_mensagem(telefone: str, msg: dict) -> dict:
     if tipo == "pix_order":
         if msg.get("nativo") and msg.get("order_parameters"):
             return await enviar_pix_order(telefone, msg)
-        return await enviar_texto(telefone, msg.get("pix_copia_cola") or msg.get("corpo", ""))
+        corpo = msg.get("corpo", "")
+        pix = msg.get("pix_copia_cola", "")
+        if corpo:
+            await enviar_texto(telefone, corpo)
+        if pix:
+            return await enviar_texto(telefone, pix)
+        return {"ok": True}
     return await enviar_texto(telefone, texto_plano(msg))
 
 
@@ -250,10 +274,13 @@ def enviar_lista_sync(telefone: str, corpo: str, botao: str, linhas: list[dict])
         "to": _so_digitos(telefone),
         **_payload_lista(corpo, botao, linhas),
     }
-    with httpx.Client(timeout=20) as http:
-        resp = http.post(_url(), json=payload, headers=_headers())
-    if resp.status_code >= 300:
-        raise WhatsAppError(f"Falha ao enviar lista WhatsApp: {resp.status_code} {resp.text}")
+    try:
+        with httpx.Client(timeout=20) as http:
+            resp = http.post(_url(), json=payload, headers=_headers())
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar lista WhatsApp: {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f'Falha de rede: {exc}')
     return resp.json()
 
 
@@ -266,10 +293,13 @@ def enviar_botoes_sync(telefone: str, corpo: str, opcoes: list[dict]) -> dict:
         "to": _so_digitos(telefone),
         **_payload_botoes(corpo, opcoes),
     }
-    with httpx.Client(timeout=20) as http:
-        resp = http.post(_url(), json=payload, headers=_headers())
-    if resp.status_code >= 300:
-        raise WhatsAppError(f"Falha ao enviar botões WhatsApp: {resp.status_code} {resp.text}")
+    try:
+        with httpx.Client(timeout=20) as http:
+            resp = http.post(_url(), json=payload, headers=_headers())
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar botões WhatsApp: {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f'Falha de rede: {exc}')
     return resp.json()
 
 
@@ -282,7 +312,13 @@ def enviar_mensagem_sync(telefone: str, msg: dict) -> dict:
     if tipo == "botoes":
         return enviar_botoes_sync(telefone, msg["corpo"], msg["opcoes"])
     if tipo == "pix_order":
-        return enviar_texto_sync(telefone, msg.get("pix_copia_cola") or msg.get("corpo", ""))
+        corpo = msg.get("corpo", "")
+        pix = msg.get("pix_copia_cola", "")
+        if corpo:
+            enviar_texto_sync(telefone, corpo)
+        if pix:
+            return enviar_texto_sync(telefone, pix)
+        return {"ok": True}
     if tipo in ("flow", "multi_select"):
         return enviar_texto_sync(telefone, texto_plano(msg))
     return enviar_texto_sync(telefone, texto_plano(msg))

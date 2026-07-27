@@ -73,29 +73,46 @@ def _carrinho_vazio() -> dict:
 
 
 def _parse_data_futura(texto: str):
-    """Interpreta dia/mês (ou dia/mês/ano) e devolve uma date futura, ou None."""
-    from datetime import date
+    """Interpreta dia/mês (ou dia/mês/ano) e devolve uma data futura, ou None."""
+    from datetime import date, timedelta
     from django.utils import timezone
+    import re
 
     hoje = timezone.localdate()
-    limpo = (texto or "").replace("-", "/").replace(".", "/").replace(" ", "")
-    partes = [p for p in limpo.split("/") if p.isdigit()]
+    texto = (texto or "").strip().lower()
+
+    if "amanh" in texto or texto == "amanha":
+        return hoje + timedelta(days=1)
+    if "depois" in texto:
+        return hoje + timedelta(days=2)
+
+    match = re.search(r"(\d{1,2})\s*(?:/|-|\.|de)?\s*([a-z]+|\d{1,2})(?:\s*(?:/|-|\.|de)?\s*(\d{2,4}))?", texto)
+    if not match:
+        return None
+
+    dia_str, mes_str, ano_str = match.groups()
     try:
-        if len(partes) == 2:
-            dia, mes = int(partes[0]), int(partes[1])
-            alvo = date(hoje.year, mes, dia)
-            if alvo <= hoje:  # se a data deste ano já passou, assume o próximo
-                alvo = date(hoje.year + 1, mes, dia)
-        elif len(partes) == 3:
-            dia, mes, ano = int(partes[0]), int(partes[1]), int(partes[2])
+        dia = int(dia_str)
+        if mes_str.isdigit():
+            mes = int(mes_str)
+        else:
+            meses = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6, 
+                     "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12}
+            mes = meses.get(mes_str[:3], 0)
+            if not mes: return None
+
+        ano = hoje.year
+        if ano_str:
+            ano = int(ano_str)
             if ano < 100:
                 ano += 2000
-            alvo = date(ano, mes, dia)
-        else:
-            return None
+
+        alvo = date(ano, mes, dia)
+        if not ano_str and alvo <= hoje:
+            alvo = date(hoje.year + 1, mes, dia)
+        return alvo if alvo > hoje else None
     except ValueError:
         return None
-    return alvo if alvo > hoje else None
 
 
 def _cep_validado(carrinho: dict) -> bool:
@@ -344,7 +361,11 @@ def _tela_guarnicoes(sessao, perfil=None) -> list:
 
 def _tela_acompanhamentos(sessao, perfil=None) -> list:
     cfg = ConfiguracaoLoja.get()
-    peso = sessao.carrinho_json["montagem"]["peso_g"]
+    m = sessao.carrinho_json.get("montagem", {})
+    if not m:
+        sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+        return ["Ocorreu um erro com o seu pedido. Por favor, recomece."] + _tela_menu(sessao)
+    peso = m.get("peso_g", 0)
     lim = cfg.lim_acomp(peso)
     encomenda = sessao.carrinho_json.get("encomenda", {}).get("data") if sessao.carrinho_json.get("encomenda") else None
     acomps = _disponiveis(Categoria.Tipo.ACOMPANHAMENTO, encomenda)
@@ -361,6 +382,34 @@ def _tela_acompanhamentos(sessao, perfil=None) -> list:
     if token:
         sessao.carrinho_json.setdefault("_flow", {})["acom_token"] = token
     return [msg]
+def _parse_horario(texto: str):
+    import re
+    texto = texto.lower().strip()
+    if "meio dia" in texto or "meio-dia" in texto: return 12, 0
+    if "meia noite" in texto or "meia-noite" in texto: return 0, 0
+    
+    palavras = {"uma": 1, "um": 1, "duas": 2, "dois": 2, "tres": 3, "três": 3, "quatro": 4, "cinco": 5, "seis": 6, "sete": 7, "oito": 8, "nove": 9, "dez": 10, "onze": 11}
+    for p, v in palavras.items():
+        if re.search(r'\b' + p + r'\b', texto):
+            texto = re.sub(r'\b' + p + r'\b', str(v), texto)
+
+    match = re.search(r"(\d{1,2})(?:[^\d]+(\d{2}))?|(\d{1,2})", texto)
+    if match:
+        if match.group(3):
+            hora = int(match.group(3))
+            minuto = 0
+        else:
+            hora = int(match.group(1))
+            minuto = int(match.group(2)) if match.group(2) else 0
+            
+        if "tarde" in texto and 1 <= hora <= 11:
+            hora += 12
+        elif "noite" in texto and 1 <= hora <= 11:
+            hora += 12
+        return hora, minuto
+    return None, None
+
+
 def _tela_confirmacao(sessao, perfil=None) -> list:
     m = sessao.carrinho_json["montagem"]
     prot = Produto.objects.filter(id=m.get("produto_id")).first()
@@ -452,7 +501,7 @@ def _tela_lista_extra(sessao, tipo: str, titulo: str) -> list:
 
 
 def _pos_item_adicionado(sessao, msgs: list, perfil=None) -> list:
-    return msgs + _tela_resumo_carrinho(sessao, perfil)
+    return msgs + _tela_perguntar_adicionar(sessao, perfil)
 
 
 
@@ -617,14 +666,18 @@ def _checkout(sessao, perfil=None):
         ]
     else:
         linhas.append("🛵 Método: Entrega em domicílio")
-        linhas += [
-            f"Produtos: {_moeda(produtos)}",
-            f"Taxa de entrega: {_moeda(taxa)} (paga ao entregador na entrega)",
-            f"Total: {_moeda(total)}",
-            "",
-            f"💳 Agora pague os *{_moeda(produtos)}* dos produtos pelo Pix. "
-            f"A taxa de {_moeda(taxa)} você paga ao entregador. Gerando seu Pix...",
-        ]
+        linhas.append(f"Produtos: {_moeda(produtos)}")
+        if taxa > 0:
+            linhas.append(f"Taxa de entrega: {_moeda(taxa)} (paga ao entregador na entrega)")
+        linhas.append(f"Total: {_moeda(total)}")
+        linhas.append("")
+        if taxa > 0:
+            linhas.append(
+                f"💳 Agora pague os *{_moeda(produtos)}* dos produtos pelo Pix. "
+                f"A taxa de {_moeda(taxa)} você paga ao entregador. Gerando seu Pix..."
+            )
+        else:
+            linhas.append(f"💳 Agora pague os *{_moeda(total)}* do pedido pelo Pix. Gerando seu Pix...")
     return pedido.pk, avisos + ["\n".join(linhas)]
 
 
@@ -652,9 +705,13 @@ def _parse_selecoes(texto: str) -> list[str]:
 
 
 def _adicionar_acompanhamentos(sessao, selecoes: list[str], cfg, perfil=None) -> list:
-    m = sessao.carrinho_json["montagem"]
-    lim = cfg.lim_acomp(m["peso_g"])
-    escolhidos = m["acompanhamentos"]
+    m = sessao.carrinho_json.get("montagem", {})
+    if not m:
+        sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+        return ["Sua sessão expirou ou ocorreu um erro. Vamos recomeçar."] + _tela_menu(sessao)
+        
+    lim = cfg.lim_acomp(m.get("peso_g", 0))
+    escolhidos = m.setdefault("acompanhamentos", [])
     erros = []
 
     for sel in selecoes:
@@ -708,7 +765,7 @@ def _aplicar_acompanhamentos_multi(sessao, selecoes: list[str], cfg, perfil=None
 def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     texto = (texto or "").strip()
     low = texto.lower()
-    perfil = PerfilFluxo.objects.filter(id=perfil_id).first() if perfil_id else None
+    perfil = PerfilFluxo.objects.filter(id=perfil_id).first() if perfil_id else PerfilFluxo.ativo_atual()
     sessao, _ = SessaoBot.objects.get_or_create(telefone=telefone)
     if not sessao.carrinho_json:
         sessao.carrinho_json = _carrinho_vazio()
@@ -718,6 +775,16 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         Cliente.objects.update_or_create(telefone=telefone, defaults={"nome_whatsapp": nome})
 
     out = {"mensagens": [], "checkout_pedido_id": None}
+
+    if sessao.estado_atual == SessaoBot.Estado.ATENDIMENTO_HUMANO:
+        # Se voltar a digitar "reiniciar", sai do atendimento humano
+        if low in {"cancelar", "reiniciar", "recomeçar", "recomecar"}:
+            sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+            sessao.carrinho_json = _carrinho_vazio()
+            out["mensagens"] = ["Atendimento humano encerrado. Pedido reiniciado."] + _saudacao(sessao, perfil)
+            sessao.save()
+            return out
+        return out
 
     if low in {"cancelar", "reiniciar", "recomeçar", "recomecar"}:
         sessao.carrinho_json = _carrinho_vazio()
@@ -774,16 +841,13 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             return out
 
     if estado == SessaoBot.Estado.PEDINDO_CEP:
-        digitos = "".join(c for c in texto if c.isdigit())
-        if len(digitos) != 8:
-            if texto.strip().isdigit() and len(texto.strip()) < 8:
-                from bot.mensagens import T
-                msg = "⚠️ Por favor, digite primeiro o seu *CEP (8 números)* para iniciarmos o atendimento."
-                out["mensagens"] = [T(msg)]
-            else:
-                out["mensagens"] = [mensagem("CEP_INVALIDO", _cliente(sessao), perfil=perfil)]
+        import re
+        match = re.search(r"\d{5}-?\d{3}", texto)
+        if not match:
+            out["mensagens"] = [mensagem("CEP_INVALIDO", _cliente(sessao), perfil=perfil)]
             sessao.save()
             return out
+        digitos = match.group().replace("-", "")
         cep = _normalizar_cep(digitos)
         area = AreaEntrega.por_cep(cep)
         if not area:
@@ -818,8 +882,22 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
                 out["mensagens"] = ["Opção inválida."] + _tela_menu(sessao)
             else:
                 sessao.estado_atual = SessaoBot.Estado.ENCOMENDA_FUTURA
-                _set_menu(sessao, {})
-                out["mensagens"] = [mensagem("PEDIR_DATA_ENCOMENDA", _cliente(sessao), perfil=perfil)]
+            from django.utils import timezone
+            from datetime import timedelta
+            hoje = timezone.localtime().date()
+            amanha = hoje + timedelta(days=1)
+            depois = hoje + timedelta(days=2)
+            _set_menu(sessao, {
+                "1": amanha.strftime("%d/%m/%Y"),
+                "2": depois.strftime("%d/%m/%Y"),
+            })
+            corpo = "Legal! Para qual data é a sua encomenda?\n\nVocê pode tocar em uma das opções ou digitar a data (ex: 12/10)."
+            linhas = [
+                {"id": "1", "titulo": f"Amanhã ({amanha.strftime('%d/%m')})"},
+                {"id": "2", "titulo": f"Depois ({depois.strftime('%d/%m')})"},
+            ]
+            from bot.mensagens import lista
+            out["mensagens"] = [lista(corpo, "Datas Rápidas", linhas)]
             sessao.save()
             return out
         # Pedido para HOJE fica barrado quando a loja está fechada (encomenda passa).
@@ -838,16 +916,9 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             sessao.carrinho_json["montagem"] = {"modo": ItemPedido.Modo.COMPLETA, "acompanhamentos": []}
             out["mensagens"] = _tela_peso(sessao, ItemPedido.Modo.COMPLETA, perfil=perfil)
         elif low == "2":
-            if sessao.carrinho_json.get("itens"):
-                out["mensagens"] = ["Opção inválida."] + _tela_menu(sessao)
-            else:
-                out["mensagens"] = _tela_tipo_grande_porcao(sessao, perfil)
+            out["mensagens"] = _tela_tipo_grande_porcao(sessao, perfil)
         elif low in MENU_CATEGORIAS:
-            # Block sandwiches and soups if it's an encomenda
-            if encomenda:
-                out["mensagens"] = ["Opção inválida para Encomendas."] + _tela_menu(sessao)
-            else:
-                out["mensagens"] = _tela_categoria(sessao, *MENU_CATEGORIAS[low])
+            out["mensagens"] = _tela_categoria(sessao, *MENU_CATEGORIAS[low])
         else:
             out["mensagens"] = ["Opção inválida."] + _tela_menu(sessao)
         sessao.save()
@@ -881,13 +952,11 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         return out
         
     if estado == SessaoBot.Estado.ENCOMENDA_HORARIO:
-        import re
-        match = re.search(r"(\d{1,2})[^\d](\d{2})", texto)
-        if not match:
-            out["mensagens"] = ["Formato de horário inválido. Por favor, digite no formato HH:MM (ex: 12:30)."]
+        hora, minuto = _parse_horario(texto)
+        if hora is None:
+            out["mensagens"] = ["Formato de horário inválido. Digite um horário como 12:30, 15h, ou meio dia."]
             sessao.save()
             return out
-        hora, minuto = int(match.group(1)), int(match.group(2))
         if not (0 <= hora <= 23 and 0 <= minuto <= 59):
             out["mensagens"] = ["Horário inválido. Por favor, digite um horário real (ex: 12:30)."]
             sessao.save()
