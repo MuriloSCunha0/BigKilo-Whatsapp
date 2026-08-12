@@ -74,13 +74,40 @@ async def criar_cobranca_pix(pedido) -> dict:
     if valor <= 0:
         raise AsaasError("Pedido sem valor para cobrança.")
 
-    if settings.MODO_SIMULACAO or not settings.ASAAS_API_KEY:
-        cobranca_id = f"pay_sim_{pedido.pk}"
-        copia_cola = _pix_simulado(pedido)
+    # Sem Asaas (ou modo manual/simulação): gera o Pix "copia e cola" LOCALMENTE
+    # a partir da chave do restaurante — pagável de verdade, mas sem confirmação
+    # automática (o lojista confirma no painel quando o Pix cair).
+    usar_manual = (
+        settings.PIX_PROVIDER == "manual"
+        or settings.MODO_SIMULACAO
+        or not settings.ASAAS_API_KEY
+    )
+    if usar_manual:
+        from pedidos.models import ConfiguracaoLoja
+
+        cfg = await sync_to_async(ConfiguracaoLoja.get)()
+        chave = (cfg.chave_pix or "").strip()
+        if chave:
+            from .pix_estatico import gerar_pix_copia_cola
+
+            copia_cola = gerar_pix_copia_cola(
+                chave, pedido.valor_total,
+                nome=cfg.nome_loja or "Big Kilo",
+                cidade=settings.PIX_MERCHANT_CITY,
+                txid=f"PEDIDO{pedido.pk}",
+            )
+            cobranca_id = f"manual_{pedido.pk}"
+            simulado = False
+        else:
+            # Sem chave Pix configurada: cai no fake só para não travar o fluxo.
+            copia_cola = _pix_simulado(pedido)
+            cobranca_id = f"pay_sim_{pedido.pk}"
+            simulado = True
         pedido.asaas_cobranca_id = cobranca_id
         pedido.asaas_pix_copia_cola = copia_cola
         await sync_to_async(pedido.save)(update_fields=["asaas_cobranca_id", "asaas_pix_copia_cola"])
-        return {"cobranca_id": cobranca_id, "pix_copia_cola": copia_cola, "qr_base64": "", "simulado": True}
+        return {"cobranca_id": cobranca_id, "pix_copia_cola": copia_cola,
+                "qr_base64": "", "simulado": simulado, "manual": True}
 
     cliente = await sync_to_async(lambda: pedido.cliente)()
 

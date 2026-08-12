@@ -211,6 +211,13 @@ EVOLUTION_INSTANCE = os.getenv("EVOLUTION_INSTANCE", "bigkilo")
 # Segredo opcional para validar o webhook de entrada da Evolution (header 'apikey' ou ?token=).
 EVOLUTION_WEBHOOK_TOKEN = os.getenv("EVOLUTION_WEBHOOK_TOKEN", "")
 
+# ==== Provedor de Pix ====
+# "asaas"  -> cobrança via Asaas (com confirmação automática por webhook).
+# "manual" -> Pix "copia e cola" gerado localmente da chave do lojista (sem
+#             gateway); a confirmação do pagamento é feita à mão no painel.
+PIX_PROVIDER = os.getenv("PIX_PROVIDER", "asaas").strip().lower()
+PIX_MERCHANT_CITY = os.getenv("PIX_MERCHANT_CITY", "RIO DE JANEIRO")
+
 ASAAS_API_KEY = os.getenv("ASAAS_API_KEY", "")
 ASAAS_BASE_URL = os.getenv("ASAAS_BASE_URL", "https://sandbox.asaas.com/api/v3")
 # Token de validação do webhook do Asaas (header "asaas-access-token").

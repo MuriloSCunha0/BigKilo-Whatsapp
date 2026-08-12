@@ -366,11 +366,38 @@ class PedidoAdmin(ModelAdmin):
     inlines = [ItemPedidoInline]
     list_per_page = 30
     change_list_template = "admin/pedidos/pedido_change_list.html"
-    actions = ("reimprimir_comanda",)
+    actions = ("confirmar_pagamento", "reimprimir_comanda")
 
     def has_add_permission(self, request):
         # Pedidos entram somente pelo WhatsApp (bot). Nada de cadastro manual.
         return False
+
+    @admin.action(description=_("✅ Confirmar pagamento (Pix recebido)"))
+    def confirmar_pagamento(self, request, queryset):
+        # Pix manual: quando o dinheiro cai, o lojista confirma aqui. Isso coloca o
+        # pedido na fila de impressão (PREPARANDO) e avisa o cliente no WhatsApp.
+        from bot.whatsapp import enviar_texto_sync
+        from .models import mensagem
+
+        pendentes = queryset.filter(status=Pedido.Status.AGUARDANDO_PAGAMENTO)
+        n = 0
+        for pedido in pendentes:
+            pedido.status = Pedido.Status.PREPARANDO
+            pedido.comanda_impressa = False
+            pedido.save(update_fields=["status", "comanda_impressa", "atualizado_em"])
+            try:
+                enviar_texto_sync(
+                    pedido.cliente.telefone,
+                    mensagem("PAGAMENTO_CONFIRMADO", pedido.cliente),
+                )
+            except Exception:  # não falha a confirmação por erro de envio
+                pass
+            n += 1
+        ignorados = queryset.count() - n
+        msg = f"{n} pagamento(s) confirmado(s) — comanda na fila e cliente avisado."
+        if ignorados:
+            msg += f" ({ignorados} já não estava(m) aguardando pagamento.)"
+        self.message_user(request, msg)
 
     @admin.action(description=_("Reimprimir comanda (enviar para a impressora)"))
     def reimprimir_comanda(self, request, queryset):
