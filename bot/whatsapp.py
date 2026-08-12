@@ -11,7 +11,7 @@ import logging
 import httpx
 from django.conf import settings
 
-from bot.mensagens import texto_plano
+from bot.mensagens import texto_numerado, texto_plano
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +31,56 @@ def _so_digitos(valor: str) -> str:
     return "".join(c for c in (valor or "") if c.isdigit())
 
 
+# ===================== Provedor (Meta oficial x Evolution não-oficial) =====================
+def _provider() -> str:
+    """'evolution' se configurado; senão 'meta'."""
+    if (getattr(settings, "WHATSAPP_PROVIDER", "meta") == "evolution"
+            and settings.EVOLUTION_API_URL and settings.EVOLUTION_API_KEY):
+        return "evolution"
+    return "meta"
+
+
+def _evolution_url() -> str:
+    return f"{settings.EVOLUTION_API_URL}/message/sendText/{settings.EVOLUTION_INSTANCE}"
+
+
+def _evolution_headers() -> dict:
+    return {"apikey": settings.EVOLUTION_API_KEY, "Content-Type": "application/json"}
+
+
+async def _evolution_enviar(telefone: str, texto: str) -> dict:
+    payload = {"number": _so_digitos(telefone), "text": texto}
+    try:
+        async with httpx.AsyncClient(timeout=20) as http:
+            resp = await http.post(_evolution_url(), json=payload, headers=_evolution_headers())
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar (Evolution): {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f"Falha de rede (Evolution): {exc}")
+    return resp.json()
+
+
+def _evolution_enviar_sync(telefone: str, texto: str) -> dict:
+    payload = {"number": _so_digitos(telefone), "text": texto}
+    try:
+        with httpx.Client(timeout=20) as http:
+            resp = http.post(_evolution_url(), json=payload, headers=_evolution_headers())
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar (Evolution): {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f"Falha de rede (Evolution): {exc}")
+    return resp.json()
+
+
 async def enviar_texto(telefone: str, texto: str) -> dict:
     """Envia uma mensagem de texto simples para um número (E.164, só dígitos)."""
-    if settings.MODO_SIMULACAO or not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
+    if settings.MODO_SIMULACAO:
         logger.info("[SIMULA WhatsApp] -> %s: %s", telefone, texto.replace("\n", " / "))
+        return {"simulado": True}
+    if _provider() == "evolution":
+        return await _evolution_enviar(telefone, texto)
+    if not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
+        logger.info("[SIMULA WhatsApp/sem credenciais Meta] -> %s: %s", telefone, texto.replace("\n", " / "))
         return {"simulado": True}
 
     payload = {
@@ -59,8 +105,13 @@ async def enviar_texto(telefone: str, texto: str) -> dict:
 
 def enviar_texto_sync(telefone: str, texto: str) -> dict:
     """Versão síncrona para views do admin (painel do lojista)."""
-    if settings.MODO_SIMULACAO or not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
+    if settings.MODO_SIMULACAO:
         logger.info("[SIMULA WhatsApp] -> %s: %s", telefone, texto.replace("\n", " / "))
+        return {"simulado": True}
+    if _provider() == "evolution":
+        return _evolution_enviar_sync(telefone, texto)
+    if not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
+        logger.info("[SIMULA WhatsApp/sem credenciais Meta] -> %s: %s", telefone, texto.replace("\n", " / "))
         return {"simulado": True}
 
     payload = {
@@ -241,6 +292,9 @@ async def enviar_pix_order(telefone: str, msg: dict) -> dict:
     return resp.json()
 
 async def enviar_mensagem(telefone: str, msg: dict) -> dict:
+    # Evolution/texto puro: converte listas/botões em menu numerado e envia como texto.
+    if _provider() == "evolution":
+        return await enviar_texto(telefone, texto_numerado(msg))
     tipo = (msg or {}).get("tipo", "texto")
     if tipo == "texto":
         return await enviar_texto(telefone, msg.get("corpo", ""))
@@ -304,6 +358,8 @@ def enviar_botoes_sync(telefone: str, corpo: str, opcoes: list[dict]) -> dict:
 
 
 def enviar_mensagem_sync(telefone: str, msg: dict) -> dict:
+    if _provider() == "evolution":
+        return enviar_texto_sync(telefone, texto_numerado(msg))
     tipo = (msg or {}).get("tipo", "texto")
     if tipo == "texto":
         return enviar_texto_sync(telefone, msg.get("corpo", ""))

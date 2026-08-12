@@ -153,6 +153,71 @@ async def webhook_whatsapp(request):
     return JsonResponse({"ok": True})
 
 
+# ===================== Webhook Evolution API (WhatsApp não-oficial) =====================
+def _extrair_evolution(dados: dict):
+    """Extrai (telefone, texto, nome) de um evento MESSAGES_UPSERT da Evolution."""
+    try:
+        evento = (dados.get("event") or "").replace(".", "_").lower()
+        if evento != "messages_upsert":
+            return None
+        data = dados.get("data") or {}
+        if isinstance(data, list):
+            data = data[0] if data else {}
+        key = data.get("key") or {}
+        if key.get("fromMe"):
+            return None  # mensagem enviada por nós
+        jid = key.get("remoteJid") or ""
+        if not jid or jid.endswith("@g.us") or "status@broadcast" in jid:
+            return None  # grupo / status: ignora
+        telefone = jid.split("@")[0].split(":")[0]
+        msg = data.get("message") or {}
+        texto = (
+            msg.get("conversation")
+            or (msg.get("extendedTextMessage") or {}).get("text")
+            or (msg.get("buttonsResponseMessage") or {}).get("selectedButtonId")
+            or ((msg.get("listResponseMessage") or {}).get("singleSelectReply") or {}).get("selectedRowId")
+            or ""
+        )
+        nome = data.get("pushName") or ""
+        return telefone, texto, nome
+    except (KeyError, IndexError, TypeError, AttributeError):
+        return None
+
+
+@csrf_exempt
+async def webhook_evolution(request):
+    """Recebe as mensagens da Evolution API e responde pela máquina de estados."""
+    if request.method != "POST":
+        return HttpResponse(status=405)
+
+    if settings.EVOLUTION_WEBHOOK_TOKEN:
+        enviado = request.headers.get("apikey") or request.GET.get("token")
+        if enviado != settings.EVOLUTION_WEBHOOK_TOKEN:
+            return HttpResponseForbidden("token inválido")
+
+    try:
+        dados = json.loads(request.body or b"{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"erro": "json inválido"}, status=400)
+
+    extraido = _extrair_evolution(dados)
+    if not extraido:
+        return JsonResponse({"ok": True})  # evento sem mensagem de texto útil
+
+    telefone, texto, nome = extraido
+    if not (texto or "").strip():
+        return JsonResponse({"ok": True})
+
+    try:
+        respostas = await processar_mensagem(telefone, texto, nome)
+        for msg in respostas:
+            await enviar_mensagem(telefone, msg)
+    except Exception as exc:
+        logger.exception("Erro ao processar mensagem (Evolution) de %s: %s", telefone, exc)
+
+    return JsonResponse({"ok": True})
+
+
 # ===================== Simulador de testes (sem WhatsApp) =====================
 @staff_member_required
 def simulador(request):

@@ -18,6 +18,7 @@ Uso: python print_agent.py
 
 import json
 import os
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -58,20 +59,49 @@ def imprimir_file(texto, pid):
     print(f"[file] Comanda do pedido #{pid} salva em {COMANDAS_DIR}")
 
 
+def _bytes_escpos(texto: str) -> bytes:
+    """Monta os bytes ESC/POS: init + codepage PT (PC850) + texto + avanço + corte.
+
+    Funciona na ELGIN i9 (e na maioria das térmicas ESC/POS 80mm) via impressão RAW.
+    """
+    ESC, GS = b"\x1b", b"\x1d"
+    return (
+        ESC + b"@"                                   # inicializa a impressora
+        + ESC + b"t" + b"\x02"                        # codepage PC850 (acentos: ã, ç, õ…)
+        + texto.encode("cp850", errors="replace")    # corpo da comanda
+        + b"\n"
+        + ESC + b"d" + b"\x04"                        # avança 4 linhas (folga p/ o corte)
+        + GS + b"V" + b"\x01"                         # corte parcial do papel
+    )
+
+
+def _achar_impressora(win32print, preferida):
+    """Usa o nome exato se existir; senão acha a ELGIN/i9 sozinho; senão a padrão."""
+    flags = win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS
+    nomes = [p[2] for p in win32print.EnumPrinters(flags)]
+    if preferida and preferida in nomes:
+        return preferida
+    for n in nomes:  # tolera variações: "ELGIN i9", "Elgin i9 (USB)", etc.
+        low = n.lower()
+        if "elgin" in low or "i9" in low:
+            return n
+    return preferida or win32print.GetDefaultPrinter()
+
+
 def imprimir_windows(texto, pid):
     import win32print  # type: ignore
 
-    nome = PRINTER_NAME or win32print.GetDefaultPrinter()
+    nome = _achar_impressora(win32print, PRINTER_NAME)
     h = win32print.OpenPrinter(nome)
     try:
         win32print.StartDocPrinter(h, 1, (f"Comanda {pid}", None, "RAW"))
         win32print.StartPagePrinter(h)
-        win32print.WritePrinter(h, texto.encode("cp850", errors="replace"))
+        win32print.WritePrinter(h, _bytes_escpos(texto))
         win32print.EndPagePrinter(h)
         win32print.EndDocPrinter(h)
     finally:
         win32print.ClosePrinter(h)
-    print(f"[windows] Comanda do pedido #{pid} enviada para '{nome}'")
+    print(f"[windows] Comanda do pedido #{pid} enviada para '{nome}' (com corte).")
 
 
 def imprimir_escpos(texto, pid):
@@ -106,10 +136,103 @@ def processar_pendentes():
             print(f"[erro] Falha ao imprimir pedido #{pid}: {exc}")
 
 
+COMANDA_TESTE = "\n".join([
+    "=" * 40,
+    "           BIG KILO - TESTE".ljust(40),
+    "=" * 40,
+    "Se voce esta lendo isto na ELGIN i9,",
+    "a impressao automatica esta FUNCIONANDO!",
+    "",
+    "Acentos: pao, acucar, limao, feijao",
+    "Pedido #0000  -  R$ 57,00",
+    "=" * 40,
+    "",
+])
+
+
+def listar_impressoras():
+    try:
+        import win32print  # type: ignore
+    except ImportError:
+        print("Instale o pywin32:  pip install pywin32")
+        return
+    print("Impressora padrão:", win32print.GetDefaultPrinter())
+    print("Impressoras instaladas:")
+    flags = win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS
+    for p in win32print.EnumPrinters(flags):
+        print("  -", p[2])
+
+
+def testar_impressao():
+    imprimir = IMPRESSORAS.get(PRINT_MODE, imprimir_file)
+    print(f"Enviando comanda de TESTE (modo={PRINT_MODE}, impressora='{PRINTER_NAME or 'padrão'}')...")
+    imprimir(COMANDA_TESTE, "TESTE")
+    print("Pronto. Confira se saiu na impressora.")
+
+
+def _pasta_estavel():
+    base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    return Path(base) / "BigKiloImpressora"
+
+
+def _registrar_run(caminho_exe):
+    import winreg
+    chave = winreg.OpenKey(
+        winreg.HKEY_CURRENT_USER,
+        r"Software\Microsoft\Windows\CurrentVersion\Run",
+        0, winreg.KEY_SET_VALUE,
+    )
+    winreg.SetValueEx(chave, "BigKiloImpressora", 0, winreg.REG_SZ, f'"{caminho_exe}"')
+    winreg.CloseKey(chave)
+
+
+def _garantir_instalado():
+    """Só quando roda como .exe: copia para uma pasta fixa e registra o início
+    automático com o Windows. Retorna True se copiou e relançou (o atual deve sair)."""
+    if not getattr(sys, "frozen", False):
+        return False  # em modo script (dev) não mexe em nada
+    try:
+        destino_dir = _pasta_estavel()
+        destino_dir.mkdir(parents=True, exist_ok=True)
+        destino = destino_dir / "BigKiloImpressora.exe"
+        atual = Path(sys.executable)
+        if atual.resolve() != destino.resolve():
+            import shutil
+            shutil.copy2(atual, destino)      # instala numa pasta permanente
+            _registrar_run(destino)           # liga sozinho com o Windows
+            os.startfile(str(destino))        # passa a rodar da pasta fixa
+            print("[instalado] Configurado para ligar sozinho com o Windows. ✅")
+            return True
+        _registrar_run(destino)               # já está na pasta fixa: só garante o auto-start
+    except Exception as exc:
+        print(f"[instalar] {exc}")
+    return False
+
+
+def _minimizar_console():
+    """Deixa a janelinha minimizada (fora do caminho do caixa)."""
+    try:
+        import ctypes
+        hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+        if hwnd:
+            ctypes.windll.user32.ShowWindow(hwnd, 6)  # 6 = SW_MINIMIZE
+    except Exception:
+        pass
+
+
 def main():
+    if "--listar" in sys.argv:
+        listar_impressoras()
+        return
+    if "--teste" in sys.argv:
+        testar_impressao()
+        return
     if not TOKEN:
         print("⚠️  Defina PRINT_API_TOKEN (igual ao IMPRESSAO_API_TOKEN do servidor).")
         return
+    if _garantir_instalado():
+        return  # relançou da pasta fixa; este processo encerra
+    _minimizar_console()
     print(f"Agente de impressão Big Kilo (api={API}, modo={PRINT_MODE}, intervalo={INTERVALO_S}s).")
     print("Aguardando pedidos pagos... (Ctrl+C para sair)")
     intervalo_atual = INTERVALO_S

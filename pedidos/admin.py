@@ -366,10 +366,22 @@ class PedidoAdmin(ModelAdmin):
     inlines = [ItemPedidoInline]
     list_per_page = 30
     change_list_template = "admin/pedidos/pedido_change_list.html"
+    actions = ("reimprimir_comanda",)
 
     def has_add_permission(self, request):
         # Pedidos entram somente pelo WhatsApp (bot). Nada de cadastro manual.
         return False
+
+    @admin.action(description=_("Reimprimir comanda (enviar para a impressora)"))
+    def reimprimir_comanda(self, request, queryset):
+        # Volta para a fila de impressão: o agente no PC do restaurante imprime em segundos.
+        n = queryset.update(
+            status=Pedido.Status.PREPARANDO, comanda_impressa=False, impressa_em=None
+        )
+        self.message_user(
+            request,
+            f"{n} pedido(s) na fila de impressão. Se o agente estiver rodando, imprime em instantes.",
+        )
     fieldsets = (
         (None, {"fields": ("cliente", "status", "valor_total", "tipo_entrega", "data_agendada", "hora_agendada")}),
         (_("Endereço e Taxa"), {"fields": ("endereco_entrega", "bairro", "cep", "taxa_entrega", "observacoes")}),

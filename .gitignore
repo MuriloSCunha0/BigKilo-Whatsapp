@@ -24,3 +24,16 @@ comandas/
 # Editores
 .vscode/
 .idea/
+
+# Build do agente de impressao (.exe) - nao versionar
+dist_impressora/
+build_impressora/
+_bigkilo_impressora_build.py
+*.spec
+
+# Guia PDF e prints (gerados)
+Guia_*.pdf
+guia_*.png
+
+# Snapshots do Playwright MCP
+.playwright-mcp/

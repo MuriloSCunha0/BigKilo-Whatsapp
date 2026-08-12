@@ -133,6 +133,51 @@ def texto_plano(msg) -> str:
     return str(msg)
 
 
+def texto_numerado(msg) -> str:
+    """Converte uma mensagem interativa em TEXTO com opções numeradas.
+
+    Usado quando o provedor é texto puro (ex.: Evolution API), pois o WhatsApp
+    Web não renderiza listas/botões de forma confiável. O cliente responde com o
+    número da opção (o id de cada linha/opção é numérico no fluxo).
+    """
+    if msg is None:
+        return ""
+    if isinstance(msg, str):
+        return msg
+    if not isinstance(msg, dict):
+        return str(msg)
+    tipo = msg.get("tipo", "texto")
+    corpo = (msg.get("corpo", "") or "").strip()
+
+    def _opcoes(itens, chave_titulo="titulo"):
+        linhas = []
+        for it in itens or []:
+            titulo = it.get(chave_titulo, "")
+            desc = it.get("descricao")
+            linha = f"*{it.get('id')}* - {titulo}"
+            if desc:
+                linha += f" ({desc})"
+            linhas.append(linha)
+        return "\n".join(linhas)
+
+    if tipo == "lista":
+        opts = _opcoes(msg.get("linhas"))
+        return f"{corpo}\n\n{opts}\n\n_Responda com o número da opção._" if opts else corpo
+    if tipo == "botoes":
+        opts = _opcoes(msg.get("opcoes"))
+        return f"{corpo}\n\n{opts}\n\n_Responda com o número._" if opts else corpo
+    if tipo == "multi_select":
+        opts = _opcoes(msg.get("opcoes"))
+        return (f"{corpo}\n\n{opts}\n\n_Responda os números separados por vírgula "
+                f"(ex.: 1,3,5) e depois envie *pronto*._") if opts else corpo
+    if tipo == "pix_order":
+        copia = msg.get("pix_copia_cola") or ""
+        return f"{corpo}\n\n{copia}".strip()
+    if tipo == "flow":
+        return corpo
+    return texto_plano(msg)
+
+
 def normalizar_mensagens(mensagens: list) -> list[dict]:
     out: list[dict] = []
     for m in mensagens or []:

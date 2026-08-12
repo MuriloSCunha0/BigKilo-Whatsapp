@@ -6,6 +6,8 @@ app_name = "bot"
 
 urlpatterns = [
     path("webhook/whatsapp/", views.webhook_whatsapp, name="webhook_whatsapp"),
+    # Evolution API (WhatsApp não-oficial via QR) — provedor alternativo
+    path("webhook/evolution/", views.webhook_evolution, name="webhook_evolution"),
     # Simulador de testes (sem WhatsApp real)
     path("simulador/", views.simulador, name="simulador"),
     path("simulador/msg/", views.simulador_msg, name="simulador_msg"),

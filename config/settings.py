@@ -200,6 +200,17 @@ META_API_VERSION = os.getenv("META_API_VERSION", "v21.0")
 META_FLOW_ACOMPANHAMENTOS_ID = os.getenv("META_FLOW_ACOMPANHAMENTOS_ID", "")
 META_PIX_NATIVO = env_bool("META_PIX_NATIVO", False)
 
+# ==== Provedor de WhatsApp ====
+# "meta"      -> API oficial (Meta Cloud API) — exige verificação da empresa.
+# "evolution" -> Evolution API (não-oficial, conecta o número por QR) — para uso
+#                imediato enquanto a verificação oficial não sai. Troca sem retrabalho.
+WHATSAPP_PROVIDER = os.getenv("WHATSAPP_PROVIDER", "meta").strip().lower()
+EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "").rstrip("/")
+EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY", "")
+EVOLUTION_INSTANCE = os.getenv("EVOLUTION_INSTANCE", "bigkilo")
+# Segredo opcional para validar o webhook de entrada da Evolution (header 'apikey' ou ?token=).
+EVOLUTION_WEBHOOK_TOKEN = os.getenv("EVOLUTION_WEBHOOK_TOKEN", "")
+
 ASAAS_API_KEY = os.getenv("ASAAS_API_KEY", "")
 ASAAS_BASE_URL = os.getenv("ASAAS_BASE_URL", "https://sandbox.asaas.com/api/v3")
 # Token de validação do webhook do Asaas (header "asaas-access-token").

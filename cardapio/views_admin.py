@@ -1,4 +1,6 @@
+import unicodedata
 import openpyxl
+from openpyxl.worksheet.datavalidation import DataValidation
 from decimal import Decimal
 from django.contrib import messages
 from django.http import HttpResponse
@@ -20,6 +22,33 @@ COLUNAS_ESPERADAS = [
 ]
 
 
+def _norm(valor) -> str:
+    """Normaliza texto para casar valores: tira acento, maiúsculas, ignora o que vem após '('."""
+    s = str(valor or "").strip()
+    if "(" in s:
+        s = s.split("(")[0]
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return " ".join(s.split()).upper()
+
+
+def _mapa_tipo_categoria() -> dict:
+    """Aceita tanto o código (PROTEINA) quanto o rótulo amigável (Proteína)."""
+    m = {}
+    for code, label in Categoria.Tipo.choices:
+        m[_norm(code)] = code
+        m[_norm(label)] = code
+    return m
+
+
+def _mapa_modo_venda() -> dict:
+    m = {}
+    for code, label in Produto.ModoVenda.choices:
+        m[_norm(code)] = code
+        m[_norm(label)] = code
+    return m
+
+
 def baixar_planilha_exemplo(request):
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -31,39 +60,61 @@ def baixar_planilha_exemplo(request):
         cell.font = openpyxl.styles.Font(bold=True)
         cell.fill = openpyxl.styles.PatternFill("solid", fgColor="FFEFD5")
 
-    # Ajustar larguras para ficar legível
-    ws.column_dimensions["A"].width = 18
-    ws.column_dimensions["B"].width = 22
-    ws.column_dimensions["C"].width = 24
-    ws.column_dimensions["D"].width = 25
-    ws.column_dimensions["E"].width = 16
-    ws.column_dimensions["F"].width = 10
-    ws.column_dimensions["G"].width = 14
-    ws.column_dimensions["H"].width = 8
+    # Larguras
+    for letra, larg in zip("ABCDEFGHI", [18, 20, 24, 25, 22, 10, 12, 16, 8]):
+        ws.column_dimensions[letra].width = larg
 
-    # Linha de exemplo 1
-    exemplo1 = [
-        "Bebidas", "BEBIDA", "Coca-Cola 2L", "Gelada",
-        "UNIDADE", "12.00", "0.00", "", "SIM",
-    ]
-    for col_num, val in enumerate(exemplo1, 1):
-        ws.cell(row=2, column=col_num, value=val)
+    # Listas suspensas (o usuário escolhe, não digita) — rótulos amigáveis
+    tipos = ",".join(label for _, label in Categoria.Tipo.choices)          # Proteína,Acompanhamento,...
+    modos = ",".join(label for _, label in Produto.ModoVenda.choices)        # Montagem (por peso),...
+    dv_tipo = DataValidation(type="list", formula1=f'"{tipos}"', allow_blank=True)
+    dv_modo = DataValidation(type="list", formula1=f'"{modos}"', allow_blank=True)
+    dv_ativo = DataValidation(type="list", formula1='"Sim,Não"', allow_blank=True)
+    for dv in (dv_tipo, dv_modo, dv_ativo):
+        ws.add_data_validation(dv)
+    dv_tipo.add("B2:B1000")   # Tipo da Categoria
+    dv_modo.add("E2:E1000")   # Modo de Venda
+    dv_ativo.add("I2:I1000")  # Ativo
 
-    # Linha de exemplo 2
-    exemplo2 = [
-        "Proteínas", "PROTEINA", "Lombo (Madeira)", "Ao molho madeira",
-        "MONTAGEM", "0.00", "0.00", "", "SIM",
-    ]
-    for col_num, val in enumerate(exemplo2, 1):
-        ws.cell(row=3, column=col_num, value=val)
+    tipo_label = dict(Categoria.Tipo.choices)
+    modo_label = dict(Produto.ModoVenda.choices)
 
-    # Linha de exemplo 3 (Sopa à noite)
-    exemplo3 = [
-        "Caldos", "ACOMPANHAMENTO", "Caldo de Feijão", "",
-        "UNIDADE", "15.00", "0.00", "18:00-23:00", "SIM",
-    ]
-    for col_num, val in enumerate(exemplo3, 1):
-        ws.cell(row=4, column=col_num, value=val)
+    def _preco(v):
+        return (f"{v:.2f}".replace(".", ",")) if v else "0"
+
+    # Pré-preenche com os produtos REAIS já cadastrados (o lojista só ajusta/apaga).
+    produtos = Produto.objects.select_related("categoria").order_by("categoria__nome", "nome")
+    linha = 2
+    for p in produtos:
+        horario = ""
+        if p.horario_inicio and p.horario_fim:
+            horario = f"{p.horario_inicio:%H:%M}-{p.horario_fim:%H:%M}"
+        vals = [
+            p.categoria.nome if p.categoria_id else "",
+            tipo_label.get(p.categoria.tipo, "") if p.categoria_id else "",
+            p.nome,
+            p.descricao or "",
+            modo_label.get(p.modo_venda, ""),
+            _preco(p.preco),
+            _preco(p.preco_kg),
+            horario,
+            "Sim" if p.ativo else "Não",
+        ]
+        for col_num, val in enumerate(vals, 1):
+            ws.cell(row=linha, column=col_num, value=val)
+        linha += 1
+
+    # Catálogo vazio: mostra exemplos amigáveis para o usuário se guiar.
+    if linha == 2:
+        exemplos = [
+            ["Proteínas", "Proteína", "Frango grelhado", "Ao alho e óleo", "Montagem (por peso)", "0", "0", "", "Sim"],
+            ["Acompanhamentos", "Acompanhamento", "Farofa da casa", "", "Montagem (por peso)", "0", "0", "", "Sim"],
+            ["Bebidas", "Bebida", "Coca-Cola lata", "Gelada", "Unidade (preço fixo)", "6,00", "0", "", "Sim"],
+            ["Sopas", "Sopa", "Caldo verde", "", "Unidade (preço fixo)", "15,00", "0", "18:00-23:00", "Sim"],
+        ]
+        for i, ex in enumerate(exemplos, start=2):
+            for col_num, val in enumerate(ex, 1):
+                ws.cell(row=i, column=col_num, value=val)
 
     response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response["Content-Disposition"] = 'attachment; filename="modelo_cardapio_bigkilo.xlsx"'
@@ -167,9 +218,10 @@ def importar_planilha_view(request):
                     continue
 
                 # 2. Categoria (get or create - usando iexact para ignorar case)
-                tipo_cat = str(row[idx_tipo]).strip().upper() if idx_tipo >= 0 and row[idx_tipo] else "OUTRO"
-                if tipo_cat not in dict(Categoria.Tipo.choices).keys():
-                    tipo_cat = "OUTRO"
+                # Aceita código (PROTEINA) OU rótulo amigável (Proteína / proteina).
+                tipo_cat = "OUTRO"
+                if idx_tipo >= 0 and row[idx_tipo]:
+                    tipo_cat = _mapa_tipo_categoria().get(_norm(row[idx_tipo]), "OUTRO")
 
                 categoria, _ = Categoria.objects.get_or_create(
                     nome__iexact=nome_cat,
@@ -208,9 +260,9 @@ def importar_planilha_view(request):
                     existentes += 1
                 else:
                     desc = str(row[idx_desc]).strip() if idx_desc >= 0 and row[idx_desc] and row[idx_desc] != "None" else ""
-                    modo = str(row[idx_modo]).strip().upper() if idx_modo >= 0 and row[idx_modo] and row[idx_modo] != "None" else "UNIDADE"
-                    if modo not in dict(Produto.ModoVenda.choices).keys():
-                        modo = "UNIDADE"
+                    modo = "UNIDADE"
+                    if idx_modo >= 0 and row[idx_modo] and row[idx_modo] != "None":
+                        modo = _mapa_modo_venda().get(_norm(row[idx_modo]), "UNIDADE")
 
                     try:
                         preco = Decimal(str(row[idx_preco]).replace(",", ".").strip()) if idx_preco >= 0 and row[idx_preco] else Decimal("0.00")
@@ -224,8 +276,7 @@ def importar_planilha_view(request):
 
                     ativo = True
                     if idx_ativo >= 0 and row[idx_ativo]:
-                        val_ativo = str(row[idx_ativo]).strip().upper()
-                        if val_ativo in ["NÃO", "NAO", "NO", "FALSE", "0"]:
+                        if _norm(row[idx_ativo]) in ("NAO", "NO", "FALSE", "0", "N"):
                             ativo = False
 
                     produto = Produto.objects.create(
