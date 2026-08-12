@@ -74,13 +74,12 @@ def _evolution_enviar_sync(telefone: str, texto: str) -> dict:
 
 async def enviar_texto(telefone: str, texto: str) -> dict:
     """Envia uma mensagem de texto simples para um número (E.164, só dígitos)."""
-    if settings.MODO_SIMULACAO:
-        logger.info("[SIMULA WhatsApp] -> %s: %s", telefone, texto.replace("\n", " / "))
-        return {"simulado": True}
+    # Evolution envia sempre que configurado (independe de MODO_SIMULACAO, que passa
+    # a controlar só o Asaas). Assim dá pra ter WhatsApp real + Pix simulado.
     if _provider() == "evolution":
         return await _evolution_enviar(telefone, texto)
-    if not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
-        logger.info("[SIMULA WhatsApp/sem credenciais Meta] -> %s: %s", telefone, texto.replace("\n", " / "))
+    if settings.MODO_SIMULACAO or not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
+        logger.info("[SIMULA WhatsApp] -> %s: %s", telefone, texto.replace("\n", " / "))
         return {"simulado": True}
 
     payload = {
@@ -105,13 +104,10 @@ async def enviar_texto(telefone: str, texto: str) -> dict:
 
 def enviar_texto_sync(telefone: str, texto: str) -> dict:
     """Versão síncrona para views do admin (painel do lojista)."""
-    if settings.MODO_SIMULACAO:
-        logger.info("[SIMULA WhatsApp] -> %s: %s", telefone, texto.replace("\n", " / "))
-        return {"simulado": True}
     if _provider() == "evolution":
         return _evolution_enviar_sync(telefone, texto)
-    if not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
-        logger.info("[SIMULA WhatsApp/sem credenciais Meta] -> %s: %s", telefone, texto.replace("\n", " / "))
+    if settings.MODO_SIMULACAO or not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
+        logger.info("[SIMULA WhatsApp] -> %s: %s", telefone, texto.replace("\n", " / "))
         return {"simulado": True}
 
     payload = {
