@@ -1,0 +1,137 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Conexão do WhatsApp · Big Kilo{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<style>
+  #wcWrap{ max-width:560px; margin:0 auto; padding:.5rem 0 2rem; }
+  #wcWrap .lead{ color:#6b7280; font-size:.9rem; text-align:center; margin-bottom:1.25rem; }
+  html.dark #wcWrap .lead{ color:#9ca3af; }
+  #wcCard{ border:1px solid #e5e7eb; border-radius:16px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.08); }
+  html.dark #wcCard{ border-color:#374151; }
+  #wcCard .top{ background:#d97706; color:#fff; padding:1rem 1.25rem; display:flex; align-items:center; gap:.7rem; }
+  #wcCard .top .av{ width:38px; height:38px; border-radius:50%; background:#fff; color:#16a34a; display:flex; align-items:center; justify-content:center; font-size:1.3rem; }
+  #wcCard .top b{ font-size:1.05rem; } #wcCard .top small{ display:block; opacity:.9; font-size:.72rem; }
+  #wcBody{ padding:1.5rem 1.25rem; text-align:center; background:#fff; }
+  html.dark #wcBody{ background:#1f2937; color:#e5e7eb; }
+  .pill{ display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .8rem; border-radius:20px; font-size:.8rem; font-weight:700; }
+  .pill .dot{ width:9px; height:9px; border-radius:50%; }
+  .pill.on{ background:#dcfce7; color:#166534; } .pill.on .dot{ background:#22c55e; }
+  .pill.wait{ background:#fef3c7; color:#92400e; } .pill.wait .dot{ background:#f59e0b; }
+  .pill.off{ background:#f3f4f6; color:#4b5563; } .pill.off .dot{ background:#9ca3af; }
+  html.dark .pill.off{ background:#374151; color:#e5e7eb; }
+  #wcQrBox{ margin:1.25rem auto 0; width:260px; height:260px; border:1px solid #e5e7eb; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#fff; }
+  #wcQrBox img{ width:100%; height:100%; object-fit:contain; border-radius:12px; }
+  #wcQrBox .ph{ color:#9ca3af; font-size:.85rem; padding:1rem; }
+  .steps{ text-align:left; max-width:360px; margin:1.25rem auto 0; font-size:.88rem; line-height:1.7; color:#374151; }
+  html.dark .steps{ color:#d1d5db; }
+  .steps b{ color:#b45309; }
+  .btn{ border:none; border-radius:10px; padding:.6rem 1.1rem; font-weight:600; font-size:.9rem; cursor:pointer; margin-top:1.25rem; }
+  .btn.sec{ background:#f3f4f6; color:#374151; } html.dark .btn.sec{ background:#374151; color:#e5e7eb; }
+  .btn.warn{ background:#fee2e2; color:#b91c1c; }
+  .conectado{ margin-top:1rem; font-size:1.05rem; font-weight:700; color:#166534; }
+  html.dark .conectado{ color:#4ade80; }
+  .aviso{ background:#eff6ff; border:1px solid #bfdbfe; color:#1e3a8a; border-radius:10px; padding:.8rem 1rem; font-size:.85rem; margin-top:1.25rem; }
+  html.dark .aviso{ background:#0b1e3a; border-color:#1e3a8a; color:#bfdbfe; }
+</style>
+
+<div id="wcWrap">
+  <div class="lead">Conecte o WhatsApp do restaurante ao robô. É como o WhatsApp Web: escaneie o QR uma vez e pronto.</div>
+
+  {% if not evo_configurada %}
+  <div class="aviso">
+    ⚠️ A conexão via Evolution ainda não está ativa neste ambiente
+    (provedor atual não é o Evolution ou faltam as credenciais). Fale com o suporte.
+  </div>
+  {% else %}
+  <div id="wcCard">
+    <div class="top">
+      <div class="av">🟢</div>
+      <div><b>WhatsApp do Restaurante</b><small id="wcSub">verificando conexão…</small></div>
+    </div>
+    <div id="wcBody">
+      <span class="pill off" id="wcPill"><span class="dot"></span><span id="wcPillTxt">Verificando…</span></span>
+
+      <!-- Bloco desconectado: QR -->
+      <div id="wcDesconectado" style="display:none">
+        <div id="wcQrBox"><div class="ph">Gerando QR…</div></div>
+        <div class="steps">
+          No celular do restaurante:<br>
+          1. Abra o <b>WhatsApp</b><br>
+          2. Toque em <b>⋮ → Aparelhos conectados</b><br>
+          3. <b>Conectar um aparelho</b><br>
+          4. Aponte a câmera para o <b>QR acima</b>
+        </div>
+        <button class="btn sec" onclick="wcAtualizarQr()">↻ Atualizar QR</button>
+      </div>
+
+      <!-- Bloco conectado -->
+      <div id="wcConectado" style="display:none">
+        <div class="conectado">✅ Conectado!</div>
+        <div id="wcInfo" style="color:#6b7280;margin-top:.3rem;font-size:.9rem"></div>
+        <div class="aviso">O robô já está atendendo neste número. Você pode fechar esta aba — a conexão continua ativa sozinha.</div>
+        <button class="btn warn" onclick="wcDesconectar()">Desconectar este número</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if evo_configurada %}
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const csrf=()=>document.querySelector('[name=csrfmiddlewaretoken]')?.value||'';
+  let ultimoQr=0, conectado=false;
+
+  function pill(cls, txt){ const p=$('wcPill'); p.className='pill '+cls; $('wcPillTxt').textContent=txt; }
+
+  async function status(){
+    try{
+      const d=await (await fetch('/whatsapp/status/')).json();
+      if(!d.ok){ pill('off','Erro'); $('wcSub').textContent=d.erro||'erro'; return; }
+      const st=(d.state||'').toLowerCase();
+      if(st==='open'){
+        conectado=true;
+        pill('on','Conectado');
+        $('wcSub').textContent='conectado e atendendo';
+        $('wcDesconectado').style.display='none';
+        $('wcConectado').style.display='block';
+        $('wcInfo').textContent=(d.nome? d.nome+' ' : '')+(d.numero? '('+d.numero+')':'');
+      } else {
+        const eraConect=conectado; conectado=false;
+        pill(st==='connecting'?'wait':'off', st==='connecting'?'Aguardando leitura do QR':'Desconectado');
+        $('wcSub').textContent='escaneie o QR para conectar';
+        $('wcConectado').style.display='none';
+        $('wcDesconectado').style.display='block';
+        if(eraConect || Date.now()-ultimoQr>28000) wcAtualizarQr();
+      }
+    }catch(e){ pill('off','Sem conexão'); }
+  }
+
+  window.wcAtualizarQr=async()=>{
+    ultimoQr=Date.now();
+    try{
+      const d=await (await fetch('/whatsapp/qr/')).json();
+      const box=$('wcQrBox');
+      if(d.ok && d.base64){
+        const src=d.base64.startsWith('data:')? d.base64 : ('data:image/png;base64,'+d.base64);
+        box.innerHTML='<img alt="QR code" src="'+src+'">';
+      } else if(d.connected){ status(); }
+      else { box.innerHTML='<div class="ph">Não consegui gerar o QR agora. Toque em Atualizar.</div>'; }
+    }catch(e){ $('wcQrBox').innerHTML='<div class="ph">Falha ao gerar o QR.</div>'; }
+  };
+
+  window.wcDesconectar=async()=>{
+    if(!confirm('Desconectar o WhatsApp do restaurante? O robô para de atender até reconectar.')) return;
+    try{ await fetch('/whatsapp/logout/',{method:'POST',headers:{'X-CSRFToken':csrf()}}); }catch(e){}
+    setTimeout(status, 1500);
+  };
+
+  status();
+  setInterval(status, 4000);      // acompanha o estado
+})();
+</script>
+{% endif %}
+{% endblock %}

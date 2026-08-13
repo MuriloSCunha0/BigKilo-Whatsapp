@@ -11,6 +11,7 @@ import hmac
 import hashlib
 import os
 
+import httpx
 from django.core.cache import cache
 from asgiref.sync import sync_to_async
 from django.conf import settings
@@ -20,6 +21,7 @@ from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from .fluxo import processar_mensagem
 from .whatsapp import enviar_mensagem, enviar_texto
@@ -216,6 +218,86 @@ async def webhook_evolution(request):
         logger.exception("Erro ao processar mensagem (Evolution) de %s: %s", telefone, exc)
 
     return JsonResponse({"ok": True})
+
+
+# ===================== Conexão do WhatsApp (Evolution) — aba no painel =========
+def _evo_cfg():
+    return (
+        (settings.EVOLUTION_API_URL or "").rstrip("/"),
+        settings.EVOLUTION_API_KEY or "",
+        settings.EVOLUTION_INSTANCE or "bigkilo",
+    )
+
+
+def _evo_configurada() -> bool:
+    base, key, _ = _evo_cfg()
+    return bool(base and key and getattr(settings, "WHATSAPP_PROVIDER", "meta") == "evolution")
+
+
+@staff_member_required
+def whatsapp_conexao(request):
+    """Página (aba do painel) para conectar/monitorar o WhatsApp via Evolution."""
+    contexto = admin.site.each_context(request)
+    contexto["title"] = "Conexão do WhatsApp"
+    contexto["evo_configurada"] = _evo_configurada()
+    return render(request, "whatsapp_conexao.html", contexto)
+
+
+@staff_member_required
+def whatsapp_status(request):
+    """Estado da conexão (open/connecting/close) + número/nome quando conectado."""
+    base, key, inst = _evo_cfg()
+    if not (base and key):
+        return JsonResponse({"ok": False, "erro": "Evolution não configurada."})
+    try:
+        with httpx.Client(timeout=15) as http:
+            resp = http.get(f"{base}/instance/fetchInstances", headers={"apikey": key})
+        dados = resp.json() if resp.status_code < 300 else []
+        if isinstance(dados, dict):
+            dados = dados.get("instances") or [dados]
+        alvo = next((x for x in dados if (x.get("name") or x.get("instanceName")) == inst), None)
+        if not alvo:
+            return JsonResponse({"ok": True, "state": "close"})
+        jid = alvo.get("ownerJid") or ""
+        return JsonResponse({
+            "ok": True,
+            "state": alvo.get("connectionStatus") or alvo.get("state") or "close",
+            "numero": jid.split("@")[0] if jid else "",
+            "nome": alvo.get("profileName") or "",
+        })
+    except Exception as exc:
+        return JsonResponse({"ok": False, "erro": str(exc)})
+
+
+@staff_member_required
+def whatsapp_qr(request):
+    """Gera/atualiza o QR code para escanear (base64 da imagem)."""
+    base, key, inst = _evo_cfg()
+    if not (base and key):
+        return JsonResponse({"ok": False, "erro": "Evolution não configurada."})
+    try:
+        with httpx.Client(timeout=20) as http:
+            resp = http.get(f"{base}/instance/connect/{inst}", headers={"apikey": key})
+        dados = resp.json() if resp.status_code < 300 else {}
+        b64 = dados.get("base64") or (dados.get("qrcode") or {}).get("base64") or ""
+        return JsonResponse({"ok": True, "base64": b64, "connected": not b64})
+    except Exception as exc:
+        return JsonResponse({"ok": False, "erro": str(exc)})
+
+
+@staff_member_required
+@require_POST
+def whatsapp_logout(request):
+    """Desconecta o WhatsApp (logout da instância)."""
+    base, key, inst = _evo_cfg()
+    if not (base and key):
+        return JsonResponse({"ok": False, "erro": "Evolution não configurada."})
+    try:
+        with httpx.Client(timeout=20) as http:
+            resp = http.request("DELETE", f"{base}/instance/logout/{inst}", headers={"apikey": key})
+        return JsonResponse({"ok": resp.status_code < 300})
+    except Exception as exc:
+        return JsonResponse({"ok": False, "erro": str(exc)})
 
 
 # ===================== Simulador de testes (sem WhatsApp) =====================
