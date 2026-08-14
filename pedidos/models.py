@@ -62,8 +62,13 @@ class ConfiguracaoLoja(models.Model):
         help_text="Uma por pedido. Mostrada ao cliente no fechamento; paga ao entregador na entrega (não entra no Pix).",
     )
     chave_pix = models.CharField(
-        "Chave Pix (referência)", max_length=140, blank=True,
-        help_text="ℹ️ Opcional — só para sua referência. O Pix do cliente é gerado automaticamente pelo Asaas.",
+        "Chave Pix", max_length=140, blank=True,
+        help_text="ℹ️ Sua chave Pix REAL. É ela que gera o 'copia e cola' com o valor do pedido para o cliente pagar.",
+    )
+    imprimir_ao_fechar = models.BooleanField(
+        "Imprimir ao fechar o pedido", default=True,
+        help_text="ℹ️ Imprime a comanda assim que o cliente fecha o pedido (a cozinha já começa), sem esperar "
+                  "a confirmação do pagamento. Desligue para imprimir só depois de confirmar o Pix no painel.",
     )
 
     # Horário de funcionamento

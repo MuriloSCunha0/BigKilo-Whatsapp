@@ -624,8 +624,14 @@ def _checkout(sessao, perfil=None):
 
     taxa = Decimal("0.00") if tipo_entrega == Pedido.TipoEntrega.RETIRADA else cfg.taxa_entrega
 
+    # Imprimir ao fechar: o pedido já entra como PREPARANDO (a comanda vai para a
+    # fila de impressão na hora). Senão, aguarda o pagamento ser confirmado no painel.
+    status_inicial = (
+        Pedido.Status.PREPARANDO if getattr(cfg, "imprimir_ao_fechar", True)
+        else Pedido.Status.AGUARDANDO_PAGAMENTO
+    )
     pedido = Pedido.objects.create(
-        cliente=cliente, status=Pedido.Status.AGUARDANDO_PAGAMENTO,
+        cliente=cliente, status=status_inicial,
         endereco_entrega=end.get("rua", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
         bairro=end.get("bairro", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
         cep=end.get("cep", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
@@ -651,7 +657,10 @@ def _checkout(sessao, perfil=None):
     produtos = pedido.valor_total
     taxa = pedido.taxa_entrega
     total = (produtos + taxa).quantize(CENTAVO, rounding=ROUND_HALF_UP)
-    linhas = [f"Pedido #{pedido.pk} confirmado! 🧾"]
+    if getattr(cfg, "imprimir_ao_fechar", True):
+        linhas = [f"Pedido #{pedido.pk} recebido! Já vamos preparar 🍽️"]
+    else:
+        linhas = [f"Pedido #{pedido.pk} confirmado! 🧾"]
     if pedido.data_agendada:
         hora_str = f" às {pedido.hora_agendada.strftime('%H:%M')}" if pedido.hora_agendada else ""
         linhas.append(f"📅 Encomenda para {pedido.data_agendada.strftime('%d/%m/%Y')}{hora_str}")

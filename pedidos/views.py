@@ -311,11 +311,12 @@ def impressao_marcar(request):
         return JsonResponse({"erro": "token inválido ou ausente"}, status=401)
     body = json.loads(request.body or b"{}")
     pedido_id = body.get("pedido_id")
+    # Marca só como impressa e MANTÉM em "Preparando" (a cozinha continua vendo o
+    # pedido ativo). O lojista conclui quando entregar/pagar.
     n = Pedido.objects.filter(
         id=pedido_id, status=Pedido.Status.PREPARANDO, comanda_impressa=False,
     ).update(
         comanda_impressa=True,
         impressa_em=timezone.now(),
-        status=Pedido.Status.CONCLUIDO,
     )
     return JsonResponse({"ok": bool(n)})

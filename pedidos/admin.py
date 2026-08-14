@@ -88,10 +88,10 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
             "fields": ("taxa_entrega",),
             "description": _("Taxa paga ao entregador — informada ao cliente, não entra no Pix."),
         }),
-        (_("Referência (opcional)"), {
-            "fields": ("chave_pix",),
-            "classes": ("collapse",),
-            "description": _("Apenas anotação interna. A cobrança Pix é gerada pelo Asaas automaticamente."),
+        (_("Pagamento e impressão"), {
+            "fields": ("chave_pix", "imprimir_ao_fechar"),
+            "description": _("A chave Pix gera o 'copia e cola' com o valor do pedido. "
+                             "'Imprimir ao fechar' manda a comanda pra cozinha assim que o cliente fecha o pedido."),
         }),
         (_("Funcionamento"), {"fields": ("dias_funcionamento", "hora_abertura", "hora_fechamento")}),
     )
@@ -366,16 +366,34 @@ class PedidoAdmin(ModelAdmin):
     inlines = [ItemPedidoInline]
     list_per_page = 30
     change_list_template = "admin/pedidos/pedido_change_list.html"
-    actions = ("confirmar_pagamento", "reimprimir_comanda")
+    actions = ("concluir_pedido", "confirmar_pagamento", "reimprimir_comanda")
 
     def has_add_permission(self, request):
         # Pedidos entram somente pelo WhatsApp (bot). Nada de cadastro manual.
         return False
 
-    @admin.action(description=_("✅ Confirmar pagamento (Pix recebido)"))
+    @admin.action(description=_("✔️ Concluir pedido (entregue/pago)"))
+    def concluir_pedido(self, request, queryset):
+        # Fecha o pedido quando entrega/recebe o Pix. Avisa o cliente no WhatsApp.
+        from bot.whatsapp import enviar_texto_sync
+        from .models import mensagem
+
+        abertos = queryset.exclude(status__in=[Pedido.Status.CONCLUIDO, Pedido.Status.CANCELADO])
+        n = 0
+        for pedido in abertos:
+            pedido.status = Pedido.Status.CONCLUIDO
+            pedido.save(update_fields=["status", "atualizado_em"])
+            try:
+                enviar_texto_sync(pedido.cliente.telefone, mensagem("PAGAMENTO_CONFIRMADO", pedido.cliente))
+            except Exception:
+                pass
+            n += 1
+        self.message_user(request, f"{n} pedido(s) concluído(s) e cliente avisado.")
+
+    @admin.action(description=_("💳 Confirmar pagamento → preparar (modo pós-pagamento)"))
     def confirmar_pagamento(self, request, queryset):
-        # Pix manual: quando o dinheiro cai, o lojista confirma aqui. Isso coloca o
-        # pedido na fila de impressão (PREPARANDO) e avisa o cliente no WhatsApp.
+        # Usado quando "Imprimir ao fechar" está DESLIGADO: o pedido só vai para a
+        # cozinha (PREPARANDO = imprime) depois que o pagamento é confirmado aqui.
         from bot.whatsapp import enviar_texto_sync
         from .models import mensagem
 
