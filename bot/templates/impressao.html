@@ -1,0 +1,57 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Impressão automática · Big Kilo{% endblock %}
+
+{% block content %}
+<style>
+  #imWrap{ max-width:620px; margin:0 auto; padding:.5rem 0 2rem; }
+  #imWrap .lead{ color:#6b7280; font-size:.92rem; text-align:center; margin-bottom:1.25rem; }
+  html.dark #imWrap .lead{ color:#9ca3af; }
+  .card{ border:1px solid #e5e7eb; border-radius:14px; padding:1.5rem; background:#fff; text-align:center; }
+  html.dark .card{ background:#1f2937; border-color:#374151; color:#e5e7eb; }
+  .dl{ display:inline-flex; align-items:center; gap:.6rem; background:#16a34a; color:#fff; border:none;
+       padding:.85rem 1.6rem; border-radius:12px; font-size:1.05rem; font-weight:700; text-decoration:none; cursor:pointer; }
+  .dl:hover{ background:#15803d; }
+  .win{ font-size:.78rem; color:#6b7280; margin-top:.5rem; }
+  html.dark .win{ color:#9ca3af; }
+  .passos{ text-align:left; max-width:480px; margin:1.5rem auto 0; }
+  .passo{ display:flex; gap:.8rem; align-items:flex-start; margin-bottom:.9rem; }
+  .num{ flex:none; width:26px; height:26px; border-radius:50%; background:#d97706; color:#fff; font-weight:700;
+        display:flex; align-items:center; justify-content:center; font-size:.85rem; }
+  .passo div{ font-size:.9rem; line-height:1.5; color:#374151; }
+  html.dark .passo div{ color:#d1d5db; }
+  .passo b{ color:#b45309; }
+  .aviso{ background:#fefce8; border:1px solid #fde68a; color:#854d0e; border-radius:10px;
+          padding:.8rem 1rem; font-size:.85rem; margin-top:1.25rem; text-align:left; }
+  html.dark .aviso{ background:#3a2f0b; border-color:#854d0e; color:#fde68a; }
+  .ok{ background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; border-radius:10px;
+       padding:.8rem 1rem; font-size:.88rem; margin-top:1.25rem; text-align:left; }
+  html.dark .ok{ background:#062a20; border-color:#065f46; color:#a7f3d0; }
+</style>
+
+<div id="imWrap">
+  <div class="lead">Instale uma vez no computador do restaurante (o que tem a impressora ELGIN no USB).
+    Depois ele imprime os pedidos pagos sozinho — inclusive liga junto com o Windows.</div>
+
+  <div class="card">
+    {% if programa_disponivel %}
+      <a class="dl" href="{% url 'bot:impressao_baixar' %}">⬇️ Baixar o programa de impressão</a>
+      <div class="win">Windows · ~8 MB · não precisa instalar nada além disso</div>
+    {% else %}
+      <div class="aviso">O programa ainda não está disponível neste ambiente. Fale com o suporte.</div>
+    {% endif %}
+
+    <div class="passos">
+      <div class="passo"><div class="num">1</div><div><b>Baixe</b> o programa no computador do restaurante (o que tem a ELGIN i9 no USB).</div></div>
+      <div class="passo"><div class="num">2</div><div><b>Dois cliques</b> no arquivo <b>BigKiloImpressora.exe</b>.<br>Na 1ª vez o Windows pode avisar “Windows protegeu o seu PC” → clique em <b>Mais informações → Executar assim mesmo</b> (só nessa vez).</div></div>
+      <div class="passo"><div class="num">3</div><div><b>Pronto!</b> Ele se instala, liga sozinho com o Windows e imprime cada pedido pago automaticamente. Deixe a janelinha aberta (fica minimizada).</div></div>
+    </div>
+
+    <div class="ok">✅ <b>Como testar:</b> com o programa rodando, vá em <b>Pedidos</b>, selecione um pedido e use a ação
+      <b>“Reimprimir comanda”</b> — deve sair na ELGIN em alguns segundos. Todo pedido pago também imprime sozinho.</div>
+
+    <div class="aviso">⚠️ A impressora precisa estar <b>ligada, com papel</b> e aparecer no Windows como <b>“ELGIN i9(USB)”</b>
+      (o programa também acha sozinho qualquer impressora ELGIN).</div>
+  </div>
+</div>
+{% endblock %}

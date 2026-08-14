@@ -17,7 +17,7 @@ from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -298,6 +298,27 @@ def whatsapp_logout(request):
         return JsonResponse({"ok": resp.status_code < 300})
     except Exception as exc:
         return JsonResponse({"ok": False, "erro": str(exc)})
+
+
+# ===================== Impressão automática (download do programa) ============
+_PRINT_EXE = Path(settings.BASE_DIR) / "download" / "BigKiloImpressora.exe"
+
+
+@staff_member_required
+def impressao_pagina(request):
+    """Aba do painel para baixar o programa de impressão do restaurante."""
+    contexto = admin.site.each_context(request)
+    contexto["title"] = "Impressão automática"
+    contexto["programa_disponivel"] = _PRINT_EXE.exists()
+    return render(request, "impressao.html", contexto)
+
+
+@staff_member_required
+def impressao_baixar(request):
+    """Entrega o .exe do agente de impressão (Windows)."""
+    if not _PRINT_EXE.exists():
+        raise Http404("Programa de impressão não encontrado.")
+    return FileResponse(open(_PRINT_EXE, "rb"), as_attachment=True, filename="BigKiloImpressora.exe")
 
 
 # ===================== Simulador de testes (sem WhatsApp) =====================
