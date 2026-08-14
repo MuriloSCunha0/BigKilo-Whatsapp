@@ -304,18 +304,13 @@ def whatsapp_logout(request):
 _PRINT_EXE = Path(settings.BASE_DIR) / "download" / "BigKiloImpressora.exe"
 
 
-@staff_member_required
 def impressao_pagina(request):
-    """Aba do painel para baixar o programa de impressão do restaurante."""
-    contexto = admin.site.each_context(request)
-    contexto["title"] = "Impressão automática"
-    contexto["programa_disponivel"] = _PRINT_EXE.exists()
-    return render(request, "impressao.html", contexto)
+    """Página pública (instalação única, sem login) para baixar o programa de impressão."""
+    return render(request, "impressao.html", {"programa_disponivel": _PRINT_EXE.exists()})
 
 
-@staff_member_required
 def impressao_baixar(request):
-    """Entrega o .exe do agente de impressão (Windows)."""
+    """Entrega o .exe do agente de impressão (Windows). Público — instalação única."""
     if not _PRINT_EXE.exists():
         raise Http404("Programa de impressão não encontrado.")
     return FileResponse(open(_PRINT_EXE, "rb"), as_attachment=True, filename="BigKiloImpressora.exe")
