@@ -114,6 +114,7 @@
     </div>
     <div class="ft">
       <button class="btn sec" id="cwBack" onclick="cwBackStep()" style="visibility:hidden">← Voltar</button>
+      <button class="btn" id="cwDel" onclick="cwExcluir()" style="display:none; background:#fee2e2; color:#b91c1c; margin-right:auto;">🗑️ Excluir</button>
       <button class="btn prim" id="cwNext" onclick="cwNext()">Avançar →</button>
     </div>
   </div>
@@ -309,8 +310,20 @@
       else{ err(data.erro||'Erro ao salvar.'); $('cwNext').disabled=false; $('cwNext').textContent='✓ Salvar cardápio'; }
     }catch(ex){ err('Falha de conexão.'); $('cwNext').disabled=false; $('cwNext').textContent='✓ Salvar cardápio'; }
   };
-  window.cwClose=()=>{ editId=null; $('cwTitulo').textContent='➕ Novo cardápio'; $('cwOverlay').classList.remove('open'); };
-  window.cwOpen=()=>{ editId=null; $('cwTitulo').textContent='➕ Novo cardápio'; step=1; err('');
+  window.cwExcluir=async()=>{
+    if(!editId) return;
+    if(!confirm('Tem certeza que deseja excluir este cardápio? Esta ação não pode ser desfeita.\n\n(Os produtos continuam cadastrados; apenas o cardápio é removido.)')) return;
+    $('cwDel').disabled=true; $('cwDel').textContent='Excluindo...';
+    try{
+      const r=await fetch('/cardapio/cardapio/assistente/'+editId+'/excluir/',{method:'POST',
+        headers:{'X-CSRFToken':csrf()}});
+      const data=await r.json();
+      if(data.ok){ window.location.reload(); }
+      else{ err(data.erro||'Erro ao excluir.'); $('cwDel').disabled=false; $('cwDel').textContent='🗑️ Excluir'; }
+    }catch(ex){ err('Falha de conexão.'); $('cwDel').disabled=false; $('cwDel').textContent='🗑️ Excluir'; }
+  };
+  window.cwClose=()=>{ editId=null; $('cwTitulo').textContent='➕ Novo cardápio'; $('cwDel').style.display='none'; $('cwOverlay').classList.remove('open'); };
+  window.cwOpen=()=>{ editId=null; $('cwTitulo').textContent='➕ Novo cardápio'; $('cwDel').style.display='none'; step=1; err('');
     $('cwNome').value=''; $('cwAtivo').checked=true; $('cwBusca').value='';
     $('cwTipo').value='NORMAL'; $('cwExcl').checked=false; $('cwDataIni').value=''; $('cwDataFim').value='';
     document.querySelectorAll('#cwGrade input:checked, .cwProd:checked').forEach(c=>c.checked=false);
@@ -318,7 +331,7 @@
     cwFiltrar(); cwCount(); $('cwNext').disabled=false; show(); $('cwOverlay').classList.add('open'); };
 
   window.cwOpenEdit=async(id)=>{
-    editId=id; step=1; err(''); $('cwTitulo').textContent='✏️ Editar cardápio';
+    editId=id; step=1; err(''); $('cwTitulo').textContent='✏️ Editar cardápio'; $('cwDel').style.display='inline-block';
     try{
       const r=await fetch('/cardapio/cardapio/assistente/'+id+'/');
       const d=await r.json();

@@ -320,6 +320,19 @@ def cardapio_salvar(request):
 
 
 @staff_member_required
+def cardapio_excluir(request, cardapio_id):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "erro": "Método inválido."}, status=405)
+    try:
+        cardapio = Cardapio.objects.get(id=cardapio_id)
+    except Cardapio.DoesNotExist:
+        return JsonResponse({"ok": False, "erro": "Cardápio não encontrado."}, status=404)
+    nome = cardapio.nome
+    cardapio.delete()
+    return JsonResponse({"ok": True, "nome": nome})
+
+
+@staff_member_required
 def promocao_carregar(request, produto_id):
     try:
         p = Produto.objects.get(id=produto_id)
