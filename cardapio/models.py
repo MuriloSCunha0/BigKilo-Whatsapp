@@ -409,6 +409,68 @@ class FaixaPreco(models.Model):
         return f"{self.rotulo} — R$ {self.preco}"
 
 
+class GrupoComplemento(models.Model):
+    """Grupo de complementos de um produto (padrão iFood).
+
+    Ex.: 'Escolha o tamanho' (obrigatório, escolher 1), 'Adicionais' (opcional,
+    até 3). Cada grupo tem opções (OpcaoComplemento) com preço adicional.
+    """
+
+    produto = models.ForeignKey(
+        Produto, on_delete=models.CASCADE, related_name="grupos_complemento", verbose_name="Produto"
+    )
+    nome = models.CharField(
+        "Nome do grupo", max_length=80,
+        help_text="ℹ️ Ex.: Escolha o tamanho, Adicionais, Ponto da carne.",
+    )
+    obrigatorio = models.BooleanField(
+        "Obrigatório", default=False,
+        help_text="ℹ️ Se marcado, o cliente é obrigado a escolher neste grupo.",
+    )
+    min_escolhas = models.PositiveSmallIntegerField(
+        "Mínimo de escolhas", default=0,
+        help_text="ℹ️ Quantidade mínima que o cliente precisa escolher (0 = livre).",
+    )
+    max_escolhas = models.PositiveSmallIntegerField(
+        "Máximo de escolhas", default=1,
+        help_text="ℹ️ Quantidade máxima que o cliente pode escolher (0 = sem limite).",
+    )
+    ordem = models.PositiveIntegerField("Ordem", default=0, help_text="ℹ️ Ordem de exibição (0 aparece primeiro).")
+
+    class Meta:
+        verbose_name = "Grupo de complementos"
+        verbose_name_plural = "Grupos de complementos"
+        ordering = ["produto", "ordem", "id"]
+
+    def __str__(self):
+        return f"{self.nome} — {self.produto.nome}"
+
+
+class OpcaoComplemento(models.Model):
+    """Uma opção dentro de um grupo de complementos (ex.: 'Bacon +R$4')."""
+
+    grupo = models.ForeignKey(
+        GrupoComplemento, on_delete=models.CASCADE, related_name="opcoes", verbose_name="Grupo"
+    )
+    nome = models.CharField(
+        "Nome", max_length=80, help_text="ℹ️ Ex.: Bacon, Queijo extra, 500ml, Bem passado.",
+    )
+    preco_adicional = models.DecimalField(
+        "Preço adicional (R$)", max_digits=8, decimal_places=2, default=Decimal("0.00"),
+        help_text="ℹ️ Quanto soma ao preço do item. 0 = sem custo extra.",
+    )
+    ativo = models.BooleanField("Ativo", default=True, help_text="ℹ️ Desmarque para esconder a opção sem apagar.")
+    ordem = models.PositiveIntegerField("Ordem", default=0, help_text="ℹ️ Ordem de exibição (0 aparece primeiro).")
+
+    class Meta:
+        verbose_name = "Opção de complemento"
+        verbose_name_plural = "Opções de complemento"
+        ordering = ["grupo", "ordem", "id"]
+
+    def __str__(self):
+        return self.nome
+
+
 class Promocao(Produto):
     """Proxy: exibe os produtos como seção 'Promoções' no painel."""
 

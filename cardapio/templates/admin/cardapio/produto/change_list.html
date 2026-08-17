@@ -34,6 +34,25 @@
   #wzCard .prim{ background:#d97706; color:#fff; } #wzCard .sec{ background:#f3f4f6; color:#374151; }
   #wzCard .err{ color:#b91c1c; font-size:.85rem; margin-top:.5rem; min-height:1rem; }
   #wzCard .add{ background:none; color:#b45309; padding:.2rem 0; font-size:.85rem; cursor:pointer; border:none; }
+  /* ===== Complementos (estilo iFood) ===== */
+  #wzCard .cgrupo{ border:1px solid #e5e7eb; border-radius:12px; padding:.85rem .9rem; margin-bottom:.8rem; background:#fafafa; }
+  #wzCard .cgrupo .ctop{ display:flex; gap:.5rem; align-items:center; }
+  #wzCard .cgrupo .ctop input.cgnome{ flex:1; font-weight:600; }
+  #wzCard .cgrupo .del{ background:#fee2e2; color:#b91c1c; border:none; border-radius:8px; padding:.4rem .6rem; cursor:pointer; font-size:.9rem; }
+  #wzCard .cregras{ display:flex; gap:.8rem; align-items:center; flex-wrap:wrap; margin:.55rem 0 .35rem; font-size:.82rem; color:#374151; }
+  #wzCard .cregras label{ display:flex; align-items:center; gap:.35rem; margin:0; font-weight:500; }
+  #wzCard .cregras input[type=number]{ width:58px; padding:.35rem; text-align:center; }
+  #wzCard .cregras input[type=checkbox]{ width:auto; }
+  #wzCard .copcao{ display:flex; gap:.4rem; align-items:center; margin-top:.4rem; }
+  #wzCard .copcao input.conome{ flex:1; }
+  #wzCard .copcao input.copreco{ width:96px; }
+  #wzCard .copcao .rem{ background:#f3f4f6; color:#6b7280; border:none; border-radius:7px; padding:.35rem .55rem; cursor:pointer; }
+  #wzCard .cvazio{ font-size:.82rem; color:#6b7280; }
+  html.dark #wzCard .cgrupo{ background:#111827; border-color:#374151; }
+  html.dark #wzCard .cregras{ color:#d1d5db; }
+  html.dark #wzCard .copcao .rem{ background:#374151; color:#d1d5db; }
+  html.dark #wzCard .cvazio{ color:#9ca3af; }
+  html.dark #wzCard .cgrupo .del{ background:rgba(185,28,28,.2); color:#fca5a5; }
 
   /* ===== Tema escuro (acompanha o Unfold: classe .dark no <html>) ===== */
   html.dark #wzCard{ background:#1f2937; color:#e5e7eb; }
@@ -59,10 +78,10 @@
 <div id="wzOverlay" onclick="if(event.target===this)wzClose()">
   <div id="wzCard">
     <div class="h"><h1>➕ Novo produto</h1><button type="button" onclick="wzClose()">✕</button></div>
-    <div class="dots"><div class="dot on" data-d="1"></div><div class="dot" data-d="2"></div><div class="dot" data-d="3"></div><div class="dot" data-d="4"></div></div>
+    <div class="dots"><div class="dot on" data-d="1"></div><div class="dot" data-d="2"></div><div class="dot" data-d="3"></div><div class="dot" data-d="4"></div><div class="dot" data-d="5"></div></div>
     <div class="bd">
       <section data-step="1">
-        <div class="st">Passo 1 de 4</div><h2>Informações básicas</h2>
+        <div class="st">Passo 1 de 5</div><h2>Informações básicas</h2>
         <label>Categoria *</label>
         <select id="wzCat"><option value="">— escolha —</option>
           {% for c in wizard_categorias %}<option value="{{ c.id }}" data-tipo="{{ c.tipo }}">{{ c.nome }} ({{ c.get_tipo_display }})</option>{% endfor %}
@@ -79,7 +98,7 @@
         </div>
       </section>
       <section data-step="2" style="display:none">
-        <div class="st">Passo 2 de 4</div><h2>Preço</h2>
+        <div class="st">Passo 2 de 5</div><h2>Preço</h2>
         <div id="wzMont" style="display:none">
           <div class="muted">Usa a <b>tabela de preços da loja</b> (Dados da loja). Nada a preencher aqui.</div>
           <div id="wzKgWrap" style="display:none"><label>Preço por kg — só proteína (opcional)</label>
@@ -93,7 +112,7 @@
           <button type="button" class="add" onclick="wzAddFaixa()">+ adicionar tamanho</button></div>
       </section>
       <section data-step="3" style="display:none">
-        <div class="st">Passo 3 de 4</div><h2>Quando fica disponível?</h2>
+        <div class="st">Passo 3 de 5</div><h2>Quando fica disponível?</h2>
         <label style="display:flex;gap:.5rem;align-items:center;"><input type="checkbox" id="wzSempre" checked style="width:auto"> Sempre disponível (item fixo, enquanto a loja estiver aberta)</label>
         <div id="wzCards" style="display:none">
           <div class="hint">Escolha em quais cardápios este item aparece:</div>
@@ -121,7 +140,13 @@
         </div>
       </section>
       <section data-step="4" style="display:none">
-        <div class="st">Passo 4 de 4</div><h2>Revisão</h2><div class="review" id="wzReview"></div>
+        <div class="st">Passo 4 de 5</div><h2>Complementos <span style="font-weight:400;color:#6b7280;font-size:.9rem">(opcional)</span></h2>
+        <div class="hint" style="margin-bottom:.6rem">ℹ️ Grupos de opções que o cliente escolhe, como no iFood. Ex.: <b>Escolha o tamanho</b> (obrigatório, 1) · <b>Adicionais</b> (opcional, até 3: Bacon +R$4). Deixe vazio se este item não tem.</div>
+        <div id="wzComps"></div>
+        <button type="button" class="add" onclick="wzAddGrupo()">+ adicionar grupo de complementos</button>
+      </section>
+      <section data-step="5" style="display:none">
+        <div class="st">Passo 5 de 5</div><h2>Revisão</h2><div class="review" id="wzReview"></div>
       </section>
       <div class="err" id="wzErr"></div>
     </div>
@@ -148,6 +173,48 @@
   window.wzAddFaixa=(r='',p='')=>$('wzFaixas').insertAdjacentHTML('beforeend',
     `<div class="faixa"><input placeholder="Tamanho (ex.: 500ml)" value="${r}"><input inputmode="decimal" placeholder="Preço" value="${p}" style="max-width:120px"><button type="button" class="btn sec" onclick="this.parentNode.remove()">✕</button></div>`);
 
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  window.wzAddOpcao=(grupoEl, nome='', preco='')=>{
+    const box=grupoEl.querySelector('.copcoes');
+    const row=document.createElement('div'); row.className='copcao';
+    row.innerHTML=`<input class="conome" placeholder="Opção (ex.: Bacon)" value="${esc(nome)}">`
+      +`<input class="copreco" inputmode="decimal" placeholder="+R$ 0,00" value="${esc(preco)}">`
+      +`<button type="button" class="rem" title="Remover opção" onclick="this.closest('.copcao').remove()">✕</button>`;
+    box.appendChild(row);
+  };
+  window.wzAddGrupo=(nome='',obrig=false,min=0,max=1,opcoes=null)=>{
+    const wrap=document.createElement('div'); wrap.className='cgrupo';
+    wrap.innerHTML=`<div class="ctop">`
+      +`<input class="cgnome" placeholder="Nome do grupo (ex.: Escolha o tamanho)" value="${esc(nome)}">`
+      +`<button type="button" class="del" title="Remover grupo" onclick="this.closest('.cgrupo').remove()">🗑️</button></div>`
+      +`<div class="cregras"><label><input type="checkbox" class="cgobrig" ${obrig?'checked':''}> Obrigatório</label>`
+      +`<label>mín. <input type="number" class="cgmin" min="0" value="${min}"></label>`
+      +`<label>máx. <input type="number" class="cgmax" min="0" value="${max}"></label>`
+      +`<span style="color:#9ca3af">(máx. 0 = sem limite)</span></div>`
+      +`<div class="copcoes"></div>`
+      +`<button type="button" class="add" onclick="wzAddOpcao(this.closest('.cgrupo'))">+ adicionar opção</button>`;
+    $('wzComps').appendChild(wrap);
+    const ops=(opcoes&&opcoes.length)?opcoes:[{}];
+    ops.forEach(o=>wzAddOpcao(wrap, o.nome||'', o.preco||''));
+    return wrap;
+  };
+  function coletaComplementos(){
+    const grupos=[];
+    document.querySelectorAll('#wzComps .cgrupo').forEach(g=>{
+      const nome=g.querySelector('.cgnome').value.trim(); if(!nome) return;
+      const opcoes=[];
+      g.querySelectorAll('.copcao').forEach(o=>{
+        const on=o.querySelector('.conome').value.trim();
+        if(on) opcoes.push({nome:on, preco:o.querySelector('.copreco').value.trim()});
+      });
+      if(!opcoes.length) return;
+      grupos.push({nome, obrigatorio:g.querySelector('.cgobrig').checked,
+        min:parseInt(g.querySelector('.cgmin').value||'0',10)||0,
+        max:parseInt(g.querySelector('.cgmax').value||'0',10)||0, opcoes});
+    });
+    return grupos;
+  }
+
   function prep2(){
     const tipo=$('wzCat').selectedOptions[0]?.dataset.tipo;
     $('wzMont').style.display=modo==='MONTAGEM'?'block':'none';
@@ -162,7 +229,8 @@
       modo_venda:modo, preco:$('wzPreco').value, preco_kg:$('wzKg').value,
       faixas:[...$('wzFaixas').querySelectorAll('.faixa')].map(f=>({rotulo:f.children[0].value,preco:f.children[1].value})),
       sempre_disponivel:$('wzSempre').checked, cardapios:cards,
-      horario_inicio:$('wzHoraIn').value||null, horario_fim:$('wzHoraFim').value||null};
+      horario_inicio:$('wzHoraIn').value||null, horario_fim:$('wzHoraFim').value||null,
+      complementos:coletaComplementos()};
   }
   function valida(){
     if(step===1){ if(!$('wzCat').value)return'Escolha a categoria.'; if(!$('wzNome').value.trim())return'Informe o nome.'; if(!modo)return'Escolha como o item é vendido.'; }
@@ -171,6 +239,17 @@
     if(step===3){
       if(($('wzHoraIn').value && !$('wzHoraFim').value) || (!$('wzHoraIn').value && $('wzHoraFim').value)){
         return 'Preencha o horário de início E de fim, ou deixe ambos em branco.';
+      }
+    }
+    if(step===4){
+      for(const g of document.querySelectorAll('#wzComps .cgrupo')){
+        const nome=g.querySelector('.cgnome').value.trim();
+        const temOp=[...g.querySelectorAll('.copcao .conome')].some(i=>i.value.trim());
+        if(nome && !temOp) return `Adicione ao menos uma opção no grupo "${nome}" (ou remova o grupo).`;
+        if(!nome && temOp) return 'Dê um nome ao grupo de complementos (ou remova-o).';
+        const mn=parseInt(g.querySelector('.cgmin').value||'0',10)||0;
+        const mx=parseInt(g.querySelector('.cgmax').value||'0',10)||0;
+        if(mx && mn>mx) return `No grupo "${nome}", o mínimo não pode ser maior que o máximo.`;
       }
     }
     return'';
@@ -188,19 +267,23 @@
       ag = nomes.length ? ('Cardápios: '+nomes.join(', ')) : '⚠️ nenhum cardápio selecionado';
     }
     let h_esp = (d.horario_inicio && d.horario_fim) ? `<br>Horário Específico: ${d.horario_inicio} às ${d.horario_fim}` : '';
-    $('wzReview').innerHTML=`<b>${d.nome}</b><br>Categoria: ${tipo}<br>Tipo: ${nm[modo]}<br>Preço: ${preco}<br>Disponível: ${ag}${h_esp}`;
+    const comps=coletaComplementos();
+    const compTxt = comps.length
+      ? comps.map(g=>`${g.obrigatorio?'★ ':''}${g.nome} (${g.opcoes.length} opç.)`).join(' · ')
+      : 'nenhum';
+    $('wzReview').innerHTML=`<b>${d.nome}</b><br>Categoria: ${tipo}<br>Tipo: ${nm[modo]}<br>Preço: ${preco}<br>Disponível: ${ag}${h_esp}<br>Complementos: ${compTxt}`;
   }
   function show(){
     document.querySelectorAll('#wzCard section[data-step]').forEach(s=>s.style.display=(+s.dataset.step===step)?'block':'none');
     document.querySelectorAll('#wzCard .dot').forEach(x=>x.classList.toggle('on',+x.dataset.d<=step));
     $('wzBack').style.visibility=step>1?'visible':'hidden';
-    $('wzNext').textContent=step===4?(editId?'✓ Salvar alterações':'✓ Salvar produto'):'Avançar →';
-    if(step===2)prep2(); if(step===4)review();
+    $('wzNext').textContent=step===5?(editId?'✓ Salvar alterações':'✓ Salvar produto'):'Avançar →';
+    if(step===2)prep2(); if(step===5)review();
   }
   window.wzBackStep=()=>{ if(step>1){step--;err('');show();} };
   window.wzNext=async()=>{
     const e=valida(); if(e){err(e);return;} err('');
-    if(step<4){step++;show();return;}
+    if(step<5){step++;show();return;}
     $('wzNext').disabled=true; $('wzNext').textContent='Salvando...';
     try{
       const r=await fetch('/cardapio/produto/assistente/salvar/',{method:'POST',
@@ -217,7 +300,7 @@
   window.wzOpen=()=>{ editId=null; document.querySelector('#wzCard .h h1').textContent='➕ Novo produto'; step=1; modo=''; err('');
     $('wzCat').value=''; $('wzNome').value=''; $('wzDesc').value=''; $('wzPreco').value=''; $('wzKg').value='';
     $('wzFaixas').innerHTML=''; $('wzSempre').checked=true; $('wzCards').style.display='none';
-    $('wzHoraIn').value=''; $('wzHoraFim').value='';
+    $('wzHoraIn').value=''; $('wzHoraFim').value=''; $('wzComps').innerHTML='';
     document.querySelectorAll('.wzCardChk:checked').forEach(c=>c.checked=false);
     document.querySelectorAll('#wzModos .opt').forEach(x=>x.classList.remove('sel'));
     $('wzNext').disabled=false; show(); $('wzOverlay').classList.add('open'); };
@@ -243,6 +326,8 @@
       });
       $('wzHoraIn').value=p.horario_inicio?p.horario_inicio.substring(0,5):'';
       $('wzHoraFim').value=p.horario_fim?p.horario_fim.substring(0,5):'';
+      $('wzComps').innerHTML='';
+      (p.complementos||[]).forEach(g=>wzAddGrupo(g.nome, g.obrigatorio, g.min, g.max, g.opcoes));
       $('wzNext').disabled=false; show(); $('wzOverlay').classList.add('open');
     }catch(e){ alert('Falha ao carregar produto.'); }
   };

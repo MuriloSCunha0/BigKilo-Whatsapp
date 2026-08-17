@@ -10,7 +10,23 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Cardapio, Categoria, DisponibilidadeCardapio, FaixaPreco, PeriodoChoices, Produto
+from .models import (
+    Cardapio,
+    Categoria,
+    DisponibilidadeCardapio,
+    FaixaPreco,
+    GrupoComplemento,
+    OpcaoComplemento,
+    PeriodoChoices,
+    Produto,
+)
+
+
+def _int(valor, padrao=0) -> int:
+    try:
+        return int(str(valor).strip())
+    except (ValueError, TypeError):
+        return padrao
 
 
 def _dec(valor) -> Decimal:
@@ -50,7 +66,12 @@ def wizard(request):
 @staff_member_required
 def wizard_carregar(request, produto_id):
     try:
-        p = Produto.objects.prefetch_related("faixas", "cardapios").select_related("categoria").get(id=produto_id)
+        p = (
+            Produto.objects
+            .prefetch_related("faixas", "cardapios", "grupos_complemento__opcoes")
+            .select_related("categoria")
+            .get(id=produto_id)
+        )
     except Produto.DoesNotExist:
         return JsonResponse({"ok": False, "erro": "Produto não encontrado."}, status=404)
     return JsonResponse({
@@ -68,6 +89,23 @@ def wizard_carregar(request, produto_id):
             "horario_fim": p.horario_fim.strftime("%H:%M") if p.horario_fim else None,
             "faixas": [{"rotulo": f.rotulo, "preco": str(f.preco).replace(".", ",")} for f in p.faixas.all()],
             "cardapios": list(p.cardapios.values_list("id", flat=True)),
+            "complementos": [
+                {
+                    "nome": g.nome,
+                    "obrigatorio": g.obrigatorio,
+                    "min": g.min_escolhas,
+                    "max": g.max_escolhas,
+                    "opcoes": [
+                        {
+                            "nome": o.nome,
+                            "preco": str(o.preco_adicional).replace(".", ",") if o.preco_adicional else "",
+                            "ativo": o.ativo,
+                        }
+                        for o in g.opcoes.all()
+                    ],
+                }
+                for g in p.grupos_complemento.all()
+            ],
         },
     })
 
@@ -165,6 +203,32 @@ def wizard_salvar(request):
         produto.cardapios.set(Cardapio.objects.filter(id__in=ids))
     else:
         produto.cardapios.clear()
+
+    # Complementos (grupos + opções): substitui tudo pelo que veio do assistente.
+    produto.grupos_complemento.all().delete()
+    for gi, g in enumerate(dados.get("complementos", [])):
+        gnome = (g.get("nome") or "").strip()
+        if not gnome:
+            continue
+        grupo = GrupoComplemento.objects.create(
+            produto=produto,
+            nome=gnome[:80],
+            obrigatorio=bool(g.get("obrigatorio")),
+            min_escolhas=max(0, _int(g.get("min"), 0)),
+            max_escolhas=max(0, _int(g.get("max"), 1)),
+            ordem=gi,
+        )
+        for oi, o in enumerate(g.get("opcoes", [])):
+            onome = (o.get("nome") or "").strip()
+            if not onome:
+                continue
+            OpcaoComplemento.objects.create(
+                grupo=grupo,
+                nome=onome[:80],
+                preco_adicional=_dec(o.get("preco")),
+                ativo=bool(o.get("ativo", True)),
+                ordem=oi,
+            )
 
     aviso = ""
     if not produto.sempre_disponivel and not produto.cardapios.exists():
