@@ -153,6 +153,17 @@ class CardapioAdmin(ModelAdmin):
     search_fields = ("nome",)
     filter_horizontal = ("produtos",)
     inlines = [DisponibilidadeCardapioInline]
+    actions = ["excluir_selecionados"]
+
+    @admin.action(description="🗑️ Excluir cardápios selecionados")
+    def excluir_selecionados(self, request, queryset):
+        n = queryset.count()
+        queryset.delete()
+        self.message_user(
+            request,
+            f"{n} cardápio(s) excluído(s). Os produtos continuam cadastrados.",
+            messages.SUCCESS,
+        )
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
