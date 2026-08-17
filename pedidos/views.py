@@ -23,6 +23,7 @@ from .models import (
     AreaEntrega,
     ChaveMensagem,
     Cliente,
+    ConfiguracaoLoja,
     LogMensagem,
     MensagemCliente,
     MensagemFluxo,
@@ -133,6 +134,7 @@ def fluxo_editar(request, perfil_id):
         "testar_url": f"/simulador/?perfil={perfil.id}",
         "mostrar_ativar": True, "ativo": perfil.ativo,
         "base_label": "Texto padrão",
+        "loja_nome": ConfiguracaoLoja.get().nome_loja,
     })
     return render(request, "fluxo_editar.html", ctx)
 
@@ -198,6 +200,7 @@ def contato_mensagens(request, cliente_id):
         "testar_url": f"/simulador/?tel={cliente.telefone}",
         "mostrar_ativar": False, "ativo": False,
         "base_label": "O que os outros recebem",
+        "loja_nome": ConfiguracaoLoja.get().nome_loja,
     })
     return render(request, "fluxo_editar.html", ctx)
 

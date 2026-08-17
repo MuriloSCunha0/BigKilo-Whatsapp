@@ -5,102 +5,174 @@
 {% block content %}
 {% csrf_token %}
 <style>
-  #fxHeader { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; background: #fff; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
-  #fxHeader .title-box { display: flex; flex-direction: column; gap: .2rem; }
-  #fxHeader .nome { font-size: 1.35rem; font-weight: 700; color: #111827; }
-  #fxHeader .badge { font-size: .75rem; font-weight: 700; padding: .25rem .65rem; border-radius: 20px; background: #16a34a; color: #fff; display: inline-block; width: fit-content; }
-  
-  #fxWorkspace { display: grid; grid-template-columns: 340px 1fr 320px; gap: 1.25rem; align-items: start; }
-  @media(max-width: 1200px) { #fxWorkspace { grid-template-columns: 1fr; } #fxPreviewArea { order: -1; } }
+  /* ===== Tokens (claro) ===== */
+  #fxWrap{
+    --bg-card:#fff; --bd:#e8ebef; --bd-soft:#eef1f4;
+    --tx:#0f172a; --tx-soft:#64748b; --tx-mut:#94a3b8;
+    --panel:#f7f8fa; --brand:#d97706; --brand-ink:#b45309; --brand-soft:#fff7ed;
+    --wa-head:#008069; --wa-bg:#efeae2; --wa-in:#fff; --wa-time:#667781;
+    --shadow:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.06);
+    --shadow-lg:0 18px 40px rgba(16,24,40,.16);
+  }
+  html.dark #fxWrap{
+    --bg-card:#1f2937; --bd:#374151; --bd-soft:#2b3644;
+    --tx:#f3f4f6; --tx-soft:#9ca3af; --tx-mut:#6b7280;
+    --panel:#111827; --brand:#f59e0b; --brand-ink:#fcd34d; --brand-soft:rgba(217,119,6,.14);
+    --wa-head:#1f2c33; --wa-bg:#0b141a; --wa-in:#202c33; --wa-time:#8696a0;
+    --shadow:0 1px 2px rgba(0,0,0,.3); --shadow-lg:0 18px 40px rgba(0,0,0,.5);
+  }
 
-  /* Pipeline / Drag and Drop List */
-  #fxCanvas { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 1rem; max-height: calc(85vh - 100px); overflow-y: auto; display: flex; flex-direction: column; gap: .75rem; }
-  .fxGroupTitle { font-size: .72rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin: .5rem 0 .2rem .2rem; display: flex; align-items: center; gap: .4rem; }
-  
-  .fxNodeCard { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: .75rem .85rem; cursor: pointer; transition: all .15s ease; position: relative; user-select: none; }
-  .fxNodeCard:hover { border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,.12); transform: translateY(-1px); }
-  .fxNodeCard.active { border-color: #d97706; background: #fff7ed; box-shadow: 0 0 0 2px rgba(217,119,6,.2); }
-  .fxNodeCard.dragging { opacity: .4; border: 2px dashed #d97706; }
-  
-  .fxNodeCard .drag-handle { cursor: grab; color: #9ca3af; font-size: .9rem; margin-right: .4rem; font-weight: 700; display: inline-block; }
-  .fxNodeCard .node-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .2rem; }
-  .fxNodeCard .node-title { font-weight: 700; font-size: .88rem; color: #1f2937; }
-  .fxNodeCard .node-sub { font-size: .72rem; color: #6b7280; margin-top: .15rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .fxConnector { text-align: center; color: #d1d5db; font-size: .8rem; margin: -.4rem 0; pointer-events: none; }
+  #fxWrap *{ box-sizing:border-box; }
 
-  /* Central Editor */
-  #fxMainEditor { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 1.25rem; min-height: 480px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
-  #fxMainEditor h2 { margin: 0 0 .25rem; font-size: 1.2rem; color: #111827; font-weight: 700; }
-  #fxMainEditor .when-text { font-size: .82rem; color: #4b5563; margin: 0 0 1rem; background: #f3f4f6; padding: .5rem .75rem; border-radius: 8px; display: flex; align-items: center; gap: .4rem; }
-  #fxMainEditor textarea { width: 100%; min-height: 180px; padding: .85rem; border: 1px solid #d1d5db; border-radius: 10px; font-size: .95rem; line-height: 1.5; resize: vertical; font-family: inherit; }
-  #fxMainEditor textarea:focus { outline: none; border-color: #d97706; box-shadow: 0 0 0 3px rgba(217,119,6,.15); }
-  #fxMainEditor textarea.invalido { border-color: #dc2626; background: #fef2f2; }
+  #fxHeader{ display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:space-between;
+    margin-bottom:1.25rem; background:var(--bg-card); padding:1.1rem 1.35rem; border-radius:16px;
+    border:1px solid var(--bd); box-shadow:var(--shadow); }
+  #fxHeader .title-box{ display:flex; flex-direction:column; gap:.25rem; }
+  #fxHeader .nome-row{ display:flex; align-items:center; gap:.6rem; }
+  #fxHeader .nome{ font-size:1.4rem; font-weight:800; color:var(--tx); letter-spacing:-.01em; }
+  #fxHeader .badge{ font-size:.7rem; font-weight:800; padding:.28rem .7rem; border-radius:999px;
+    background:linear-gradient(135deg,#16a34a,#15803d); color:#fff; display:inline-flex; align-items:center; gap:.3rem;
+    box-shadow:0 2px 8px rgba(22,163,74,.35); }
+  #fxHeader .sub{ font-size:.84rem; color:var(--tx-soft); }
+  /* Toggle estilo switch */
+  .fxSwitch{ display:flex; align-items:center; gap:.6rem; font-size:.9rem; font-weight:600; color:var(--tx); cursor:pointer; }
+  .fxSwitch input{ position:absolute; opacity:0; width:0; height:0; }
+  .fxSwitch .track{ width:46px; height:26px; border-radius:999px; background:var(--tx-mut); position:relative; transition:background .2s; flex:none; }
+  .fxSwitch .track::after{ content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%;
+    background:#fff; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .fxSwitch input:checked + .track{ background:#16a34a; }
+  .fxSwitch input:checked + .track::after{ transform:translateX(20px); }
 
-  .fxChips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .75rem 0; }
-  .fxChipBtn { border: none; background: #fef3c7; color: #92400e; border-radius: 8px; padding: .4rem .75rem; cursor: pointer; font-size: .8rem; font-weight: 600; transition: background .15s; }
-  .fxChipBtn:hover { background: #fde68a; }
-  .fxErrBox { color: #dc2626; font-size: .8rem; margin-top: .4rem; background: #fef2f2; padding: .5rem .75rem; border-radius: 8px; border: 1px solid #fecaca; display: none; }
-  .fxBaseRef { font-size: .75rem; color: #6b7280; margin-top: .85rem; padding: .65rem; background: #f9fafb; border-radius: 8px; border-left: 3px solid #d97706; }
+  #fxWorkspace{ display:grid; grid-template-columns:320px 1fr 340px; gap:1.25rem; align-items:start; }
+  @media(max-width:1200px){ #fxWorkspace{ grid-template-columns:1fr; } #fxPreviewArea{ order:-1; } }
 
-  /* Phone Preview */
-  #fxPreviewArea { position: sticky; top: 1rem; }
-  #fxPhoneFrame { background: #ece5dd; border-radius: 20px; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.15); border: 1px solid rgba(0,0,0,.1); }
-  #fxPhoneFrame .header { background: #075e54; color: #fff; padding: .75rem 1rem; font-size: .9rem; font-weight: 600; display: flex; align-items: center; gap: .6rem; }
-  #fxPhoneFrame .chat-body { min-height: 260px; max-height: 380px; overflow-y: auto; padding: .85rem; display: flex; flex-direction: column; gap: .5rem; }
-  #fxPhoneFrame .bubble { background: #fff; border-radius: 10px; padding: .65rem .8rem; font-size: .85rem; line-height: 1.45; white-space: pre-wrap; box-shadow: 0 1px 2px rgba(0,0,0,.08); color: #111; }
-  #fxPhoneFrame .bubble b { font-weight: 700; color: #000; }
-  #fxPhoneFrame .footer-lbl { font-size: .72rem; color: #6b7280; margin-top: .5rem; text-align: center; font-weight: 500; }
+  /* ===== Coluna esquerda: etapas ===== */
+  #fxCanvas{ background:var(--panel); border:1px solid var(--bd); border-radius:16px; padding:1rem .85rem;
+    max-height:calc(88vh - 90px); overflow-y:auto; counter-reset:stepnum; }
+  .fxCanvasTitle{ font-size:.82rem; font-weight:800; color:var(--tx); margin:.1rem .2rem .8rem; display:flex; align-items:center; gap:.45rem; }
+  .fxCanvasTitle small{ font-weight:500; color:var(--tx-soft); font-size:.72rem; }
+  .fxGroupTitle{ font-size:.68rem; font-weight:800; color:var(--tx-mut); text-transform:uppercase; letter-spacing:.06em;
+    margin:.9rem 0 .5rem .2rem; }
+  .fxGroupTitle:first-of-type{ margin-top:.2rem; }
 
-  /* Floating Bar */
-  #fxActionBar { position: sticky; bottom: 0; background: rgba(255,255,255,.98); backdrop-filter: blur(8px); border-top: 1px solid #e5e7eb; padding: .85rem 1.25rem; margin-top: 1.5rem; display: flex; gap: .75rem; align-items: center; justify-content: flex-end; border-radius: 12px; box-shadow: 0 -4px 16px rgba(0,0,0,.05); }
-  #fxActionBar .status-msg { margin-right: auto; font-size: .88rem; font-weight: 600; }
-  .fxBtn { border: none; border-radius: 9px; padding: .6rem 1.3rem; font-weight: 600; cursor: pointer; font-size: .9rem; text-decoration: none; display: inline-flex; align-items: center; gap: .4rem; }
-  .fxBtnPrimary { background: #d97706; color: #fff; }
-  .fxBtnPrimary:hover { background: #b45309; }
-  .fxBtnSecondary { background: #f3f4f6; color: #374151; }
-  .fxBtnSecondary:hover { background: #e5e7eb; }
-  .fxBtn:disabled { opacity: .5; cursor: not-allowed; }
+  .fxNodeCard{ background:var(--bg-card); border:1px solid var(--bd); border-radius:12px; padding:.7rem .8rem .7rem .7rem;
+    cursor:pointer; transition:border-color .15s, box-shadow .15s, transform .1s; position:relative; user-select:none;
+    display:flex; gap:.6rem; align-items:flex-start; }
+  .fxNodeCard:hover{ border-color:var(--brand); box-shadow:0 4px 14px rgba(217,119,6,.14); }
+  .fxNodeCard.active{ border-color:var(--brand); background:var(--brand-soft); box-shadow:0 0 0 2px var(--brand); }
+  .fxNodeCard .num{ counter-increment:stepnum; flex:none; width:24px; height:24px; border-radius:50%;
+    background:var(--panel); border:1px solid var(--bd); color:var(--tx-soft); font-size:.72rem; font-weight:800;
+    display:flex; align-items:center; justify-content:center; margin-top:.05rem; }
+  .fxNodeCard .num::before{ content:counter(stepnum); }
+  .fxNodeCard.active .num{ background:var(--brand); border-color:var(--brand); color:#fff; }
+  .fxNodeCard .node-body{ min-width:0; flex:1; }
+  .fxNodeCard .node-title{ font-weight:700; font-size:.86rem; color:var(--tx); line-height:1.25; }
+  .fxNodeCard .node-sub{ font-size:.74rem; color:var(--tx-soft); margin-top:.2rem;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.35; }
+  .fxConnector{ text-align:center; color:var(--tx-mut); font-size:.72rem; margin:.15rem 0; pointer-events:none; opacity:.6; }
 
-  /* Dark mode support */
-  html.dark #fxHeader, html.dark #fxMainEditor, html.dark #fxActionBar { background: #1f2937; border-color: #374151; color: #e5e7eb; }
-  html.dark #fxHeader .nome { color: #f3f4f6; }
-  html.dark #fxCanvas { background: #111827; border-color: #374151; }
-  html.dark .fxNodeCard { background: #1f2937; border-color: #374151; }
-  html.dark .fxNodeCard .node-title { color: #f3f4f6; }
-  html.dark #fxMainEditor textarea { background: #111827; color: #e5e7eb; border-color: #374151; }
-  html.dark #fxPhoneFrame { background: #111827; }
-  html.dark #fxPhoneFrame .bubble { background: #1f2937; color: #f3f4f6; }
+  /* ===== Coluna central: editor ===== */
+  #fxMainEditor{ background:var(--bg-card); border:1px solid var(--bd); border-radius:16px; padding:1.4rem; min-height:480px; box-shadow:var(--shadow); }
+  #fxMainEditor h2{ margin:0 0 .4rem; font-size:1.25rem; color:var(--tx); font-weight:800; letter-spacing:-.01em; }
+  .when-text{ font-size:.82rem; color:var(--tx-soft); margin:0 0 1rem; background:var(--panel); padding:.6rem .8rem;
+    border-radius:10px; display:flex; align-items:flex-start; gap:.45rem; border:1px solid var(--bd-soft); }
+  .fxEditorHint{ font-size:.82rem; color:var(--tx-soft); margin:0 0 .6rem; }
+  #fxMainEditor textarea{ width:100%; min-height:190px; padding:.9rem 1rem; border:1px solid var(--bd); border-radius:12px;
+    font-size:.98rem; line-height:1.55; resize:vertical; font-family:inherit; background:var(--bg-card); color:var(--tx); }
+  #fxMainEditor textarea:focus{ outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(217,119,6,.18); }
+  #fxMainEditor textarea.invalido{ border-color:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,.12); }
+  .fxCount{ font-size:.72rem; color:var(--tx-mut); text-align:right; margin-top:.35rem; }
+
+  .fxChipsLabel{ font-size:.74rem; font-weight:700; color:var(--tx-soft); margin-top:.9rem; }
+  .fxChips{ display:flex; flex-wrap:wrap; gap:.45rem; margin:.45rem 0 0; }
+  .fxChipBtn{ border:1px solid var(--brand); background:var(--brand-soft); color:var(--brand-ink); border-radius:999px;
+    padding:.4rem .8rem; cursor:pointer; font-size:.8rem; font-weight:700; transition:background .15s, transform .1s; }
+  .fxChipBtn:hover{ background:var(--brand); color:#fff; }
+  .fxChipBtn:active{ transform:scale(.96); }
+  .fxErrBox{ color:#dc2626; font-size:.8rem; margin-top:.6rem; background:rgba(220,38,38,.08); padding:.55rem .8rem;
+    border-radius:10px; border:1px solid rgba(220,38,38,.3); display:none; }
+  .fxBaseRef{ font-size:.78rem; color:var(--tx-soft); margin-top:1rem; padding:.75rem .85rem; background:var(--panel);
+    border-radius:10px; border-left:3px solid var(--brand); }
+  .fxBaseRef b{ color:var(--tx); }
+
+  /* ===== Coluna direita: prévia WhatsApp realista ===== */
+  #fxPreviewArea{ position:sticky; top:1rem; }
+  #fxPhone{ border-radius:24px; overflow:hidden; box-shadow:var(--shadow-lg); border:1px solid var(--bd); background:var(--wa-bg); }
+  .wa-head{ background:var(--wa-head); color:#fff; padding:.7rem .9rem; display:flex; align-items:center; gap:.65rem; }
+  .wa-avatar{ width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.2); display:flex; align-items:center;
+    justify-content:center; font-size:1.15rem; flex:none; }
+  .wa-head .who{ line-height:1.15; min-width:0; }
+  .wa-head .who b{ font-size:.92rem; font-weight:700; display:block; }
+  .wa-head .who span{ font-size:.72rem; opacity:.85; }
+  .wa-head .icons{ margin-left:auto; opacity:.85; font-size:1rem; letter-spacing:.3rem; }
+  .wa-body{ background:var(--wa-bg); background-image:radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px);
+    background-size:22px 22px; min-height:300px; max-height:440px; overflow-y:auto; padding:1rem .8rem;
+    display:flex; flex-direction:column; gap:.5rem; }
+  html.dark .wa-body{ background-image:radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px); }
+  .wa-day{ align-self:center; background:var(--wa-in); color:var(--wa-time); font-size:.68rem; font-weight:600;
+    padding:.2rem .7rem; border-radius:8px; box-shadow:0 1px 1px rgba(0,0,0,.08); margin-bottom:.2rem; }
+  .wa-bubble{ position:relative; align-self:flex-start; max-width:85%; background:var(--wa-in); color:var(--tx);
+    border-radius:8px; border-top-left-radius:0; padding:.5rem .65rem .38rem; font-size:.86rem; line-height:1.42;
+    box-shadow:0 1px 1px rgba(0,0,0,.12); }
+  .wa-bubble::before{ content:""; position:absolute; top:0; left:-7px; width:0; height:0;
+    border-style:solid; border-width:0 8px 8px 0; border-color:transparent var(--wa-in) transparent transparent; }
+  .wa-text{ white-space:pre-wrap; word-wrap:break-word; }
+  .wa-text b{ font-weight:700; }
+  .wa-time{ display:block; text-align:right; font-size:.62rem; color:var(--wa-time); margin-top:.15rem; }
+  .wa-input{ background:var(--wa-head); padding:.5rem .7rem; display:flex; align-items:center; gap:.5rem; }
+  .wa-input .pill{ flex:1; background:var(--wa-in); color:var(--tx-mut); border-radius:999px; padding:.5rem .85rem; font-size:.8rem; }
+  .wa-input .mic{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.25); display:flex;
+    align-items:center; justify-content:center; color:#fff; font-size:.95rem; flex:none; }
+  .footer-lbl{ font-size:.72rem; color:var(--tx-mut); margin-top:.6rem; text-align:center; font-weight:500; }
+
+  /* ===== Barra de ações ===== */
+  #fxActionBar{ position:sticky; bottom:0; background:color-mix(in srgb, var(--bg-card) 92%, transparent);
+    backdrop-filter:blur(10px); border:1px solid var(--bd); padding:.85rem 1.25rem; margin-top:1.5rem;
+    display:flex; gap:.75rem; align-items:center; justify-content:flex-end; border-radius:14px; box-shadow:var(--shadow); }
+  #fxActionBar .status-msg{ margin-right:auto; font-size:.9rem; font-weight:700; }
+  .fxBtn{ border:none; border-radius:11px; padding:.65rem 1.35rem; font-weight:700; cursor:pointer; font-size:.9rem;
+    text-decoration:none; display:inline-flex; align-items:center; gap:.4rem; transition:background .15s, transform .1s; }
+  .fxBtn:active{ transform:scale(.98); }
+  .fxBtnPrimary{ background:var(--brand); color:#fff; box-shadow:0 4px 12px rgba(217,119,6,.3); }
+  .fxBtnPrimary:hover{ background:var(--brand-ink); }
+  .fxBtnSecondary{ background:var(--panel); color:var(--tx); border:1px solid var(--bd); }
+  .fxBtnSecondary:hover{ border-color:var(--brand); color:var(--brand-ink); }
+  .fxBtn:disabled{ opacity:.5; cursor:not-allowed; box-shadow:none; }
 </style>
 
+<div id="fxWrap">
 <div id="fxHeader">
   <div class="title-box">
-    <div style="display:flex; align-items:center; gap:.6rem;">
+    <div class="nome-row">
       <span class="nome">{{ titulo }}</span>
-      {% if mostrar_ativar and ativo %}<span class="badge">★ ATIVO NA META API</span>{% endif %}
+      {% if mostrar_ativar and ativo %}<span class="badge">★ Ativo no WhatsApp</span>{% endif %}
     </div>
-    <div style="font-size:.82rem; color:#6b7280;">{{ subtitulo }}</div>
+    <div class="sub">✏️ Mude aqui as <b>frases</b> que o cliente lê. O caminho do pedido continua o mesmo.</div>
   </div>
   {% if mostrar_ativar %}
-  <label style="display:flex; align-items:center; gap:.5rem; font-size:.88rem; font-weight:600; cursor:pointer;">
-    <input type="checkbox" id="fxAtivar" {% if ativo %}checked{% endif %} style="width:18px; height:18px;"> Usar este fluxo no WhatsApp Oficial (Meta)
+  <label class="fxSwitch">
+    <input type="checkbox" id="fxAtivar" {% if ativo %}checked{% endif %}>
+    <span class="track"></span>
+    Usar este fluxo no WhatsApp
   </label>
   {% endif %}
 </div>
 
 <div id="fxWorkspace">
   <!-- Left Column: Visual Flow Nodes & Drag-and-Drop -->
-  <aside id="fxCanvas" aria-label="Pipeline visual de etapas">
-    <div style="font-size:.78rem; font-weight:700; color:#4b5563; margin-bottom:.2rem;">⚡ Fluxo de Atendimento (Arraste para reordenar)</div>
+  <aside id="fxCanvas" aria-label="Etapas do atendimento">
+    <div class="fxCanvasTitle">⚡ Etapas do atendimento <small>· clique para editar</small></div>
     {% for g in grupos %}
-    <div class="fxGroupTitle">📌 {{ g.titulo }}</div>
+    <div class="fxGroupTitle">{{ g.titulo }}</div>
     {% for e in g.etapas %}
-    <div class="fxNodeCard" id="node_{{ e.chave }}" data-chave="{{ e.chave }}" draggable="true" onclick="fxSelecionar('{{ e.chave }}')">
-      <div class="node-head">
-        <span class="node-title"><span class="drag-handle">⋮⋮</span> {{ e.label }}</span>
+    <div class="fxNodeCard" id="node_{{ e.chave }}" data-chave="{{ e.chave }}" onclick="fxSelecionar('{{ e.chave }}')">
+      <span class="num"></span>
+      <div class="node-body">
+        <div class="node-title">{{ e.label }}</div>
+        <div class="node-sub" id="sub_{{ e.chave }}">{{ e.texto|truncatechars:60 }}</div>
       </div>
-      <div class="node-sub" id="sub_{{ e.chave }}">{{ e.texto|truncatechars:60 }}</div>
     </div>
-    <div class="fxConnector">↓</div>
+    {% if not forloop.last %}<div class="fxConnector">↓</div>{% endif %}
     {% endfor %}
     {% endfor %}
   </aside>
@@ -110,49 +182,62 @@
     {% for e in etapas %}
     <div class="fxPanel" id="panel_{{ e.chave }}" style="display:none;">
       <h2>{{ e.label }}</h2>
-      <div class="when-text">📍 <strong>Gatilho:</strong> {{ e.quando }}</div>
-      <p style="font-size:.8rem; color:#6b7280; margin-bottom:.5rem;">Escreva a mensagem personalizada para esta etapa do atendimento. Clique nos botões amarelos para inserir variáveis automáticas.</p>
-      
+      <div class="when-text">📍 <strong>Quando aparece:</strong>&nbsp;{{ e.quando }}</div>
+      <p class="fxEditorHint">Escreva a mensagem que o cliente vai receber. Use <b>*asteriscos*</b> para deixar em <b>negrito</b>.</p>
+
       <textarea id="txt_{{ e.chave }}" data-chave="{{ e.chave }}"
                 data-vars='[{% for v in e.variaveis %}"{{ v.tok }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
                 oninput="fxAtualizar()">{{ e.texto }}</textarea>
-      
+      <div class="fxCount" id="count_{{ e.chave }}"></div>
+
       {% if e.variaveis %}
+      <div class="fxChipsLabel">Inserir informação automática:</div>
       <div class="fxChips">
         {% for v in e.variaveis %}
-        <button type="button" class="fxChipBtn" onclick="fxInserir('{{ e.chave }}','{{ v.tok }}')">
-          + Inserir {{ v.label|default:v.tok }}
+        <button type="button" class="fxChipBtn" onclick="fxInserir('{{ e.chave }}','{{ v.tok }}')" title="{{ v.label|default:v.tok }}">
+          + {{ v.label|default:v.tok }}
         </button>
         {% endfor %}
       </div>
       {% endif %}
-      
+
       <div class="fxErrBox" id="err_{{ e.chave }}"></div>
-      <div class="fxBaseRef"><strong>💡 Sugestão / Texto Padrão:</strong> {{ e.base|truncatechars:200 }}</div>
+      <div class="fxBaseRef"><b>💡 Texto padrão (sugestão):</b> {{ e.base|truncatechars:200 }}</div>
     </div>
     {% endfor %}
   </main>
 
   <!-- Right Column: Realtime WhatsApp Smartphone Preview -->
   <aside id="fxPreviewArea">
-    <div id="fxPhoneFrame">
-      <div class="header">
-        <span>💬 Prévia WhatsApp</span>
+    <div id="fxPhone">
+      <div class="wa-head">
+        <div class="wa-avatar">🍽️</div>
+        <div class="who"><b>{{ loja_nome|default:"Big Kilo" }}</b><span>online</span></div>
+        <div class="icons">⋮</div>
       </div>
-      <div class="chat-body">
-        <div class="bubble" id="fxBubble">Selecione uma etapa no fluxo para visualizar a mensagem.</div>
+      <div class="wa-body">
+        <div class="wa-day">HOJE</div>
+        <div class="wa-bubble">
+          <span class="wa-text" id="fxBubble">Selecione uma etapa ao lado para ver a mensagem.</span>
+          <span class="wa-time">agora ✓✓</span>
+        </div>
+      </div>
+      <div class="wa-input">
+        <div class="pill">Mensagem</div>
+        <div class="mic">🎤</div>
       </div>
     </div>
-    <div class="footer-lbl">Preview em tempo real • Meta Cloud API</div>
+    <div class="footer-lbl">Prévia em tempo real • assim o cliente vê</div>
   </aside>
 </div>
 
 <div id="fxActionBar">
   <span class="status-msg" id="fxMsg"></span>
-  <a class="fxBtn fxBtnSecondary" href="{{ voltar_url }}">Voltar</a>
-  {% if testar_url %}<button class="fxBtn fxBtnSecondary" id="fxTestar" onclick="fxTestar()">🧪 Testar conversa no Simulador</button>{% endif %}
-  <button class="fxBtn fxBtnPrimary" id="fxSalvar" onclick="fxSalvar()">💾 Salvar Alterações</button>
+  <a class="fxBtn fxBtnSecondary" href="{{ voltar_url }}">← Voltar</a>
+  {% if testar_url %}<button class="fxBtn fxBtnSecondary" id="fxTestar" onclick="fxTestar()">🧪 Testar no Simulador</button>{% endif %}
+  <button class="fxBtn fxBtnPrimary" id="fxSalvar" onclick="fxSalvar()">💾 Salvar alterações</button>
 </div>
+</div><!-- /fxWrap -->
 
 <script>
 (function(){
@@ -219,8 +304,12 @@
     if(!chaveAtiva) return;
     const t = document.getElementById('txt_' + chaveAtiva);
     const sub = document.getElementById('sub_' + chaveAtiva);
-    if(t && sub) sub.textContent = t.value.length > 60 ? t.value.substring(0,60) + '...' : t.value;
-    document.getElementById('fxBubble').innerHTML = fxPreviewTexto(t ? t.value : '');
+    if(t && sub) sub.textContent = t.value.length > 60 ? t.value.substring(0,60) + '...' : (t.value || '(vazio)');
+    const cnt = document.getElementById('count_' + chaveAtiva);
+    if(t && cnt){ const n = t.value.length; cnt.textContent = n + (n === 1 ? ' caractere' : ' caracteres'); }
+    const bubble = document.getElementById('fxBubble');
+    const val = t ? t.value : '';
+    bubble.innerHTML = val.trim() ? fxPreviewTexto(val) : '<span style="opacity:.5">(mensagem vazia)</span>';
   };
 
   async function fxSave(){
@@ -263,38 +352,6 @@
     else document.getElementById('fxMsg').textContent = d.erro || 'Erro ao salvar.';
   };
   {% endif %}
-
-  // HTML5 Drag and Drop Reordering
-  let draggedNode = null;
-  document.querySelectorAll('.fxNodeCard').forEach(card => {
-    card.addEventListener('dragstart', (e) => {
-      draggedNode = card;
-      card.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    card.addEventListener('dragend', () => {
-      card.classList.remove('dragging');
-      draggedNode = null;
-    });
-    card.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-    });
-    card.addEventListener('drop', (e) => {
-      e.preventDefault();
-      if(draggedNode && draggedNode !== card) {
-        const canvas = document.getElementById('fxCanvas');
-        const cards = Array.from(canvas.querySelectorAll('.fxNodeCard'));
-        const draggedIdx = cards.indexOf(draggedNode);
-        const targetIdx = cards.indexOf(card);
-        if(draggedIdx < targetIdx) {
-          card.after(draggedNode);
-        } else {
-          card.before(draggedNode);
-        }
-      }
-    });
-  });
 
   const first = document.querySelector('.fxNodeCard');
   if(first) fxSelecionar(first.dataset.chave);
