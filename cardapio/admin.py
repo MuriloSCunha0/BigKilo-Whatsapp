@@ -155,6 +155,13 @@ class CardapioAdmin(ModelAdmin):
     inlines = [DisponibilidadeCardapioInline]
     actions = ["excluir_selecionados"]
 
+    def get_actions(self, request):
+        # Remove a ação padrão "Remover selecionados" do Django para não
+        # duplicar com a nossa "Excluir cardápios selecionados".
+        actions = super().get_actions(request)
+        actions.pop("delete_selected", None)
+        return actions
+
     @admin.action(description="🗑️ Excluir cardápios selecionados")
     def excluir_selecionados(self, request, queryset):
         n = queryset.count()
