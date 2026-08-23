@@ -437,6 +437,7 @@ class ChaveMensagem(models.TextChoices):
     PERGUNTAR_ADICIONAR = "PERGUNTAR_ADICIONAR", "O que adicionar?"
     PEDIR_DATA_ENCOMENDA = "PEDIR_DATA_ENCOMENDA", "Pedir data da encomenda"
     ENCOMENDA_AGENDADA = "ENCOMENDA_AGENDADA", "Encomenda agendada"
+    ENCOMENDA_CONTATO = "ENCOMENDA_CONTATO", "Encomenda — entraremos em contato"
     DATA_INVALIDA = "DATA_INVALIDA", "Data inválida"
     # Novos botões e menus
     BTN_MENU_REFEICAO = "BTN_MENU_REFEICAO", "Menu: Montar refeição"
@@ -495,6 +496,11 @@ MENSAGENS_PADRAO = {
         "Encomenda anotada para *{data}*! 📅\n"
         "Agora monte seu pedido normalmente no menu abaixo."
     ),
+    "ENCOMENDA_CONTATO": (
+        "Perfeito! 📅 Para *encomendas*, um de nossos atendentes vai falar com você aqui pelo "
+        "WhatsApp para combinar tudo (itens, data, horário e pagamento) da melhor forma.\n\n"
+        "Já anotamos seu interesse — em breve entramos em contato com você! 🙌"
+    ),
     "MONTAR_REFEICAO": "Vamos montar sua refeição! Toque em *Escolher peso* e selecione o tamanho:",
     "ESCOLHER_PROTEINA": "Escolha a *proteína* na lista abaixo:",
     "ESCOLHER_ACOMPANHAMENTOS": (
@@ -551,8 +557,9 @@ FLUXO_ETAPAS = [
     ("PEDIR_MAIS", "Ao perguntar se quer adicionar mais ao pedido."),
     ("RESUMO_CARRINHO", "Resumo do carrinho após cada item adicionado."),
     ("PERGUNTAR_ADICIONAR", "Ao oferecer bebida, sobremesa ou outra refeição."),
-    ("PEDIR_DATA_ENCOMENDA", "Opção 3 — pede a data da encomenda futura."),
-    ("ENCOMENDA_AGENDADA", "Depois que o cliente informa a data da encomenda."),
+    ("ENCOMENDA_CONTATO", "Opção 3 (Encomenda) — avisa que um atendente vai falar com o cliente."),
+    ("PEDIR_DATA_ENCOMENDA", "Opção 3 — pede a data da encomenda futura (modo agendamento no bot)."),
+    ("ENCOMENDA_AGENDADA", "Depois que o cliente informa a data da encomenda (modo agendamento)."),
     ("AGUARDANDO_PAGAMENTO", "Enquanto aguarda o pagamento do Pix."),
     ("PAGAMENTO_CONFIRMADO", "Quando o pagamento é confirmado."),
     ("BTN_MENU_REFEICAO", "Botão no menu principal: Montar refeição."),
@@ -598,7 +605,7 @@ FLUXO_GRUPOS = [
     ("começo", "Começo do atendimento", ["BOAS_VINDAS", "AREA_ATENDIMENTO", "PEDIR_CEP", "FORA_AREA", "CEP_INVALIDO", "ANUNCIO_PROMO"]),
     ("cardapio", "Montagem do prato", ["MONTAR_REFEICAO", "ESCOLHER_PROTEINA", "ESCOLHER_ACOMPANHAMENTOS"]),
     ("carrinho", "Carrinho e fechamento", ["RESUMO_CARRINHO", "PERGUNTAR_ADICIONAR", "PEDIR_MAIS", "PEDIR_ENDERECO_COMPLETO"]),
-    ("encomenda", "Encomenda futura", ["PEDIR_DATA_ENCOMENDA", "ENCOMENDA_AGENDADA"]),
+    ("encomenda", "Encomenda futura", ["ENCOMENDA_CONTATO", "PEDIR_DATA_ENCOMENDA", "ENCOMENDA_AGENDADA"]),
     ("pagamento", "Pagamento", ["AGUARDANDO_PAGAMENTO", "PAGAMENTO_CONFIRMADO"]),
     ("botoes_menu", "Títulos dos Menus e Botões Principais", [
         "BTN_MENU_REFEICAO", "BTN_MENU_REFEICAO_ENC", "BTN_MENU_GRANDES", "BTN_MENU_GRANDES_ENC",

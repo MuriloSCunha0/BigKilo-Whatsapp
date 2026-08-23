@@ -1,0 +1,220 @@
+{% extends "admin/base_site.html" %}
+{% block title %}Atendimento · Big Kilo{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<style>
+  #atWrap{
+    --bg:#fff; --bd:#e5e7eb; --panel:#f7f8fa; --tx:#111827; --tx2:#6b7280; --tx3:#9ca3af;
+    --brand:#d97706; --brand-ink:#b45309; --wa:#008069; --in:#fff; --out:#d9fdd3; --wabg:#efeae2;
+    --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  html.dark #atWrap{
+    --bg:#1f2937; --bd:#374151; --panel:#111827; --tx:#f3f4f6; --tx2:#9ca3af; --tx3:#6b7280;
+    --brand:#f59e0b; --brand-ink:#fcd34d; --wa:#1f2c33; --in:#202c33; --out:#005c4b; --wabg:#0b141a;
+    --shadow:0 1px 3px rgba(0,0,0,.3);
+  }
+  #atWrap *{ box-sizing:border-box; }
+  #atGrid{ display:grid; grid-template-columns:320px 1fr; gap:0; border:1px solid var(--bd);
+    border-radius:16px; overflow:hidden; box-shadow:var(--shadow); height:calc(100vh - 190px); min-height:460px; background:var(--bg); }
+  @media(max-width:900px){ #atGrid{ grid-template-columns:1fr; height:auto; } #atRight{ min-height:420px; } }
+
+  /* Lista de conversas */
+  #atList{ border-right:1px solid var(--bd); display:flex; flex-direction:column; min-height:0; background:var(--bg); }
+  #atSearch{ padding:.7rem; border-bottom:1px solid var(--bd); }
+  #atSearch input{ width:100%; padding:.55rem .8rem; border:1px solid var(--bd); border-radius:999px;
+    background:var(--panel); color:var(--tx); font-size:.9rem; }
+  #atConvs{ overflow-y:auto; flex:1; }
+  .atConv{ display:flex; gap:.6rem; align-items:center; padding:.7rem .8rem; cursor:pointer; border-bottom:1px solid var(--bd); }
+  .atConv:hover{ background:var(--panel); }
+  .atConv.sel{ background:var(--panel); box-shadow:inset 3px 0 0 var(--brand); }
+  .atAv{ width:42px; height:42px; border-radius:50%; background:var(--wa); color:#fff; flex:none;
+    display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:700; }
+  .atMeta{ min-width:0; flex:1; }
+  .atTop{ display:flex; justify-content:space-between; gap:.4rem; }
+  .atNome{ font-weight:700; font-size:.9rem; color:var(--tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .atHora{ font-size:.68rem; color:var(--tx3); flex:none; }
+  .atPrev{ font-size:.78rem; color:var(--tx2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .atBadge{ font-size:.6rem; font-weight:800; color:#fff; background:var(--brand); border-radius:999px; padding:.1rem .45rem; margin-left:.3rem; }
+  .atVazio{ padding:2rem 1rem; text-align:center; color:var(--tx3); font-size:.85rem; }
+
+  /* Painel de chat */
+  #atRight{ display:flex; flex-direction:column; min-width:0; background:var(--wabg); }
+  #atEmpty{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--tx2); gap:.5rem; text-align:center; padding:2rem; }
+  #atChat{ display:none; flex-direction:column; min-height:0; flex:1; }
+  #atHead{ background:var(--wa); color:#fff; padding:.6rem .9rem; display:flex; align-items:center; gap:.6rem; }
+  #atHead .who{ min-width:0; flex:1; }
+  #atHead .who b{ display:block; font-size:.95rem; }
+  #atHead .who span{ font-size:.72rem; opacity:.85; }
+  .atHeadBtn{ background:rgba(255,255,255,.18); color:#fff; border:none; border-radius:8px; padding:.4rem .7rem;
+    font-size:.8rem; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:.3rem; }
+  .atHeadBtn:hover{ background:rgba(255,255,255,.3); }
+  #atBody{ flex:1; overflow-y:auto; padding:1rem .9rem; display:flex; flex-direction:column; gap:.4rem;
+    background-image:radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px); background-size:22px 22px; }
+  html.dark #atBody{ background-image:radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px); }
+  .bub{ max-width:78%; padding:.45rem .65rem .3rem; border-radius:8px; font-size:.86rem; line-height:1.4;
+    white-space:pre-wrap; word-wrap:break-word; box-shadow:0 1px 1px rgba(0,0,0,.12); color:var(--tx); }
+  .bub.cliente{ align-self:flex-start; background:var(--in); border-top-left-radius:0; }
+  .bub.nos{ align-self:flex-end; background:var(--out); border-top-right-radius:0; }
+  html.dark .bub.nos{ color:#e9edef; }
+  .bub .t{ display:block; text-align:right; font-size:.6rem; color:var(--tx3); margin-top:.15rem; }
+
+  /* Barra de ações + compositor */
+  #atActions{ display:flex; gap:.5rem; flex-wrap:wrap; padding:.55rem .9rem; background:var(--bg); border-top:1px solid var(--bd); }
+  .atBtn{ border:none; border-radius:9px; padding:.5rem .9rem; font-size:.82rem; font-weight:700; cursor:pointer;
+    display:inline-flex; align-items:center; gap:.35rem; text-decoration:none; }
+  .atBtn.assumir{ background:#16a34a; color:#fff; }
+  .atBtn.encerrar{ background:var(--panel); color:var(--tx); border:1px solid var(--bd); }
+  .atBtn.ligar{ background:var(--brand); color:#fff; }
+  .atBtn:disabled{ opacity:.5; cursor:not-allowed; }
+  #atCompose{ display:flex; gap:.5rem; padding:.6rem .9rem; background:var(--bg); border-top:1px solid var(--bd); align-items:flex-end; }
+  #atCompose textarea{ flex:1; resize:none; min-height:42px; max-height:120px; padding:.6rem .8rem; border:1px solid var(--bd);
+    border-radius:12px; font-family:inherit; font-size:.9rem; background:var(--panel); color:var(--tx); }
+  #atSend{ background:var(--wa); color:#fff; border:none; border-radius:50%; width:44px; height:44px; font-size:1.1rem; cursor:pointer; flex:none; }
+  #atSend:disabled{ opacity:.5; cursor:not-allowed; }
+  #atHint{ font-size:.75rem; color:var(--tx2); padding:.4rem .9rem 0; }
+  .atNota{ background:#fffbeb; border:1px solid #fde68a; color:#92400e; border-radius:10px; padding:.6rem .8rem;
+    font-size:.82rem; margin-bottom:.9rem; }
+  html.dark .atNota{ background:rgba(217,119,6,.15); color:#fcd34d; border-color:#78350f; }
+</style>
+
+<div id="atWrap">
+  <div class="atNota">💬 Aqui aparecem as conversas do WhatsApp. Selecione uma para ver o histórico. Em <b>Abrir atendimento</b>, o bot para e você fala direto com o cliente (ou toque em <b>Ligar</b>).</div>
+  <div id="atGrid">
+    <aside id="atList">
+      <div id="atSearch"><input type="text" id="atBusca" placeholder="🔎 Buscar conversa..." oninput="atFiltrar()"></div>
+      <div id="atConvs"><div class="atVazio">Carregando conversas...</div></div>
+    </aside>
+    <section id="atRight">
+      <div id="atEmpty">
+        <div style="font-size:2.5rem">💬</div>
+        <div>Selecione uma conversa à esquerda<br>para começar o atendimento.</div>
+      </div>
+      <div id="atChat">
+        <div id="atHead">
+          <div class="atAv" id="atHAv">–</div>
+          <div class="who"><b id="atHNome">—</b><span id="atHStatus"></span></div>
+          <a class="atHeadBtn" id="atLigar" href="#" title="Ligar para o cliente">📞 Ligar</a>
+        </div>
+        <div id="atBody"></div>
+        <div id="atActions">
+          <button class="atBtn assumir" id="atAbrir" onclick="atAbrir()">🙋 Abrir atendimento</button>
+          <button class="atBtn encerrar" id="atEncerrar" onclick="atEncerrar()" style="display:none">↩️ Encerrar (voltar ao bot)</button>
+        </div>
+        <div id="atCompose">
+          <textarea id="atTexto" placeholder="Escreva uma mensagem..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();atEnviar();}"></textarea>
+          <button id="atSend" onclick="atEnviar()" title="Enviar">➤</button>
+        </div>
+        <div id="atHint"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const U_CONV = "{% url 'bot:atendimento_conversas' %}";
+  const U_MSG  = "{% url 'bot:atendimento_mensagens' %}";
+  const U_ABRIR = "{% url 'bot:atendimento_abrir' %}";
+  const U_ENC  = "{% url 'bot:atendimento_encerrar' %}";
+  const U_SEND = "{% url 'bot:atendimento_enviar' %}";
+  const $ = id => document.getElementById(id);
+  let atual = null, emAtend = false, convs = [];
+
+  const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const inic = n => (n||'?').trim().charAt(0).toUpperCase();
+
+  async function post(url, body){
+    const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body:JSON.stringify(body||{})});
+    return r.json();
+  }
+
+  async function carregarConversas(){
+    try{
+      const d = await (await fetch(U_CONV)).json();
+      if(!d.ok) return;
+      convs = d.conversas || [];
+      renderConversas();
+    }catch(e){}
+  }
+  function renderConversas(){
+    const q = ($('atBusca').value||'').toLowerCase();
+    const box = $('atConvs');
+    const lista = convs.filter(c => !q || (c.nome+c.telefone).toLowerCase().includes(q));
+    if(!lista.length){ box.innerHTML = '<div class="atVazio">Nenhuma conversa ainda.<br>Elas aparecem quando um cliente escreve no WhatsApp.</div>'; return; }
+    box.innerHTML = lista.map(c => `
+      <div class="atConv ${c.telefone===atual?'sel':''}" onclick="atAbrirConversa('${c.telefone}')">
+        <div class="atAv">${esc(inic(c.nome))}</div>
+        <div class="atMeta">
+          <div class="atTop"><span class="atNome">${esc(c.nome)}${c.em_atendimento?'<span class="atBadge">EM ATENDIMENTO</span>':''}</span><span class="atHora">${esc(c.quando)}</span></div>
+          <div class="atPrev">${esc(c.ultima)}</div>
+        </div>
+      </div>`).join('');
+  }
+  window.atFiltrar = renderConversas;
+
+  window.atAbrirConversa = async (tel) => {
+    atual = tel;
+    $('atEmpty').style.display = 'none';
+    $('atChat').style.display = 'flex';
+    renderConversas();
+    await carregarMensagens(true);
+  };
+
+  async function carregarMensagens(scroll){
+    if(!atual) return;
+    try{
+      const d = await (await fetch(U_MSG + '?telefone=' + encodeURIComponent(atual))).json();
+      if(!d.ok) return;
+      emAtend = d.em_atendimento;
+      $('atHNome').textContent = d.nome;
+      $('atHAv').textContent = inic(d.nome);
+      $('atHStatus').textContent = emAtend ? 'em atendimento humano' : 'atendimento automático (bot)';
+      $('atLigar').href = 'tel:+' + atual.replace(/\D/g,'');
+      $('atAbrir').style.display = emAtend ? 'none' : 'inline-flex';
+      $('atEncerrar').style.display = emAtend ? 'inline-flex' : 'none';
+      $('atHint').textContent = emAtend
+        ? 'O bot está pausado. Suas mensagens vão direto ao cliente.'
+        : 'Dica: clique em “Abrir atendimento” para pausar o bot antes de conversar.';
+      const body = $('atBody');
+      const perto = body.scrollHeight - body.scrollTop - body.clientHeight < 80;
+      body.innerHTML = (d.mensagens||[]).map(m =>
+        `<div class="bub ${m.de}">${esc(m.texto)}<span class="t">${esc(m.quando)}</span></div>`).join('')
+        || '<div class="atVazio">Sem mensagens ainda.</div>';
+      if(scroll || perto) body.scrollTop = body.scrollHeight;
+    }catch(e){}
+  }
+
+  window.atAbrir = async () => {
+    if(!atual) return;
+    $('atAbrir').disabled = true;
+    const d = await post(U_ABRIR, {telefone:atual});
+    $('atAbrir').disabled = false;
+    if(d.ok){ await carregarMensagens(true); carregarConversas(); }
+    else alert(d.erro||'Erro ao abrir atendimento.');
+  };
+  window.atEncerrar = async () => {
+    if(!atual) return;
+    if(!confirm('Encerrar o atendimento humano? O bot volta a responder este cliente na próxima mensagem dele.')) return;
+    const d = await post(U_ENC, {telefone:atual});
+    if(d.ok){ await carregarMensagens(true); carregarConversas(); }
+    else alert(d.erro||'Erro ao encerrar.');
+  };
+  window.atEnviar = async () => {
+    const t = $('atTexto').value.trim();
+    if(!t || !atual) return;
+    $('atSend').disabled = true;
+    const d = await post(U_SEND, {telefone:atual, texto:t});
+    $('atSend').disabled = false;
+    if(d.ok){ $('atTexto').value=''; await carregarMensagens(true); carregarConversas(); }
+    else alert(d.erro||'Erro ao enviar.');
+  };
+
+  carregarConversas();
+  setInterval(carregarConversas, 6000);
+  setInterval(() => carregarMensagens(false), 4000);
+})();
+</script>
+{% endblock %}

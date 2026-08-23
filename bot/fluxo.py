@@ -885,28 +885,13 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     if estado == SessaoBot.Estado.MENU_PRINCIPAL:
         encomenda = bool(sessao.carrinho_json.get("encomenda", {}).get("data"))
         loja_fechada = not cfg.esta_aberta
-        # Opção 3: agendar encomenda para outro dia (permitida mesmo com a loja fechada).
+        # Opção 3 (Encomenda): NÃO agenda pelo bot. Avisa que um atendente vai falar
+        # com o cliente e encerra a conversa. Se ele mandar outra mensagem, o bot reinicia.
         if low == "3":
-            if sessao.carrinho_json.get("itens"):
-                out["mensagens"] = ["Opção inválida."] + _tela_menu(sessao)
-            else:
-                sessao.estado_atual = SessaoBot.Estado.ENCOMENDA_FUTURA
-            from django.utils import timezone
-            from datetime import timedelta
-            hoje = timezone.localtime().date()
-            amanha = hoje + timedelta(days=1)
-            depois = hoje + timedelta(days=2)
-            _set_menu(sessao, {
-                "1": amanha.strftime("%d/%m/%Y"),
-                "2": depois.strftime("%d/%m/%Y"),
-            })
-            corpo = "Legal! Para qual data é a sua encomenda?\n\nVocê pode tocar em uma das opções ou digitar a data (ex: 12/10)."
-            linhas = [
-                {"id": "1", "titulo": f"Amanhã ({amanha.strftime('%d/%m')})"},
-                {"id": "2", "titulo": f"Depois ({depois.strftime('%d/%m')})"},
-            ]
-            from bot.mensagens import lista
-            out["mensagens"] = [lista(corpo, "Datas Rápidas", linhas)]
+            aviso = mensagem("ENCOMENDA_CONTATO", _cliente(sessao), perfil=perfil)
+            sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+            sessao.carrinho_json = _carrinho_vazio()
+            out["mensagens"] = [aviso]
             sessao.save()
             return out
         # Pedido para HOJE fica barrado quando a loja está fechada (encomenda passa).

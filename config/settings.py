@@ -272,6 +272,7 @@ UNFOLD = {
                 "items": [
                     {"title": "Painel (resumo)", "icon": "dashboard", "link": "/admin/"},
                     {"title": "Pedidos", "icon": "receipt_long", "link": "/admin/pedidos/pedido/"},
+                    {"title": "Atendimento (conversas)", "icon": "forum", "link": "/atendimento/"},
                     {"title": "Conectar WhatsApp", "icon": "qr_code_2", "link": "/whatsapp/conexao/"},
                     {"title": "Impressão (baixar programa)", "icon": "print", "link": "/impressao/"},
                     {"title": "Simulador (testar bot)", "icon": "chat", "link": "/simulador/"},

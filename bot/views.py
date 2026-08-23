@@ -300,6 +300,151 @@ def whatsapp_logout(request):
         return JsonResponse({"ok": False, "erro": str(exc)})
 
 
+# ===================== Atendimento humano (inbox estilo WhatsApp) =============
+_AVISO_ATENDENTE = (
+    "👋 Um atendente do Big Kilo assumiu a conversa e vai te ajudar por aqui. Pode falar!"
+)
+_AVISO_ENCERRADO = (
+    "✅ Atendimento encerrado. Se precisar de algo, é só mandar uma mensagem que te atendo de novo. 🙂"
+)
+
+
+@staff_member_required
+def atendimento_inbox(request):
+    """Aba 'Atendimento' — lista as conversas (estilo WhatsApp) e permite o
+    atendente humano assumir e responder o cliente."""
+    contexto = admin.site.each_context(request)
+    contexto["title"] = "Atendimento"
+    return render(request, "atendimento_inbox.html", contexto)
+
+
+@staff_member_required
+def atendimento_conversas(request):
+    """JSON com a lista de conversas (última mensagem, nome, se está em atendimento)."""
+    from pedidos.models import Cliente, LogMensagem, SessaoBot
+
+    ultimas = list(LogMensagem.objects.order_by("telefone", "-criado_em").distinct("telefone"))
+    ultimas.sort(key=lambda m: m.criado_em, reverse=True)
+    ultimas = ultimas[:100]
+    tels = [m.telefone for m in ultimas]
+    nomes = {c.telefone: c.nome_whatsapp for c in Cliente.objects.filter(telefone__in=tels)}
+    estados = {s.telefone: s.estado_atual for s in SessaoBot.objects.filter(telefone__in=tels)}
+
+    conversas = []
+    for m in ultimas:
+        prefixo = "" if m.direcao == LogMensagem.Direcao.ENTRADA else "Você: "
+        conversas.append({
+            "telefone": m.telefone,
+            "nome": nomes.get(m.telefone) or m.telefone,
+            "ultima": (prefixo + (m.texto or "").replace("\n", " "))[:70],
+            "quando": timezone.localtime(m.criado_em).strftime("%d/%m %H:%M"),
+            "em_atendimento": estados.get(m.telefone) == SessaoBot.Estado.ATENDIMENTO_HUMANO,
+        })
+    return JsonResponse({"ok": True, "conversas": conversas})
+
+
+@staff_member_required
+def atendimento_mensagens(request):
+    """JSON com o histórico de uma conversa (para o painel de chat)."""
+    from pedidos.models import Cliente, LogMensagem, SessaoBot
+
+    tel = (request.GET.get("telefone") or "").strip()
+    if not tel:
+        return JsonResponse({"ok": False, "erro": "Telefone ausente."})
+    msgs = LogMensagem.objects.filter(telefone=tel).order_by("criado_em")[:400]
+    sess = SessaoBot.objects.filter(telefone=tel).first()
+    cli = Cliente.objects.filter(telefone=tel).first()
+    return JsonResponse({
+        "ok": True,
+        "nome": (cli.nome_whatsapp if cli and cli.nome_whatsapp else tel),
+        "em_atendimento": bool(sess and sess.estado_atual == SessaoBot.Estado.ATENDIMENTO_HUMANO),
+        "mensagens": [{
+            "de": ("nos" if m.direcao == LogMensagem.Direcao.SAIDA else "cliente"),
+            "texto": m.texto,
+            "quando": timezone.localtime(m.criado_em).strftime("%d/%m %H:%M"),
+        } for m in msgs],
+    })
+
+
+def _num_do_body(request):
+    try:
+        return (json.loads(request.body or b"{}").get("telefone") or "").strip()
+    except (ValueError, TypeError):
+        return ""
+
+
+@staff_member_required
+@require_POST
+def atendimento_abrir(request):
+    """Pausa o bot e coloca a conversa em atendimento humano; avisa o cliente."""
+    from pedidos.models import LogMensagem, SessaoBot
+    from .whatsapp import enviar_texto_sync
+
+    tel = _num_do_body(request)
+    if not tel:
+        return JsonResponse({"ok": False, "erro": "Telefone ausente."})
+    sess, _ = SessaoBot.objects.get_or_create(telefone=tel)
+    sess.estado_atual = SessaoBot.Estado.ATENDIMENTO_HUMANO
+    sess.save()
+    try:
+        enviar_texto_sync(tel, _AVISO_ATENDENTE)
+    except Exception:
+        logger.exception("Falha ao avisar cliente do atendimento humano")
+    LogMensagem.objects.create(telefone=tel, direcao=LogMensagem.Direcao.SAIDA, texto=_AVISO_ATENDENTE)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required
+@require_POST
+def atendimento_encerrar(request):
+    """Devolve a conversa ao bot (próxima mensagem do cliente reinicia o atendimento automático)."""
+    from pedidos.models import LogMensagem, SessaoBot
+    from .whatsapp import enviar_texto_sync
+
+    tel = _num_do_body(request)
+    if not tel:
+        return JsonResponse({"ok": False, "erro": "Telefone ausente."})
+    sess = SessaoBot.objects.filter(telefone=tel).first()
+    if sess:
+        sess.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+        sess.carrinho_json = {}
+        sess.save()
+    try:
+        enviar_texto_sync(tel, _AVISO_ENCERRADO)
+    except Exception:
+        logger.exception("Falha ao avisar cliente do encerramento")
+    LogMensagem.objects.create(telefone=tel, direcao=LogMensagem.Direcao.SAIDA, texto=_AVISO_ENCERRADO)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required
+@require_POST
+def atendimento_enviar(request):
+    """Envia uma mensagem do atendente para o cliente (garante o modo atendimento humano)."""
+    from pedidos.models import LogMensagem, SessaoBot
+    from .whatsapp import enviar_texto_sync
+
+    try:
+        dados = json.loads(request.body or b"{}")
+    except (ValueError, TypeError):
+        dados = {}
+    tel = (dados.get("telefone") or "").strip()
+    texto = (dados.get("texto") or "").strip()
+    if not tel or not texto:
+        return JsonResponse({"ok": False, "erro": "Telefone e mensagem são obrigatórios."})
+    sess, _ = SessaoBot.objects.get_or_create(telefone=tel)
+    if sess.estado_atual != SessaoBot.Estado.ATENDIMENTO_HUMANO:
+        sess.estado_atual = SessaoBot.Estado.ATENDIMENTO_HUMANO
+        sess.save()
+    try:
+        enviar_texto_sync(tel, texto)
+    except Exception as exc:
+        logger.exception("Falha ao enviar mensagem do atendente")
+        return JsonResponse({"ok": False, "erro": f"Falha ao enviar: {exc}"})
+    LogMensagem.objects.create(telefone=tel, direcao=LogMensagem.Direcao.SAIDA, texto=texto)
+    return JsonResponse({"ok": True, "quando": timezone.localtime().strftime("%d/%m %H:%M")})
+
+
 # ===================== Impressão automática (download do programa) ============
 _PRINT_EXE = Path(settings.BASE_DIR) / "download" / "BigKiloImpressora.exe"
 
