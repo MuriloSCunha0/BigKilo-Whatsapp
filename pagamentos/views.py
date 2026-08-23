@@ -5,6 +5,7 @@ import logging
 
 from asgiref.sync import sync_to_async
 from django.conf import settings
+from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
