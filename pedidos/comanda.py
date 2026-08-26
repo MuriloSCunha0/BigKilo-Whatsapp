@@ -1,5 +1,7 @@
 """Geração do texto da comanda (cupom) impressa na cozinha."""
 
+from django.utils import timezone
+
 from .models import ConfiguracaoLoja, ItemPedido, Pedido
 
 LARGURA = 40  # colunas típicas de impressora térmica 80mm
@@ -19,7 +21,7 @@ def gerar_comanda_texto(pedido: Pedido) -> str:
     cfg = ConfiguracaoLoja.get()
     linhas = [LINHA, _centro(cfg.nome_loja.upper()), _centro(cfg.slogan), LINHA]
 
-    data = pedido.criado_em.strftime("%d/%m %H:%M")
+    data = timezone.localtime(pedido.criado_em).strftime("%d/%m %H:%M")
     linhas.append(f"PEDIDO #{pedido.pk}".ljust(LARGURA - len(data)) + data)
     linhas.append(f"Cliente: {pedido.cliente.nome_whatsapp or '-'} ({pedido.cliente.telefone})")
     if pedido.data_agendada:
