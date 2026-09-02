@@ -449,6 +449,11 @@ def atendimento_enviar(request):
 _PRINT_EXE = Path(settings.BASE_DIR) / "download" / "BigKiloImpressora.exe"
 
 
+def politica_privacidade(request):
+    """Página pública de Política de Privacidade (exigida pela Meta para publicar o app)."""
+    return render(request, "politica_privacidade.html")
+
+
 def impressao_pagina(request):
     """Página pública (instalação única, sem login) para baixar o programa de impressão."""
     return render(request, "impressao.html", {"programa_disponivel": _PRINT_EXE.exists()})

@@ -21,6 +21,7 @@ urlpatterns = [
     path("atendimento/encerrar/", views.atendimento_encerrar, name="atendimento_encerrar"),
     path("atendimento/enviar/", views.atendimento_enviar, name="atendimento_enviar"),
     # Aba "Impressão" — download do programa de impressão do restaurante
+    path("privacidade/", views.politica_privacidade, name="politica_privacidade"),
     path("impressao/", views.impressao_pagina, name="impressao_pagina"),
     path("impressao/baixar/", views.impressao_baixar, name="impressao_baixar"),
     # Simulador de testes (sem WhatsApp real)
