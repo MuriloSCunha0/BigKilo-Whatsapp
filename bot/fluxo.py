@@ -519,10 +519,52 @@ def _pos_item_adicionado(sessao, msgs: list, perfil=None) -> list:
 
 
 
+_DIAS_CURTOS = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"]
+
+
+def _horario_disponibilidade(tipo) -> str:
+    """Frase com os horários em que uma categoria fica no ar, lida da agenda.
+
+    Sai do banco (e não chumbada) para continuar certa quando o restaurante mexer
+    nos cardápios pelo admin.
+    """
+    janelas: dict[tuple, set] = {}
+    produtos = Produto.objects.filter(
+        categoria__tipo=tipo, ativo=True, categoria__ativa=True
+    ).prefetch_related("cardapios__agenda")
+    for prod in produtos:
+        for card in prod.cardapios.all():
+            if not card.ativo:
+                continue
+            for linha in card.agenda.all():
+                chave = (linha.hora_inicio, linha.hora_fim)
+                janelas.setdefault(chave, set()).add(linha.dia_semana)
+    if not janelas:
+        return ""
+
+    partes = []
+    for (ini, fim), dias in sorted(janelas.items()):
+        ordenados = sorted(dias)
+        # Sequência corrida vira "segunda a sábado"; senão lista os dias.
+        if len(ordenados) > 2 and ordenados == list(range(ordenados[0], ordenados[-1] + 1)):
+            quando = f"{_DIAS_CURTOS[ordenados[0]]} a {_DIAS_CURTOS[ordenados[-1]]}"
+        elif len(ordenados) == 1:
+            quando = _DIAS_CURTOS[ordenados[0]]
+        else:
+            nomes = [_DIAS_CURTOS[d] for d in ordenados]
+            quando = ", ".join(nomes[:-1]) + f" e {nomes[-1]}"
+        partes.append(f"{quando}, das {ini:%H:%M} às {fim:%H:%M}")
+    return "; ".join(partes)
+
+
 def _tela_categoria(sessao, tipo, titulo) -> list:
     produtos = _disponiveis(tipo)
     if not produtos:
-        return [T(f"No momento não há {titulo.lower()} disponíveis.")] + _tela_menu(sessao)
+        quando = _horario_disponibilidade(tipo)
+        aviso = f"No momento não há {titulo.lower()} disponíveis."
+        if quando:
+            aviso += f"\n🕒 Servimos {titulo.lower()} {quando}."
+        return [T(aviso)] + _tela_menu(sessao)
     sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_FIXO
     sessao.carrinho_json["_ultimo_tipo_fixo"] = {"tipo": tipo, "titulo": titulo}
     rows, mapa = _rows_produtos(produtos, com_preco=True, cliente=_cliente(sessao))
