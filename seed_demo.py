@@ -277,7 +277,27 @@ def criar_personalizacao_exemplo():
     print("Personalização de exemplo: contato Maria (saudação + promo exclusiva).")
 
 
+def _pode_rodar() -> bool:
+    """Trava de seguranca: este script SOBRESCREVE precos, limites, cardapio e
+    mensagens com valores de demonstracao.
+
+    Ja apagou a configuracao real do Big Kilo mais de uma vez ao ser chamado no
+    deploy. Agora so roda com SEED_DEMO=1 explicito. Sai com codigo 0 de proposito:
+    se ainda estiver encadeado num start command, o deploy nao pode quebrar por isso.
+    """
+    if os.getenv("SEED_DEMO") == "1":
+        return True
+    print("=" * 68)
+    print(" seed_demo NAO executado.")
+    print(" Ele sobrescreve precos, limites e cardapio com dados de demonstracao.")
+    print(" Para rodar de proposito: SEED_DEMO=1 python seed_demo.py")
+    print("=" * 68)
+    return False
+
+
 if __name__ == "__main__":
+    if not _pode_rodar():
+        raise SystemExit(0)
     set_tenant_schema()
     criar_admin()
     criar_config()
