@@ -271,12 +271,11 @@ def _tela_menu(sessao, perfil=None) -> list:
                     {"id": "3", "titulo": mensagem("BTN_MENU_ENCOMENDA", cliente, perfil)},
                 ]
         
-    corpo = (
-        cab
-        + "O que você deseja?\n"
-        "Toque em *Ver opções* para escolher.\n\n"
-        "*cancelar* recomeça o pedido."
-    )
+    # Sem menção a "cancelar": aqui não existe botão para isso, e prometer uma
+    # opção que não aparece confunde. Voltar atrás é o botão "Corrigir" na tela de
+    # confirmação do prato; "cancelar" segue valendo digitado, e é anunciado só
+    # onde é a única saída (aguardando pagamento).
+    corpo = cab + "O que você deseja?\nToque em *Ver opções* para escolher."
     return [lista(corpo, "Ver opções", linhas)]
 
 def _entrar_menu(sessao, perfil=None) -> list[str]:
