@@ -1214,11 +1214,17 @@ async def processar_mensagem(telefone: str, texto: str, nome: str = "", perfil_i
         try:
             dados = await criar_cobranca_pix(pedido)
             from pagamentos.pix_whatsapp import montar_mensagens_pix
-            mensagens.extend(montar_mensagens_pix(pedido, dados))
-        except AsaasError as exc:
+            # montar_mensagens_pix consulta o banco (ConfiguracaoLoja, itens do pedido).
+            # Sob ASGI isso precisa sair do loop, senão o Django levanta
+            # SynchronousOnlyOperation e o cliente nao recebe mensagem nenhuma.
+            mensagens.extend(await sync_to_async(montar_mensagens_pix)(pedido, dados))
+        except Exception as exc:
+            # Qualquer falha aqui (Asaas, rede, ORM) nao pode engolir a confirmacao do
+            # pedido: o cliente precisa ao menos saber que o pedido entrou.
+            nivel = "Asaas falhou" if isinstance(exc, AsaasError) else "Falha ao montar o Pix"
             mensagens.append("Não consegui gerar o Pix agora. Um atendente vai te ajudar. 🙏")
             import logging
-            logging.getLogger(__name__).error("Asaas falhou no pedido #%s: %s", pedido_id, exc)
+            logging.getLogger(__name__).exception("%s no pedido #%s: %s", nivel, pedido_id, exc)
     if registrar:
         await sync_to_async(_registrar_conversa)(telefone, texto, mensagens)
     return normalizar_mensagens(mensagens)
