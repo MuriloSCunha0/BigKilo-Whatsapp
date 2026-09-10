@@ -59,7 +59,7 @@ class ConfiguracaoLoja(models.Model):
     # Entrega e pagamento
     taxa_entrega = models.DecimalField(
         "Taxa de entrega", max_digits=8, decimal_places=2, default=Decimal("7.00"),
-        help_text="Uma por pedido. Mostrada ao cliente no fechamento; paga ao entregador na entrega (não entra no Pix).",
+        help_text="Uma por pedido. Entra no Pix do cliente; o restaurante repassa ao entregador.",
     )
     chave_pix = models.CharField(
         "Chave Pix", max_length=140, blank=True,
@@ -297,7 +297,7 @@ class Pedido(models.Model):
     cep = models.CharField("CEP", max_length=9, blank=True)
     taxa_entrega = models.DecimalField(
         "Taxa de entrega", max_digits=8, decimal_places=2, default=Decimal("0.00"),
-        help_text="Paga ao entregador na entrega (não incluída no Pix).",
+        help_text="Somada ao Pix do cliente. O restaurante repassa ao entregador.",
     )
     observacoes = models.TextField("Observações gerais", blank=True)
 
@@ -337,6 +337,17 @@ class Pedido(models.Model):
         total = sum((item.subtotal for item in self.itens.all()), Decimal("0.00"))
         self.valor_total = total.quantize(CENTAVO, rounding=ROUND_HALF_UP)
         return self.valor_total
+
+    @property
+    def valor_a_cobrar(self):
+        """Quanto o cliente paga no Pix: produtos + taxa de entrega.
+
+        `valor_total` continua sendo só os produtos (relatórios e admin dependem
+        disso); a taxa entra apenas no que é cobrado, e o restaurante repassa ao
+        entregador.
+        """
+        taxa = self.taxa_entrega or Decimal("0.00")
+        return (self.valor_total + taxa).quantize(CENTAVO, rounding=ROUND_HALF_UP)
 
 
 class ItemPedido(models.Model):
@@ -510,7 +521,7 @@ MENSAGENS_PADRAO = {
     "AGUARDANDO_PAGAMENTO": "Estamos aguardando o pagamento. Para um novo pedido, digite *cancelar*.",
     "PAGAMENTO_CONFIRMADO": (
         "✅ Pagamento confirmado! Seu pedido já está sendo preparado.\n"
-        "A taxa de entrega é paga diretamente ao entregador. Já já chega aí! 🍽️"
+        "Já já chega aí! 🍽️"
     ),
     "ANUNCIO_PROMO": "🎁 Temos promoções hoje! Confira no cardápio.",
     "BTN_MENU_REFEICAO": "Montar refeição completa",

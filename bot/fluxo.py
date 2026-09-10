@@ -732,16 +732,11 @@ def _checkout(sessao, perfil=None):
         linhas.append("🛵 Método: Entrega em domicílio")
         linhas.append(f"Produtos: {_moeda(produtos)}")
         if taxa > 0:
-            linhas.append(f"Taxa de entrega: {_moeda(taxa)} (paga ao entregador na entrega)")
+            linhas.append(f"Taxa de entrega: {_moeda(taxa)}")
         linhas.append(f"Total: {_moeda(total)}")
         linhas.append("")
-        if taxa > 0:
-            linhas.append(
-                f"💳 Agora pague os *{_moeda(produtos)}* dos produtos pelo Pix. "
-                f"A taxa de {_moeda(taxa)} você paga ao entregador. Gerando seu Pix..."
-            )
-        else:
-            linhas.append(f"💳 Agora pague os *{_moeda(total)}* do pedido pelo Pix. Gerando seu Pix...")
+        # Taxa entra no Pix: o cliente paga tudo de uma vez e a loja repassa ao entregador.
+        linhas.append(f"💳 Agora pague os *{_moeda(total)}* do pedido pelo Pix. Gerando seu Pix...")
     return pedido.pk, avisos + ["\n".join(linhas)]
 
 

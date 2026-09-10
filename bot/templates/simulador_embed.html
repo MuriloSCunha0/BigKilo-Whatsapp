@@ -126,7 +126,7 @@
       const box=document.createElement('div'); box.className='sim-pix';
       const sub=(m.subtotal_centavos||0)/100; const tax=(m.taxa_centavos||0)/100;
       box.innerHTML='<div class="valor">Pix pedido #'+m.pedido_id+' — R$ '+sub.toFixed(2).replace('.',',')+'</div>'
-        +'<div>Taxa entregador (na entrega): R$ '+tax.toFixed(2).replace('.',',')+'</div>';
+        +'<div>Taxa de entrega (no Pix): R$ '+tax.toFixed(2).replace('.',',')+'</div>';
       if(m.nativo) box.innerHTML+='<div>📱 No WhatsApp: botão <b>Revisar e pagar</b></div>';
       const ta=document.createElement('textarea'); ta.readOnly=true; ta.value=m.pix_copia_cola||'';
       const cp=document.createElement('button'); cp.type='button'; cp.textContent='Copiar Pix';

@@ -86,7 +86,7 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
         }),
         (_("Entrega"), {
             "fields": ("taxa_entrega",),
-            "description": _("Taxa paga ao entregador — informada ao cliente, não entra no Pix."),
+            "description": _("Taxa somada ao Pix do cliente — o restaurante repassa ao entregador."),
         }),
         (_("Pagamento e impressão"), {
             "fields": ("chave_pix", "imprimir_ao_fechar"),

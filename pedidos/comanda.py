@@ -56,8 +56,10 @@ def gerar_comanda_texto(pedido: Pedido) -> str:
     linhas.append(SUBLINHA)
     linhas.append(("TOTAL:").ljust(20) + _moeda(pedido.valor_total).rjust(LARGURA - 20))
     if pedido.taxa_entrega and pedido.taxa_entrega > 0:
-        linhas.append("Taxa entrega (ao entregador):")
+        # Ja veio paga no Pix; a cozinha/entregador precisa saber que nao cobra nada.
+        linhas.append("Taxa entrega (paga):")
         linhas.append(_moeda(pedido.taxa_entrega).rjust(LARGURA))
+        linhas.append(("PAGO PELO CLIENTE:").ljust(20) + _moeda(pedido.valor_a_cobrar).rjust(LARGURA - 20))
     if pedido.observacoes:
         linhas.append(SUBLINHA)
         linhas.append("OBS: " + pedido.observacoes)

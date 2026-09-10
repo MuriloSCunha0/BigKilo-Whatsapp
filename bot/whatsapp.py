@@ -270,7 +270,7 @@ async def enviar_pix_order(telefone: str, msg: dict) -> dict:
     params = msg.get("order_parameters") or {}
     if not params:
         return await enviar_texto(telefone, msg.get("pix_copia_cola") or msg.get("corpo", ""))
-    footer = "Taxa de entrega paga ao entregador"
+    footer = "Taxa de entrega incluida no total"
     body = {
         "messaging_product": "whatsapp",
         "to": _so_digitos(telefone),

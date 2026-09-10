@@ -56,7 +56,7 @@ async def _obter_ou_criar_cliente(http: httpx.AsyncClient, cliente) -> str:
 
 def _pix_simulado(pedido) -> str:
     """Gera um 'copia e cola' fake (apenas para testes, NÃO é pagável)."""
-    valor = f"{pedido.valor_total:.2f}"
+    valor = f"{pedido.valor_a_cobrar:.2f}"
     return (
         "00020126SIMULADO-BIG-KILO5204000053039865802BR"
         f"5913BIG KILO TESTE6009SAO PAULO62070503***"
@@ -70,7 +70,9 @@ async def criar_cobranca_pix(pedido) -> dict:
     Retorna um dict com {cobranca_id, pix_copia_cola, qr_base64}.
     Em MODO_SIMULACAO (ou sem ASAAS_API_KEY), gera um Pix fake para testes.
     """
-    valor = float(pedido.valor_total)
+    # Produtos + taxa de entrega: o cliente paga tudo no Pix e o restaurante
+    # repassa a taxa ao entregador.
+    valor = float(pedido.valor_a_cobrar)
     if valor <= 0:
         raise AsaasError("Pedido sem valor para cobrança.")
 
@@ -91,7 +93,7 @@ async def criar_cobranca_pix(pedido) -> dict:
             from .pix_estatico import gerar_pix_copia_cola
 
             copia_cola = gerar_pix_copia_cola(
-                chave, pedido.valor_total,
+                chave, pedido.valor_a_cobrar,
                 nome=cfg.nome_loja or "Big Kilo",
                 cidade=settings.PIX_MERCHANT_CITY,
                 txid=f"PEDIDO{pedido.pk}",

@@ -61,7 +61,8 @@ def montar_order_parameters(pedido, pix_copia_cola: str) -> dict | None:
             }
         )
 
-    total = _centavos(pedido.valor_total)
+    # O Pix nativo cobra o mesmo que o copia e cola: produtos + taxa.
+    total = _centavos(pedido.valor_a_cobrar)
     return {
         "reference_id": f"pedido_{pedido.pk}",
         "type": "digital-goods",
@@ -82,7 +83,7 @@ def montar_order_parameters(pedido, pix_copia_cola: str) -> dict | None:
         "order": {
             "status": "pending",
             "items": items,
-            "subtotal": {"value": total, "offset": 100},
+            "subtotal": {"value": _centavos(pedido.valor_total), "offset": 100},
         },
     }
 
@@ -96,9 +97,9 @@ def montar_mensagens_pix(pedido, dados_asaas: dict) -> list:
     total = subtotal + taxa
     corpo = (
         f"Pedido #{pedido.pk} pronto para pagamento!\n"
-        f"Produtos (pague no Pix): {_moeda(subtotal)}\n"
-        f"Taxa de entrega (ao entregador): {_moeda(taxa)}\n"
-        f"Total: {_moeda(total)}"
+        f"Produtos: {_moeda(subtotal)}\n"
+        f"Taxa de entrega: {_moeda(taxa)}\n"
+        f"Total a pagar no Pix: {_moeda(total)}"
     )
     params = montar_order_parameters(pedido, copia)
     usar_nativo = pix_nativo_habilitado() and params is not None
