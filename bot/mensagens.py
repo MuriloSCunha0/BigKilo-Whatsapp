@@ -1,4 +1,4 @@
-﻿"""Mensagens estruturadas para WhatsApp (Meta Cloud API — interativas)."""
+"""Mensagens estruturadas para WhatsApp (Meta Cloud API — interativas)."""
 
 from __future__ import annotations
 
@@ -45,8 +45,19 @@ def botoes(corpo: str, opcoes: list[dict]) -> dict:
 
 
 
-def multi_select(corpo: str, opcoes: list[dict], minimo: int = 1, maximo: int = 10) -> dict:
-    """Multi-select para simulador (checkboxes). opcoes: [{id, titulo, descricao?}]."""
+def multi_select(
+    corpo: str,
+    opcoes: list[dict],
+    minimo: int = 1,
+    maximo: int = 10,
+    escolhidos: list[str] | None = None,
+    pagina: int = 0,
+) -> dict:
+    """Multi-select para simulador (checkboxes). opcoes: [{id, titulo, descricao?}].
+
+    `escolhidos` são os nomes já marcados; usados para montar o texto de progresso
+    quando a mensagem precisa virar lista interativa (ver `multi_para_lista`).
+    """
     opts = []
     for op in opcoes:
         item = {"id": str(op["id"]), "titulo": _trunc(str(op.get("titulo", "")), 40)}
@@ -59,17 +70,81 @@ def multi_select(corpo: str, opcoes: list[dict], minimo: int = 1, maximo: int = 
         "opcoes": opts,
         "minimo": minimo,
         "maximo": maximo,
+        "escolhidos": list(escolhidos or []),
+        "pagina": pagina,
         "botao": "Confirmar escolha",
     }
 
 
-def flow_acompanhamentos(corpo: str, flow_id: str, cta: str, payload: dict) -> dict:
+def _cabecalho_multi(msg: dict) -> tuple[str, int]:
+    """Corpo do multi_select com o progresso da escolha. Devolve (texto, faltam)."""
+    corpo = (msg.get("corpo") or "").strip()
+    maximo = int(msg.get("maximo") or 1)
+    escolhidos = msg.get("escolhidos") or []
+    faltam = max(0, maximo - len(escolhidos))
+    partes = [corpo]
+    if escolhidos:
+        partes.append("Já escolhido: " + ", ".join(escolhidos) + ".")
+    return "\n".join(x for x in partes if x), faltam
+
+
+MAX_LINHAS_LISTA = 10   # teto de linhas de uma lista interativa na Cloud API
+ID_MAIS = "mais"        # linha de paginação
+ID_PRONTO = "pronto"    # linha de encerrar a escolha
+
+
+def multi_para_lista(msg: dict) -> dict:
+    """Converte um multi_select em lista interativa — tudo por toque, nada digitado.
+
+    A Cloud API limita a lista a 10 linhas, então cardápio grande é paginado:
+    reserva-se uma linha para "ver mais" (que dá a volta no fim, para não virar beco
+    sem saída) e outra para "pronto", que encerra a escolha sem o cliente escrever.
+    """
+    cabecalho, faltam = _cabecalho_multi(msg)
+    opcoes = list(msg.get("opcoes") or [])
+    escolhidos = msg.get("escolhidos") or []
+
+    reservados = 1 if escolhidos else 0                 # linha "pronto"
+    if len(opcoes) > MAX_LINHAS_LISTA - reservados:
+        reservados += 1                                 # linha "ver mais"
+    slots = max(1, MAX_LINHAS_LISTA - reservados)
+
+    paginas = max(1, -(-len(opcoes) // slots))
+    pagina = int(msg.get("pagina") or 0) % paginas
+    linhas = [dict(o) for o in opcoes[pagina * slots:(pagina + 1) * slots]]
+
+    if paginas > 1:
+        linhas.append({
+            "id": ID_MAIS,
+            "titulo": "➡️ Ver mais opções",
+            "descricao": f"página {pagina + 1} de {paginas}",
+        })
+    if escolhidos:
+        linhas.append({
+            "id": ID_PRONTO,
+            "titulo": "✅ Pronto, pode seguir",
+            "descricao": "Encerrar a escolha",
+        })
+
+    partes = [
+        cabecalho,
+        f"Toque para escolher (cabem mais {faltam})." if faltam > 1 else "Toque para escolher:",
+    ]
+    return lista("\n".join(partes), "Ver acompanhamentos", linhas)
+
+
+def flow_acompanhamentos(
+    corpo: str, flow_id: str, cta: str, payload: dict, token: str = ""
+) -> dict:
+    """Mensagem de Flow. `token` viaja como parâmetro do Flow, nunca dentro de `data`:
+    o `data` precisa bater exatamente com o schema declarado na tela publicada."""
     return {
         "tipo": "flow",
         "corpo": corpo,
         "flow_id": flow_id,
         "cta": _trunc(cta, 20),
         "payload": payload,
+        "token": token,
     }
 
 
@@ -121,8 +196,8 @@ def texto_plano(msg) -> str:
         extra = f"\n[{botao}] " + " | ".join(linhas) if linhas else ""
         return cab + extra
     if tipo == "multi_select":
-        ops = ", ".join(o.get("titulo", "") for o in (msg.get("opcoes") or []))
-        return f"{msg.get('corpo', '')}\n[multi-select: {ops}]"
+        # Sem Flow publicado o multi_select vira menu numerado, nunca texto cru.
+        return texto_numerado(msg)
     if tipo == "flow":
         return f"{msg.get('corpo', '')}\n[Flow: {msg.get('cta', 'Abrir')}]"
     if tipo == "pix_order":

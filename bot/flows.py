@@ -1,4 +1,4 @@
-﻿"""WhatsApp Flow — acompanhamentos multi-select."""
+"""WhatsApp Flow — acompanhamentos multi-select."""
 
 from __future__ import annotations
 
@@ -19,7 +19,15 @@ def _usar_flow_whatsapp() -> bool:
     )
 
 
-def montar_tela_acompanhamentos(corpo: str, opcoes: list[dict], mapa: dict, lim: int, minimo: int = 1):
+def montar_tela_acompanhamentos(
+    corpo: str,
+    opcoes: list[dict],
+    mapa: dict,
+    lim: int,
+    minimo: int = 1,
+    escolhidos: list[str] | None = None,
+    pagina: int = 0,
+):
     """Retorna mensagem flow (WhatsApp) ou multi_select (simulador/dev)."""
     if _usar_flow_whatsapp():
         token = secrets.token_hex(16)
@@ -37,7 +45,6 @@ def montar_tela_acompanhamentos(corpo: str, opcoes: list[dict], mapa: dict, lim:
                 "options": rows,
                 "min_items": minimo,
                 "max_items": lim,
-                "flow_token": token,
             },
         }
         msg = flow_acompanhamentos(
@@ -45,9 +52,16 @@ def montar_tela_acompanhamentos(corpo: str, opcoes: list[dict], mapa: dict, lim:
             settings.META_FLOW_ACOMPANHAMENTOS_ID,
             "Escolher acomp.",
             payload,
+            token,
         )
         return msg, mapa, token
-    return multi_select(corpo, opcoes, minimo=minimo, maximo=lim), mapa, None
+    return (
+        multi_select(
+            corpo, opcoes, minimo=minimo, maximo=lim, escolhidos=escolhidos, pagina=pagina
+        ),
+        mapa,
+        None,
+    )
 
 
 def parse_resposta_acompanhamentos(texto: str) -> list[str] | None:

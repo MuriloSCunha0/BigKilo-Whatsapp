@@ -10,7 +10,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from asgiref.sync import sync_to_async
 
 from bot.flows import montar_tela_acompanhamentos, parse_resposta_acompanhamentos
-from bot.mensagens import T, botoes, lista, normalizar_mensagens, texto_plano
+from bot.mensagens import ID_MAIS, T, botoes, lista, normalizar_mensagens, texto_plano
 
 from cardapio.models import Categoria, Produto
 from pedidos.models import (
@@ -28,7 +28,11 @@ def _ha_promo_global() -> bool:
 
 
 CENTAVO = Decimal("0.01")
-CENTAVO = Decimal("0.01")
+
+# Teto de acompanhamentos oferecidos numa montagem. A lista da Cloud API só aceita 10
+# linhas por vez, mas isso é resolvido paginando (ver multi_para_lista) — este número
+# só evita um cardápio gigante virar uma sequência interminável de páginas.
+MAX_ACOMP_LISTADOS = 30
 
 def _get_tabela_pesos(modo: str, encomenda: bool) -> dict:
     if encomenda:
@@ -370,14 +374,24 @@ def _tela_acompanhamentos(sessao, perfil=None) -> list:
     encomenda = sessao.carrinho_json.get("encomenda", {}).get("data") if sessao.carrinho_json.get("encomenda") else None
     acomps = _disponiveis(Categoria.Tipo.ACOMPANHAMENTO, encomenda)
     sessao.estado_atual = SessaoBot.Estado.MONTANDO_PRATO
-    rows, mapa = _rows_produtos(acomps)
+    ja_ids = m.get("acompanhamentos") or []
+    # Numeração estável durante toda a montagem: o mapa cobre o cardápio inteiro e
+    # apenas as linhas já escolhidas somem da tela. Assim "7" continua sendo o mesmo
+    # prato se o cliente responder olhando uma mensagem anterior — e repetir um item
+    # já escolhido vira um no-op, não a escolha errada.
+    rows, mapa = _rows_produtos(acomps, max_rows=MAX_ACOMP_LISTADOS)
     opcoes = [
         {"id": r["id"], "titulo": r["titulo"], **({"descricao": r["descricao"]} if r.get("descricao") else {})}
-        for r in rows
+        for r in rows if mapa[r["id"]] not in ja_ids
     ]
+    por_id = {p.id: p.nome for p in acomps}
+    ja_nomes = [por_id[i] for i in ja_ids if i in por_id]
     prefixo = mensagem("ESCOLHER_ACOMPANHAMENTOS", _cliente(sessao), perfil=perfil, lim=lim)
     corpo = prefixo
-    msg, mapa, token = montar_tela_acompanhamentos(corpo, opcoes, mapa, lim, minimo=1)
+    msg, mapa, token = montar_tela_acompanhamentos(
+        corpo, opcoes, mapa, lim, minimo=1, escolhidos=ja_nomes,
+        pagina=int(m.get("acomp_pagina") or 0),
+    )
     _set_menu(sessao, mapa)
     if token:
         sessao.carrinho_json.setdefault("_flow", {})["acom_token"] = token
@@ -742,6 +756,11 @@ def _adicionar_acompanhamentos(sessao, selecoes: list[str], cfg, perfil=None) ->
             break
         escolhidos.append(pid)
 
+    if len(escolhidos) >= lim:
+        # Cota preenchida: segue direto, sem exigir um "pronto" do cliente. Vem antes
+        # do bloco de erros porque estourar o limite ainda deixa o prato completo —
+        # re-exibir a lista aqui deixava o cliente sem saída (nada mais a escolher).
+        return [T(e) for e in erros] + _tela_confirmacao(sessao)
     if erros:
         return [T(e) for e in erros] + _tela_acompanhamentos(sessao, perfil)
     return _tela_acompanhamentos(sessao, perfil)
@@ -750,7 +769,8 @@ def _adicionar_acompanhamentos(sessao, selecoes: list[str], cfg, perfil=None) ->
 def _aplicar_acompanhamentos_multi(sessao, selecoes: list[str], cfg, perfil=None) -> list:
     m = sessao.carrinho_json["montagem"]
     lim = cfg.lim_acomp(m["peso_g"])
-    escolhidos = []
+    # A tela só lista o que ainda falta, então parte do que já foi escolhido.
+    escolhidos = list(m.get("acompanhamentos") or [])
     erros = []
     for sel in selecoes:
         pid = _resolver(sessao, sel)
@@ -1011,6 +1031,12 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         return out
 
     if estado == SessaoBot.Estado.MONTANDO_PRATO:
+        if texto.strip() == ID_MAIS:
+            m = sessao.carrinho_json.setdefault("montagem", {})
+            m["acomp_pagina"] = int(m.get("acomp_pagina") or 0) + 1
+            out["mensagens"] = _tela_acompanhamentos(sessao, perfil)
+            sessao.save()
+            return out
         selecoes_multi = parse_resposta_acompanhamentos(texto)
         if selecoes_multi:
             out["mensagens"] = _aplicar_acompanhamentos_multi(sessao, selecoes_multi, cfg, perfil)
@@ -1027,6 +1053,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             out["mensagens"] = _pos_item_adicionado(sessao, msgs, perfil)
         elif low in _CORRIGIR or texto.strip() == "2":
             sessao.carrinho_json["montagem"]["acompanhamentos"] = []
+            sessao.carrinho_json["montagem"]["acomp_pagina"] = 0
             out["mensagens"] = _tela_acompanhamentos(sessao, perfil)
         else:
             out["mensagens"] = [_ERR_BOTOES] + _tela_confirmacao(sessao)
@@ -1077,11 +1104,9 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             else:
                 produto = Produto.objects.get(id=pid)
                 if produto.modo_venda == Produto.ModoVenda.FAIXA:
-                    out["mensagens"] = [_ERR_LISTA] + _tela_lista_extra(
-                        sessao,
-                        sessao.carrinho_json.get("_extra_tipo", Categoria.Tipo.BEBIDA),
-                        "item",
-                    )
+                    # Bebida/sobremesa vendida por tamanho (ex.: suco 300ml/500ml):
+                    # abre a tela de faixas, igual ao caminho de ESCOLHENDO_FIXO.
+                    out["mensagens"] = _tela_faixas(sessao, produto)
                 else:
                     msgs = _add_unidade(sessao, produto)
                     out["mensagens"] = _pos_item_adicionado(sessao, msgs, perfil)

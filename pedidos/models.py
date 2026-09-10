@@ -503,10 +503,7 @@ MENSAGENS_PADRAO = {
     ),
     "MONTAR_REFEICAO": "Vamos montar sua refeição! Toque em *Escolher peso* e selecione o tamanho:",
     "ESCOLHER_PROTEINA": "Escolha a *proteína* na lista abaixo:",
-    "ESCOLHER_ACOMPANHAMENTOS": (
-        "Escolha os acompanhamentos (mínimo 1, máximo {lim}).\n"
-        "Toque para marcar as opções e depois confirme."
-    ),
+    "ESCOLHER_ACOMPANHAMENTOS": "Escolha os acompanhamentos (mínimo 1, máximo {lim}).",
     "PEDIR_MAIS": "Quer adicionar *mais alguma coisa* ao pedido?",
     "RESUMO_CARRINHO": "Confira seu pedido abaixo e escolha uma opção:",
     "PERGUNTAR_ADICIONAR": "Quer incluir *bebida*, *sobremesa* ou *outra refeição*?",

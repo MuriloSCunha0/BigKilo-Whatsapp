@@ -1,6 +1,5 @@
-﻿{
+{
   "version": "7.0",
-  "data_api_version": "3.0",
   "routing_model": {
     "SELECT_ACOMP": []
   },
@@ -9,6 +8,25 @@
       "id": "SELECT_ACOMP",
       "title": "Acompanhamentos",
       "terminal": true,
+      "data": {
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          },
+          "__example__": [
+            { "id": "1", "title": "Arroz Branco", "description": "" },
+            { "id": "2", "title": "Feijao Preto", "description": "" }
+          ]
+        },
+        "min_items": { "type": "number", "__example__": 1 },
+        "max_items": { "type": "number", "__example__": 2 }
+      },
       "layout": {
         "type": "SingleColumnLayout",
         "children": [
@@ -25,6 +43,8 @@
             "name": "acompanhamentos",
             "label": "Acompanhamentos",
             "required": true,
+            "min-selected-items": "${data.min_items}",
+            "max-selected-items": "${data.max_items}",
             "data-source": "${data.options}"
           },
           {

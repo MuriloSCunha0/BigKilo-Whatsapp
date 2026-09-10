@@ -11,7 +11,7 @@ import logging
 import httpx
 from django.conf import settings
 
-from bot.mensagens import texto_numerado, texto_plano
+from bot.mensagens import multi_para_lista, texto_numerado, texto_plano
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +216,7 @@ async def enviar_botoes(telefone: str, corpo: str, opcoes: list[dict]) -> dict:
 
 
 
-def _payload_flow(corpo: str, flow_id: str, cta: str, payload: dict) -> dict:
+def _payload_flow(corpo: str, flow_id: str, cta: str, payload: dict, token: str = "") -> dict:
     params = {
         "flow_message_version": "3",
         "flow_id": flow_id,
@@ -224,8 +224,8 @@ def _payload_flow(corpo: str, flow_id: str, cta: str, payload: dict) -> dict:
         "flow_action": "navigate",
         "flow_action_payload": payload,
     }
-    if payload.get("data", {}).get("flow_token"):
-        params["flow_token"] = payload["data"]["flow_token"]
+    if token:
+        params["flow_token"] = token
     return {
         "type": "interactive",
         "interactive": {
@@ -236,14 +236,14 @@ def _payload_flow(corpo: str, flow_id: str, cta: str, payload: dict) -> dict:
     }
 
 
-async def enviar_flow(telefone: str, corpo: str, flow_id: str, cta: str, payload: dict) -> dict:
+async def enviar_flow(telefone: str, corpo: str, flow_id: str, cta: str, payload: dict, token: str = "") -> dict:
     msg = {"tipo": "flow", "corpo": corpo, "flow_id": flow_id, "cta": cta, "payload": payload}
     if settings.MODO_SIMULACAO or not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
         return _simulacao(telefone, msg)
     body = {
         "messaging_product": "whatsapp",
         "to": _so_digitos(telefone),
-        **_payload_flow(corpo, flow_id, cta, payload),
+        **_payload_flow(corpo, flow_id, cta, payload, token),
     }
     try:
         async with httpx.AsyncClient(timeout=20) as http:
@@ -299,9 +299,15 @@ async def enviar_mensagem(telefone: str, msg: dict) -> dict:
     if tipo == "botoes":
         return await enviar_botoes(telefone, msg["corpo"], msg["opcoes"])
     if tipo == "flow":
-        return await enviar_flow(telefone, msg["corpo"], msg["flow_id"], msg["cta"], msg["payload"])
+        return await enviar_flow(
+            telefone, msg["corpo"], msg["flow_id"], msg["cta"], msg["payload"], msg.get("token", "")
+        )
     if tipo == "multi_select":
-        return await enviar_texto(telefone, texto_plano(msg))
+        # A Cloud API só tem multi-select dentro de Flow. Sem Flow publicado, a lista
+        # nativa é o caminho tocável: multi_para_lista pagina para caber em 10 linhas,
+        # então o cliente escolhe tudo no toque, sem digitar nada.
+        lst = multi_para_lista(msg)
+        return await enviar_lista(telefone, lst["corpo"], lst["botao"], lst["linhas"])
     if tipo == "pix_order":
         if msg.get("nativo") and msg.get("order_parameters"):
             return await enviar_pix_order(telefone, msg)
@@ -329,6 +335,25 @@ def enviar_lista_sync(telefone: str, corpo: str, botao: str, linhas: list[dict])
             resp = http.post(_url(), json=payload, headers=_headers())
         if resp.status_code >= 300:
             raise WhatsAppError(f"Falha ao enviar lista WhatsApp: {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f'Falha de rede: {exc}')
+    return resp.json()
+
+
+def enviar_flow_sync(telefone: str, corpo: str, flow_id: str, cta: str, payload: dict, token: str = "") -> dict:
+    msg = {"tipo": "flow", "corpo": corpo, "flow_id": flow_id, "cta": cta, "payload": payload}
+    if settings.MODO_SIMULACAO or not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
+        return _simulacao(telefone, msg)
+    body = {
+        "messaging_product": "whatsapp",
+        "to": _so_digitos(telefone),
+        **_payload_flow(corpo, flow_id, cta, payload, token),
+    }
+    try:
+        with httpx.Client(timeout=20) as http:
+            resp = http.post(_url(), json=body, headers=_headers())
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar Flow WhatsApp: {resp.status_code} {resp.text}")
     except httpx.RequestError as exc:
         raise WhatsAppError(f'Falha de rede: {exc}')
     return resp.json()
@@ -371,6 +396,11 @@ def enviar_mensagem_sync(telefone: str, msg: dict) -> dict:
         if pix:
             return enviar_texto_sync(telefone, pix)
         return {"ok": True}
-    if tipo in ("flow", "multi_select"):
-        return enviar_texto_sync(telefone, texto_plano(msg))
+    if tipo == "multi_select":
+        lst = multi_para_lista(msg)
+        return enviar_lista_sync(telefone, lst["corpo"], lst["botao"], lst["linhas"])
+    if tipo == "flow":
+        return enviar_flow_sync(
+            telefone, msg["corpo"], msg["flow_id"], msg["cta"], msg["payload"], msg.get("token", "")
+        )
     return enviar_texto_sync(telefone, texto_plano(msg))
