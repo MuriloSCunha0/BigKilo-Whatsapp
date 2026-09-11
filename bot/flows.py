@@ -10,7 +10,16 @@ from django.conf import settings
 from bot.mensagens import _trunc, flow_acompanhamentos, multi_select
 
 
-def _usar_flow_whatsapp() -> bool:
+def _usar_flow_whatsapp(lim: int = 2) -> bool:
+    """O Flow so vale a pena quando ha mais de um acompanhamento a escolher.
+
+    Com lim == 1 nao existe multiplo a marcar, e um CheckboxGroup com
+    max-selected-items = 1 e justamente o caso que a Meta recusa em tempo de
+    execucao ("Ocorreu um erro. Tente novamente mais tarde"). Nesse caso a lista
+    nativa resolve melhor: um toque e pronto.
+    """
+    if lim < 2:
+        return False
     return bool(
         not settings.MODO_SIMULACAO
         and settings.META_ACCESS_TOKEN
@@ -29,14 +38,12 @@ def montar_tela_acompanhamentos(
     pagina: int = 0,
 ):
     """Retorna mensagem flow (WhatsApp) ou multi_select (simulador/dev)."""
-    if _usar_flow_whatsapp():
+    if _usar_flow_whatsapp(lim):
         token = secrets.token_hex(16)
+        # Só id e título: "description" vazio no data-source quebra a renderização
+        # do Flow, e o nome do prato já basta.
         rows = [
-            {
-                "id": str(op["id"]),
-                "title": _trunc(str(op.get("titulo", "")), 24),
-                "description": _trunc(str(op.get("descricao", "") or ""), 72),
-            }
+            {"id": str(op["id"]), "title": _trunc(str(op.get("titulo", "")), 30)}
             for op in opcoes
         ]
         payload = {

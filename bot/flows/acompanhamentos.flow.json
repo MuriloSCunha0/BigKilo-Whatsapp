@@ -15,17 +15,17 @@
             "type": "object",
             "properties": {
               "id": { "type": "string" },
-              "title": { "type": "string" },
-              "description": { "type": "string" }
+              "title": { "type": "string" }
             }
           },
           "__example__": [
-            { "id": "1", "title": "Arroz Branco", "description": "" },
-            { "id": "2", "title": "Feijao Preto", "description": "" }
+            { "id": "1", "title": "Arroz Branco" },
+            { "id": "2", "title": "Feijao Preto" },
+            { "id": "3", "title": "Farofa Crocante" }
           ]
         },
         "min_items": { "type": "number", "__example__": 1 },
-        "max_items": { "type": "number", "__example__": 2 }
+        "max_items": { "type": "number", "__example__": 3 }
       },
       "layout": {
         "type": "SingleColumnLayout",
@@ -36,7 +36,7 @@
           },
           {
             "type": "TextBody",
-            "text": "Marque de ${data.min_items} a ${data.max_items} opcoes e toque em Confirmar."
+            "text": "Marque ate ${data.max_items} opcoes e toque em Confirmar."
           },
           {
             "type": "CheckboxGroup",
