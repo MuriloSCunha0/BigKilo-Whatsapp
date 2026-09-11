@@ -231,6 +231,7 @@ class SessaoBot(models.Model):
         OFERTA_BEBIDA = "OFERTA_BEBIDA", "Escolhendo bebida/sobremesa extra"
         PERGUNTANDO_MAIS_ITEM = "PERGUNTANDO_MAIS_ITEM", "Pedir mais itens? (legado)"
         RESUMO_CARRINHO = "RESUMO_CARRINHO", "Resumo do carrinho"
+        CORRIGINDO_PEDIDO = "CORRIGINDO_PEDIDO", "Corrigindo o pedido"
         PERGUNTANDO_ADICIONAR = "PERGUNTANDO_ADICIONAR", "O que adicionar?"
         PEDINDO_ENDERECO_COMPLETO = "PEDINDO_ENDERECO_COMPLETO", "Pedindo endereço completo"
         ENCOMENDA_FUTURA = "ENCOMENDA_FUTURA", "Encomenda futura (Data)"

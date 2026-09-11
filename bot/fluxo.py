@@ -458,27 +458,75 @@ def _tela_confirmacao(sessao, perfil=None) -> list:
     ]
 
 
-def _tela_resumo_carrinho(sessao, perfil=None) -> list:
+def _resumo_texto(sessao, perfil=None) -> str:
+    """Descritivo completo do pedido, para o cliente conferir antes de fechar."""
     itens = sessao.carrinho_json.get("itens") or []
-    sessao.estado_atual = SessaoBot.Estado.RESUMO_CARRINHO
-    _set_menu(sessao, {"adicionar": "adicionar", "fechar": "fechar"})
-    cab = mensagem("RESUMO_CARRINHO", _cliente(sessao), perfil=perfil)
-    linhas = [cab, "", "🛒 *Seu pedido:*"]
+    cfg = ConfiguracaoLoja.get()
+    tipo = sessao.carrinho_json.get("tipo_entrega", Pedido.TipoEntrega.ENTREGA)
+    linhas = [mensagem("RESUMO_CARRINHO", _cliente(sessao), perfil=perfil), "", "🛒 *Seu pedido:*"]
     for it in itens:
         linhas.append(_linha_item_carrinho(it))
-    total = sum(Decimal(str(i["subtotal"])) for i in itens)
-    linhas.append(f"\n*Subtotal:* {_moeda(total)}")
-    corpo = "\n".join(linhas)
-    cliente = _cliente(sessao)
+
+    produtos = sum(Decimal(str(i["subtotal"])) for i in itens)
+    taxa = Decimal("0.00") if tipo == Pedido.TipoEntrega.RETIRADA else cfg.taxa_entrega
+    linhas.append("")
+    if tipo == Pedido.TipoEntrega.RETIRADA:
+        linhas.append("🏬 *Retirada na loja*")
+    else:
+        linhas.append("🛵 *Entrega em domicílio*")
+        end = (sessao.carrinho_json.get("endereco") or {})
+        if end.get("rua"):
+            linhas.append(f"📍 {end['rua']}")
+    enc = sessao.carrinho_json.get("encomenda") or {}
+    if enc.get("data"):
+        linhas.append(f"📅 Encomenda para {enc['data']}")
+    linhas.append(f"Produtos: {_moeda(produtos)}")
+    if taxa > 0:
+        linhas.append(f"Taxa de entrega: {_moeda(taxa)}")
+    linhas.append(f"*Total: {_moeda(produtos + taxa)}*")
+    return "\n".join(linhas)
+
+
+def _tela_resumo_carrinho(sessao, perfil=None) -> list:
+    """Última conferência antes de fechar: o cliente confirma ou corrige."""
+    if not (sessao.carrinho_json.get("itens") or []):
+        sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+        return [T("Seu carrinho está vazio.")] + _tela_menu(sessao, perfil)
+    sessao.estado_atual = SessaoBot.Estado.RESUMO_CARRINHO
+    _set_menu(sessao, {})
     return [
         botoes(
-            corpo,
+            _resumo_texto(sessao, perfil),
             [
-                {"id": "adicionar", "titulo": mensagem("BTN_CARRINHO_ADICIONAR", cliente, perfil)},
-                {"id": "fechar", "titulo": mensagem("BTN_CARRINHO_FECHAR", cliente, perfil)},
+                {"id": "confirmar", "titulo": "Confirmar pedido"},
+                {"id": "corrigir", "titulo": "Corrigir"},
             ],
         )
     ]
+
+
+def _tela_corrigir(sessao, perfil=None) -> list:
+    """Etapa de correção: toca no item para tirar, ou volta a adicionar."""
+    itens = sessao.carrinho_json.get("itens") or []
+    if not itens:
+        sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+        return [T("Seu pedido ficou vazio.")] + _tela_menu(sessao, perfil)
+    sessao.estado_atual = SessaoBot.Estado.CORRIGINDO_PEDIDO
+    _set_menu(sessao, {})
+    linhas = []
+    for i, it in enumerate(itens[:8]):
+        prod = Produto.objects.filter(id=it.get("produto_id")).first()
+        nome = prod.nome if prod else "Item"
+        peso = f" {it.get('peso_g')}g" if it.get("peso_g") else ""
+        linhas.append({
+            "id": f"rm:{i}",
+            "titulo": f"❌ {nome}{peso}",
+            "descricao": f"Tirar do pedido — {_moeda(it.get('subtotal', '0'))}",
+        })
+    linhas.append({"id": "adicionar", "titulo": "➕ Adicionar mais", "descricao": "Voltar ao cardápio"})
+    linhas.append({"id": "voltar_resumo", "titulo": "↩️ Voltar ao resumo", "descricao": "Sem mudar nada"})
+    corpo = "O que você quer corrigir?\nToque no item para tirar do pedido."
+    return [lista(corpo, "Ver itens", linhas)]
 
 
 def _tela_perguntar_adicionar(sessao, perfil=None) -> list:
@@ -717,7 +765,12 @@ def _checkout(sessao, perfil=None):
             ItemAcompanhamento.objects.create(item_pedido=item, produto=ac, preco_adicional=ac.preco)
     pedido.recalcular_total()
     pedido.save(update_fields=["valor_total"])
-    sessao.estado_atual = SessaoBot.Estado.AGUARDANDO_PAGAMENTO
+    # Sem cobranca nao ha o que aguardar: a conversa volta ao menu, senao o cliente
+    # fica preso no "estamos aguardando o pagamento" sem nunca sair de la.
+    sessao.estado_atual = (
+        SessaoBot.Estado.AGUARDANDO_PAGAMENTO if exigir_pagamento
+        else SessaoBot.Estado.MENU_PRINCIPAL
+    )
     sessao.carrinho_json = _carrinho_vazio()
 
     produtos = pedido.valor_total
@@ -996,8 +1049,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             sessao.save()
             return out
         if low in {"fechar", "finalizar"} or texto.strip() == "fechar":
-            pid, msgs = _iniciar_fechamento(sessao, perfil)
-            out["mensagens"], out["checkout_pedido_id"] = msgs, pid
+            out["mensagens"] = _tela_resumo_carrinho(sessao, perfil)
         elif low == "1":
             sessao.carrinho_json["montagem"] = {"modo": ItemPedido.Modo.COMPLETA, "acompanhamentos": []}
             out["mensagens"] = _tela_peso(sessao, ItemPedido.Modo.COMPLETA, perfil=perfil)
@@ -1134,11 +1186,13 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     if estado == SessaoBot.Estado.RESUMO_CARRINHO:
         acao = _resolver(sessao, texto) or low
-        if acao == "adicionar" or low in {"adicionar", "1"}:
-            out["mensagens"] = _tela_perguntar_adicionar(sessao, perfil)
-        elif acao == "fechar" or low in {"fechar", "finalizar", "2"}:
+        if acao in {"confirmar", "fechar"} or low in {"confirmar", "fechar", "finalizar", "1"}:
             pid, msgs = _iniciar_fechamento(sessao, perfil)
             out["mensagens"], out["checkout_pedido_id"] = msgs, pid
+        elif acao == "corrigir" or low in {"corrigir", "2"}:
+            out["mensagens"] = _tela_corrigir(sessao, perfil)
+        elif acao == "adicionar" or low == "adicionar":
+            out["mensagens"] = _tela_perguntar_adicionar(sessao, perfil)
         else:
             out["mensagens"] = [_ERR_BOTOES] + _tela_resumo_carrinho(sessao, perfil)
         sessao.save()
@@ -1155,8 +1209,8 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         elif acao in {"refeicao", "menu"} or low in {"refeicao", "menu"}:
             out["mensagens"] = _tela_menu(sessao, perfil)
         elif acao == "fechar" or low in {"fechar", "voltar", "resumo"}:
-            pid, msgs = _iniciar_fechamento(sessao, perfil)
-            out["mensagens"], out["checkout_pedido_id"] = msgs, pid
+            # Antes de cobrar/imprimir, o cliente confere o pedido inteiro.
+            out["mensagens"] = _tela_resumo_carrinho(sessao, perfil)
         else:
             out["mensagens"] = [_ERR_LISTA] + _tela_perguntar_adicionar(sessao, perfil)
         sessao.save()
@@ -1189,10 +1243,33 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         if texto.strip() == "1" or low in _SIM:
             out["mensagens"] = _tela_menu(sessao)
         elif texto.strip() == "2" or low in _NAO:
-            pid, msgs = _iniciar_fechamento(sessao, perfil)
-            out["mensagens"], out["checkout_pedido_id"] = msgs, pid
+            out["mensagens"] = _tela_resumo_carrinho(sessao, perfil)
         else:
             out["mensagens"] = [_ERR_BOTOES] + _tela_resumo_carrinho(sessao, perfil)
+        sessao.save()
+        return out
+
+    if estado == SessaoBot.Estado.CORRIGINDO_PEDIDO:
+        alvo = texto.strip()
+        if alvo.startswith("rm:"):
+            itens = sessao.carrinho_json.get("itens") or []
+            try:
+                idx = int(alvo[3:])
+            except ValueError:
+                idx = -1
+            if 0 <= idx < len(itens):
+                removido = itens.pop(idx)
+                prod = Produto.objects.filter(id=removido.get("produto_id")).first()
+                nome = prod.nome if prod else "Item"
+                out["mensagens"] = [T(f"🗑️ {nome} saiu do pedido.")] + _tela_corrigir(sessao, perfil)
+            else:
+                out["mensagens"] = [_ERR_LISTA] + _tela_corrigir(sessao, perfil)
+        elif alvo == "adicionar":
+            out["mensagens"] = _tela_perguntar_adicionar(sessao, perfil)
+        elif alvo == "voltar_resumo":
+            out["mensagens"] = _tela_resumo_carrinho(sessao, perfil)
+        else:
+            out["mensagens"] = [_ERR_LISTA] + _tela_corrigir(sessao, perfil)
         sessao.save()
         return out
 
