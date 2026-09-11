@@ -53,19 +53,23 @@ def gerar_comanda_texto(pedido: Pedido) -> str:
             linhas.append(f"   obs: {item.observacoes}")
         linhas.append("   " + _moeda(item.subtotal).rjust(LARGURA - 3))
 
+    # O pedido so esta pago se o bot cobrou (Pix) E o pagamento foi confirmado.
+    # Sem isso, quem entrega precisa saber que ainda vai receber na porta.
+    pago = bool(pedido.asaas_cobranca_id) and pedido.status != Pedido.Status.AGUARDANDO_PAGAMENTO
+
     linhas.append(SUBLINHA)
     linhas.append(("TOTAL:").ljust(20) + _moeda(pedido.valor_total).rjust(LARGURA - 20))
     if pedido.taxa_entrega and pedido.taxa_entrega > 0:
-        # Ja veio paga no Pix; a cozinha/entregador precisa saber que nao cobra nada.
-        linhas.append("Taxa entrega (paga):")
+        linhas.append("Taxa entrega:")
         linhas.append(_moeda(pedido.taxa_entrega).rjust(LARGURA))
-        linhas.append(("PAGO PELO CLIENTE:").ljust(20) + _moeda(pedido.valor_a_cobrar).rjust(LARGURA - 20))
+    rotulo = "PAGO PELO CLIENTE:" if pago else "A RECEBER:"
+    linhas.append(rotulo.ljust(20) + _moeda(pedido.valor_a_cobrar).rjust(LARGURA - 20))
     if pedido.observacoes:
         linhas.append(SUBLINHA)
         linhas.append("OBS: " + pedido.observacoes)
 
     linhas.append(LINHA)
-    linhas.append(_centro("PAGO VIA PIX - PREPARAR"))
+    linhas.append(_centro("PAGO VIA PIX - PREPARAR" if pago else "COBRAR NA ENTREGA"))
     linhas.append(LINHA)
     linhas.append("")  # avanço de papel
     linhas.append("")

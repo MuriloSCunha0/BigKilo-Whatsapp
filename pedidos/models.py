@@ -53,6 +53,7 @@ class ConfiguracaoLoja(models.Model):
     proteina_1000 = models.DecimalField("Só proteína 1kg", max_digits=8, decimal_places=2, default=Decimal("133.40"))
 
     # Preços de SÓ GUARNIÇÃO por faixa de peso
+    guarnicao_500 = models.DecimalField("Só guarnição 500g", max_digits=8, decimal_places=2, default=Decimal("46.90"))
     guarnicao_700 = models.DecimalField("Só guarnição 700g", max_digits=8, decimal_places=2, default=Decimal("40.00"))
     guarnicao_1000 = models.DecimalField("Só guarnição 1kg", max_digits=8, decimal_places=2, default=Decimal("60.00"))
 
@@ -64,6 +65,11 @@ class ConfiguracaoLoja(models.Model):
     chave_pix = models.CharField(
         "Chave Pix", max_length=140, blank=True,
         help_text="ℹ️ Sua chave Pix REAL. É ela que gera o 'copia e cola' com o valor do pedido para o cliente pagar.",
+    )
+    exigir_pagamento = models.BooleanField(
+        "Exigir pagamento pelo bot", default=True,
+        help_text="ℹ️ Desligue para o cliente fechar o pedido SEM Pix (a comanda imprime na hora e o "
+                  "pagamento é combinado na loja). Útil para testar a impressão.",
     )
     imprimir_ao_fechar = models.BooleanField(
         "Imprimir ao fechar o pedido", default=True,
@@ -118,7 +124,7 @@ class ConfiguracaoLoja(models.Model):
 
     def preco_guarnicao(self, peso_g: int) -> Decimal:
         return {
-            700: self.guarnicao_700, 1000: self.guarnicao_1000,
+            500: self.guarnicao_500, 700: self.guarnicao_700, 1000: self.guarnicao_1000,
         }[peso_g]
 
     def lim_acomp(self, peso_g: int) -> int:

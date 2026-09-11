@@ -5,12 +5,17 @@ Fluxo: saudação -> CEP -> menu -> montagem -> confirmação -> resumo carrinho
 -> adicionar (bebida/sobremesa/refeição) -> endereço completo -> Pix.
 """
 
+from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
+
+from django.utils import timezone
 
 from asgiref.sync import sync_to_async
 
 from bot.flows import montar_tela_acompanhamentos, parse_resposta_acompanhamentos
 from bot.mensagens import ID_MAIS, T, botoes, lista, normalizar_mensagens, texto_plano
+
+ID_RECOMECAR = "recomecar_pedido"
 
 from cardapio.models import Categoria, Produto
 from pedidos.models import (
@@ -39,8 +44,10 @@ def _get_tabela_pesos(modo: str, encomenda: bool) -> dict:
         return {"1": 1000}
     if modo == ItemPedido.Modo.COMPLETA:
         return {"1": 300, "2": 500, "3": 700}
-    # Modo.PROTEINA or GUARNICAO (Grandes porções)
-    return {"1": 700, "2": 1000}
+    if modo == ItemPedido.Modo.GUARNICAO:
+        return {"1": 500, "2": 700}
+    # Modo.PROTEINA (grandes porções)
+    return {"1": 500, "2": 700, "3": 1000}
 
 SAUDACOES = {
     "oi", "oii", "olá", "ola", "opa", "eai", "e ai", "menu", "início", "inicio",
@@ -271,10 +278,11 @@ def _tela_menu(sessao, perfil=None) -> list:
                     {"id": "3", "titulo": mensagem("BTN_MENU_ENCOMENDA", cliente, perfil)},
                 ]
         
-    # Sem menção a "cancelar": aqui não existe botão para isso, e prometer uma
-    # opção que não aparece confunde. Voltar atrás é o botão "Corrigir" na tela de
-    # confirmação do prato; "cancelar" segue valendo digitado, e é anunciado só
-    # onde é a única saída (aguardando pagamento).
+    # Com itens no carrinho o cliente precisa de uma saída TOCÁVEL para largar o
+    # pedido — antes só existia a palavra "cancelar" digitada, que ninguém achava.
+    if itens:
+        linhas = linhas[:9] + [{"id": ID_RECOMECAR, "titulo": "🔄 Recomeçar pedido",
+                                "descricao": "Esvazia o carrinho"}]
     corpo = cab + "O que você deseja?\nToque em *Ver opções* para escolher."
     return [lista(corpo, "Ver opções", linhas)]
 
@@ -679,10 +687,13 @@ def _checkout(sessao, perfil=None):
 
     taxa = Decimal("0.00") if tipo_entrega == Pedido.TipoEntrega.RETIRADA else cfg.taxa_entrega
 
-    # Imprimir ao fechar: o pedido já entra como PREPARANDO (a comanda vai para a
-    # fila de impressão na hora). Senão, aguarda o pagamento ser confirmado no painel.
+    # Sem exigir pagamento o pedido nunca ficaria pago e travaria em AGUARDANDO_-
+    # PAGAMENTO para sempre: entra direto em PREPARANDO. Com pagamento exigido vale o
+    # "imprimir ao fechar" (cozinha comeca antes) ou espera a confirmacao do Pix.
+    exigir_pagamento = getattr(cfg, "exigir_pagamento", True)
     status_inicial = (
-        Pedido.Status.PREPARANDO if getattr(cfg, "imprimir_ao_fechar", True)
+        Pedido.Status.PREPARANDO
+        if (not exigir_pagamento or getattr(cfg, "imprimir_ao_fechar", True))
         else Pedido.Status.AGUARDANDO_PAGAMENTO
     )
     pedido = Pedido.objects.create(
@@ -722,22 +733,22 @@ def _checkout(sessao, perfil=None):
         
     if pedido.tipo_entrega == Pedido.TipoEntrega.RETIRADA:
         linhas.append("🏬 Método: Retirada na loja")
-        linhas += [
-            f"Produtos: {_moeda(produtos)}",
-            f"Total: {_moeda(total)}",
-            "",
-            f"💳 Agora pague os *{_moeda(total)}* pelo Pix. Gerando seu Pix...",
-        ]
+        linhas.append(f"Produtos: {_moeda(produtos)}")
     else:
         linhas.append("🛵 Método: Entrega em domicílio")
         linhas.append(f"Produtos: {_moeda(produtos)}")
         if taxa > 0:
+            # Taxa entra no Pix; a loja repassa ao entregador.
             linhas.append(f"Taxa de entrega: {_moeda(taxa)}")
-        linhas.append(f"Total: {_moeda(total)}")
-        linhas.append("")
-        # Taxa entra no Pix: o cliente paga tudo de uma vez e a loja repassa ao entregador.
+    linhas.append(f"Total: {_moeda(total)}")
+    linhas.append("")
+    if exigir_pagamento:
         linhas.append(f"💳 Agora pague os *{_moeda(total)}* do pedido pelo Pix. Gerando seu Pix...")
-    return pedido.pk, avisos + ["\n".join(linhas)]
+    else:
+        linhas.append(f"✅ Pedido confirmado! Os *{_moeda(total)}* são combinados direto com a loja.")
+        linhas.append("Já estamos preparando! 🍽️")
+    # Sem cobranca nao devolve id de checkout: e ele que dispara a geracao do Pix.
+    return (pedido.pk if exigir_pagamento else None), avisos + ["\n".join(linhas)]
 
 
 def _iniciar_fechamento(sessao, perfil=None):
@@ -827,11 +838,36 @@ def _aplicar_acompanhamentos_multi(sessao, selecoes: list[str], cfg, perfil=None
     return _tela_confirmacao(sessao)
 
 
+# Carrinho abandonado vira lixo: o cardapio do dia e os precos mudam, e o cliente
+# volta horas depois sem lembrar do que montou.
+HORAS_PARA_EXPIRAR_CARRINHO = 6
+
+
+def _sessao_expirada(sessao) -> bool:
+    """True se a sessao ficou parada tempo demais ou virou o dia."""
+    if sessao.estado_atual == SessaoBot.Estado.AGUARDANDO_PAGAMENTO:
+        return False   # pedido ja fechado, esperando o Pix: nao mexe
+    ultima = getattr(sessao, "atualizado_em", None)
+    if not ultima:
+        return False
+    agora = timezone.localtime()
+    ultima = timezone.localtime(ultima)
+    if ultima.date() != agora.date():
+        return True
+    return (agora - ultima) > timedelta(hours=HORAS_PARA_EXPIRAR_CARRINHO)
+
+
 def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     texto = (texto or "").strip()
     low = texto.lower()
     perfil = PerfilFluxo.objects.filter(id=perfil_id).first() if perfil_id else PerfilFluxo.ativo_atual()
-    sessao, _ = SessaoBot.objects.get_or_create(telefone=telefone)
+    sessao, criada = SessaoBot.objects.get_or_create(telefone=telefone)
+    carrinho_expirou = not criada and _sessao_expirada(sessao)
+    if carrinho_expirou:
+        # Carrinho parado por horas nao serve mais: preco muda, cardapio do dia muda,
+        # e o cliente volta sem lembrar do que tinha montado.
+        sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+        sessao.carrinho_json = _carrinho_vazio()
     if not sessao.carrinho_json:
         sessao.carrinho_json = _carrinho_vazio()
     for k, v in _carrinho_vazio().items():
@@ -851,9 +887,9 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             return out
         return out
 
-    if low in {"cancelar", "reiniciar", "recomeçar", "recomecar"}:
+    if low in {"cancelar", "reiniciar", "recomeçar", "recomecar"} or texto.strip() == ID_RECOMECAR:
         sessao.carrinho_json = _carrinho_vazio()
-        out["mensagens"] = ["Pedido reiniciado."] + _saudacao(sessao, perfil)
+        out["mensagens"] = ["Pedido reiniciado. Carrinho vazio. 🧹"] + _saudacao(sessao, perfil)
         sessao.save()
         return out
 
