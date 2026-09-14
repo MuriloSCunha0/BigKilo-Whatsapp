@@ -260,8 +260,12 @@ def _tela_menu(sessao, perfil=None) -> list:
         ]
     else:
         if itens:
+            # Com carrinho cheio some só a Encomenda (opção 3): ela zera o carrinho e
+            # passa para um atendente, o que jogaria fora o que o cliente já montou.
+            # O resto continua disponível — ele pode adicionar o que quiser.
             linhas = [
                 {"id": "1", "titulo": mensagem("BTN_MENU_REFEICAO", cliente, perfil)},
+                {"id": "2", "titulo": mensagem("BTN_MENU_GRANDES", cliente, perfil)},
                 {"id": "4", "titulo": mensagem("BTN_MENU_SANDUICHES", cliente, perfil)},
                 {"id": "5", "titulo": mensagem("BTN_MENU_SOPAS", cliente, perfil)},
             ]
@@ -531,27 +535,21 @@ def _tela_corrigir(sessao, perfil=None) -> list:
 
 def _tela_perguntar_adicionar(sessao, perfil=None) -> list:
     sessao.estado_atual = SessaoBot.Estado.PERGUNTANDO_ADICIONAR
-    itens = sessao.carrinho_json.get("itens", [])
-    has_grande = any(i.get("modo") in (ItemPedido.Modo.PROTEINA, ItemPedido.Modo.GUARNICAO) for i in itens)
-    
     cliente = _cliente(sessao)
-    if has_grande:
-        _set_menu(sessao, {"bebida": "bebida", "sobremesa": "sobremesa", "refeicao": "grande_porcao", "fechar": "fechar"})
-        linhas = [
-            {"id": "refeicao", "titulo": mensagem("BTN_ADD_OUTRA_GRANDE", cliente, perfil), "descricao": mensagem("DESC_ADD_OUTRA_GRANDE", cliente, perfil)},
-            {"id": "bebida", "titulo": mensagem("BTN_ADD_BEBIDA", cliente, perfil), "descricao": mensagem("DESC_ADD_BEBIDA", cliente, perfil)},
-            {"id": "sobremesa", "titulo": mensagem("BTN_ADD_SOBREMESA", cliente, perfil), "descricao": mensagem("DESC_ADD_SOBREMESA", cliente, perfil)},
-            {"id": "fechar", "titulo": mensagem("BTN_ADD_FECHAR", cliente, perfil), "descricao": mensagem("DESC_ADD_FECHAR", cliente, perfil)},
-        ]
-    else:
-        _set_menu(sessao, {"bebida": "bebida", "sobremesa": "sobremesa", "refeicao": "menu", "fechar": "fechar"})
-        linhas = [
-            {"id": "refeicao", "titulo": mensagem("BTN_ADD_REFEICAO", cliente, perfil), "descricao": mensagem("DESC_ADD_REFEICAO", cliente, perfil)},
-            {"id": "bebida", "titulo": mensagem("BTN_ADD_BEBIDA", cliente, perfil), "descricao": mensagem("DESC_ADD_BEBIDA", cliente, perfil)},
-            {"id": "sobremesa", "titulo": mensagem("BTN_ADD_SOBREMESA", cliente, perfil), "descricao": mensagem("DESC_ADD_SOBREMESA", cliente, perfil)},
-            {"id": "fechar", "titulo": mensagem("BTN_ADD_FECHAR", cliente, perfil), "descricao": mensagem("DESC_ADD_FECHAR", cliente, perfil)},
-        ]
-
+    # Sempre manda para o cardápio completo. Antes, quem tinha pedido uma grande
+    # porção só recebia "outra grande porção" e ficava preso naquela categoria.
+    _set_menu(sessao, {"bebida": "bebida", "sobremesa": "sobremesa",
+                       "refeicao": "menu", "fechar": "fechar"})
+    linhas = [
+        {"id": "refeicao", "titulo": mensagem("BTN_ADD_REFEICAO", cliente, perfil),
+         "descricao": mensagem("DESC_ADD_REFEICAO", cliente, perfil)},
+        {"id": "bebida", "titulo": mensagem("BTN_ADD_BEBIDA", cliente, perfil),
+         "descricao": mensagem("DESC_ADD_BEBIDA", cliente, perfil)},
+        {"id": "sobremesa", "titulo": mensagem("BTN_ADD_SOBREMESA", cliente, perfil),
+         "descricao": mensagem("DESC_ADD_SOBREMESA", cliente, perfil)},
+        {"id": "fechar", "titulo": mensagem("BTN_ADD_FECHAR", cliente, perfil),
+         "descricao": mensagem("DESC_ADD_FECHAR", cliente, perfil)},
+    ]
     corpo = mensagem("PERGUNTAR_ADICIONAR", cliente, perfil=perfil)
     return [lista(corpo, "Ver opções", linhas)]
 
