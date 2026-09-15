@@ -13,7 +13,7 @@ from django.utils import timezone
 from asgiref.sync import sync_to_async
 
 from bot.flows import montar_tela_acompanhamentos, parse_resposta_acompanhamentos
-from bot.mensagens import ID_MAIS, T, botoes, lista, normalizar_mensagens, texto_plano
+from bot.mensagens import ID_MAIS, T, botoes, lista, lista_paginada, normalizar_mensagens, texto_plano
 
 ID_RECOMECAR = "recomecar_pedido"
 
@@ -143,6 +143,24 @@ def _normalizar_cep(cep: str) -> str:
     if len(digitos) == 8:
         return f"{digitos[:5]}-{digitos[5:]}"
     return digitos
+
+
+def _pagina(sessao, tela: str) -> int:
+    """Pagina atual de uma tela de lista. Trocar de tela zera a contagem."""
+    pag = sessao.carrinho_json.get("_pag") or {}
+    return int(pag.get(tela) or 0) if pag.get("tela") == tela else 0
+
+
+def _virar_pagina(sessao, tela: str):
+    pag = sessao.carrinho_json.get("_pag") or {}
+    atual = int(pag.get(tela) or 0) if pag.get("tela") == tela else 0
+    sessao.carrinho_json["_pag"] = {"tela": tela, tela: atual + 1}
+
+
+def _marcar_tela(sessao, tela: str):
+    pag = sessao.carrinho_json.get("_pag") or {}
+    if pag.get("tela") != tela:
+        sessao.carrinho_json["_pag"] = {"tela": tela, tela: 0}
 
 
 def _set_menu(sessao, mapa: dict):
@@ -356,10 +374,11 @@ def _tela_proteinas(sessao, perfil=None) -> list:
     if not proteinas:
         return [T("No momento não há proteínas disponíveis.")] + _tela_menu(sessao)
     sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_ITENS
-    rows, mapa = _rows_produtos(proteinas)
+    rows, mapa = _rows_produtos(proteinas, max_rows=MAX_ACOMP_LISTADOS)
     _set_menu(sessao, mapa)
+    _marcar_tela(sessao, "proteinas")
     prefixo = mensagem("ESCOLHER_PROTEINA", _cliente(sessao), perfil=perfil)
-    return [lista(prefixo, "Ver proteínas", rows)]
+    return [lista_paginada(prefixo, "Ver proteínas", rows, _pagina(sessao, "proteinas"))]
 
 
 def _tela_guarnicoes(sessao, perfil=None) -> list:
@@ -368,10 +387,11 @@ def _tela_guarnicoes(sessao, perfil=None) -> list:
     if not acomps:
         return [T("No momento não há guarnições disponíveis.")] + _tela_menu(sessao)
     sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_ITENS
-    rows, mapa = _rows_produtos(acomps)
+    rows, mapa = _rows_produtos(acomps, max_rows=MAX_ACOMP_LISTADOS)
     _set_menu(sessao, mapa)
+    _marcar_tela(sessao, "guarnicoes")
     prefixo = "Opções de Guarnição/Acompanhamento. Qual você deseja?"
-    return [lista(prefixo, "Ver guarnições", rows)]
+    return [lista_paginada(prefixo, "Ver guarnições", rows, _pagina(sessao, "guarnicoes"))]
 
 
 def _tela_acompanhamentos(sessao, perfil=None) -> list:
@@ -560,11 +580,14 @@ def _tela_lista_extra(sessao, tipo: str, titulo: str) -> list:
         return [T(f"No momento não há {titulo.lower()} disponíveis.")] + _tela_perguntar_adicionar(sessao)
     sessao.estado_atual = SessaoBot.Estado.OFERTA_BEBIDA
     sessao.carrinho_json["_extra_tipo"] = tipo
-    rows, mapa = _rows_produtos(produtos, com_preco=True, cliente=_cliente(sessao))
-    rows.append({"id": "voltar", "titulo": "Voltar", "descricao": "Sem adicionar"})
+    rows, mapa = _rows_produtos(produtos, com_preco=True, cliente=_cliente(sessao),
+                                max_rows=MAX_ACOMP_LISTADOS)
     mapa["voltar"] = "voltar"
     _set_menu(sessao, mapa)
-    return [lista(f"Escolha {titulo.lower()}:", "Ver opções", rows)]
+    _marcar_tela(sessao, "extra")
+    voltar = [{"id": "voltar", "titulo": "Voltar", "descricao": "Sem adicionar"}]
+    return [lista_paginada(f"Escolha {titulo.lower()}:", "Ver opções", rows,
+                           _pagina(sessao, "extra"), fixas=voltar)]
 
 
 def _pos_item_adicionado(sessao, msgs: list, perfil=None) -> list:
@@ -620,9 +643,11 @@ def _tela_categoria(sessao, tipo, titulo) -> list:
         return [T(aviso)] + _tela_menu(sessao)
     sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_FIXO
     sessao.carrinho_json["_ultimo_tipo_fixo"] = {"tipo": tipo, "titulo": titulo}
-    rows, mapa = _rows_produtos(produtos, com_preco=True, cliente=_cliente(sessao))
+    rows, mapa = _rows_produtos(produtos, com_preco=True, cliente=_cliente(sessao),
+                                max_rows=MAX_ACOMP_LISTADOS)
     _set_menu(sessao, mapa)
-    return [lista(f"{titulo}:", "Ver itens", rows)]
+    _marcar_tela(sessao, "categoria")
+    return [lista_paginada(f"{titulo}:", "Ver itens", rows, _pagina(sessao, "categoria"))]
 
 
 def _tela_faixas(sessao, produto) -> list:
@@ -1133,6 +1158,14 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         return out
 
     if estado == SessaoBot.Estado.ESCOLHENDO_ITENS:
+        if texto.strip() == ID_MAIS:
+            modo = sessao.carrinho_json.get("montagem", {}).get("modo")
+            tela = "guarnicoes" if modo == ItemPedido.Modo.GUARNICAO else "proteinas"
+            _virar_pagina(sessao, tela)
+            out["mensagens"] = (_tela_guarnicoes(sessao, perfil) if tela == "guarnicoes"
+                                else _tela_proteinas(sessao, perfil))
+            sessao.save()
+            return out
         pid = _resolver(sessao, texto)
         if not pid:
             modo = sessao.carrinho_json["montagem"]["modo"]
@@ -1215,6 +1248,13 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         return out
 
     if estado == SessaoBot.Estado.OFERTA_BEBIDA:
+        if texto.strip() == ID_MAIS:
+            tipo = sessao.carrinho_json.get("_extra_tipo", Categoria.Tipo.BEBIDA)
+            titulo = "Bebida" if tipo == Categoria.Tipo.BEBIDA else "Sobremesa"
+            _virar_pagina(sessao, "extra")
+            out["mensagens"] = _tela_lista_extra(sessao, tipo, titulo)
+            sessao.save()
+            return out
         if low in _PULAR_BEBIDA or texto.strip() in {"pular", "voltar"}:
             out["mensagens"] = _tela_resumo_carrinho(sessao, perfil)
         else:
@@ -1279,6 +1319,12 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         return out
 
     if estado == SessaoBot.Estado.ESCOLHENDO_FIXO:
+        if texto.strip() == ID_MAIS:
+            info = sessao.carrinho_json.get("_ultimo_tipo_fixo") or {}
+            _virar_pagina(sessao, "categoria")
+            out["mensagens"] = _tela_categoria(sessao, info.get("tipo"), info.get("titulo", "itens"))
+            sessao.save()
+            return out
         pid = _resolver(sessao, texto)
         if not pid:
             info = sessao.carrinho_json.get("_ultimo_tipo_fixo") or {}

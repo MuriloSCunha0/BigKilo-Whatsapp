@@ -93,6 +93,32 @@ ID_MAIS = "mais"        # linha de paginação
 ID_PRONTO = "pronto"    # linha de encerrar a escolha
 
 
+def lista_paginada(corpo: str, botao: str, linhas: list[dict], pagina: int = 0,
+                   fixas: list[dict] | None = None) -> dict:
+    """Lista de escolha única que não perde item quando passa de 10 linhas.
+
+    A Cloud API corta a lista em 10 silenciosamente — item nº 11 simplesmente
+    some do cardápio. Aqui reserva-se uma linha para "ver mais", que dá a volta
+    no fim, e o cliente alcança tudo só tocando.
+    """
+    fixas = list(fixas or [])
+    reservados = len(fixas)
+    if len(linhas) > MAX_LINHAS_LISTA - reservados:
+        reservados += 1                                  # linha "ver mais"
+    slots = max(1, MAX_LINHAS_LISTA - reservados)
+
+    paginas = max(1, -(-len(linhas) // slots))
+    pagina = int(pagina or 0) % paginas
+    visiveis = [dict(l) for l in linhas[pagina * slots:(pagina + 1) * slots]]
+    if paginas > 1:
+        visiveis.append({
+            "id": ID_MAIS,
+            "titulo": "➡️ Ver mais opções",
+            "descricao": f"página {pagina + 1} de {paginas}",
+        })
+    return lista(corpo, botao, visiveis + fixas)
+
+
 def multi_para_lista(msg: dict) -> dict:
     """Converte um multi_select em lista interativa — tudo por toque, nada digitado.
 
