@@ -232,6 +232,7 @@ class SessaoBot(models.Model):
         PERGUNTANDO_MAIS_ITEM = "PERGUNTANDO_MAIS_ITEM", "Pedir mais itens? (legado)"
         RESUMO_CARRINHO = "RESUMO_CARRINHO", "Resumo do carrinho"
         CORRIGINDO_PEDIDO = "CORRIGINDO_PEDIDO", "Corrigindo o pedido"
+        ESCOLHENDO_PAGAMENTO = "ESCOLHENDO_PAGAMENTO", "Escolhendo forma de pagamento"
         PERGUNTANDO_ADICIONAR = "PERGUNTANDO_ADICIONAR", "O que adicionar?"
         PEDINDO_ENDERECO_COMPLETO = "PEDINDO_ENDERECO_COMPLETO", "Pedindo endereço completo"
         ENCOMENDA_FUTURA = "ENCOMENDA_FUTURA", "Encomenda futura (Data)"
@@ -287,6 +288,10 @@ class Pedido(models.Model):
         ENTREGA = "ENTREGA", "Entrega em domicílio"
         RETIRADA = "RETIRADA", "Retirada na loja"
 
+    class FormaPagamento(models.TextChoices):
+        PIX = "PIX", "Pix (antes de preparar)"
+        CARTAO = "CARTAO", "Cartão na entrega"
+
     cliente = models.ForeignKey(
         Cliente, on_delete=models.PROTECT, related_name="pedidos", verbose_name="Cliente"
     )
@@ -322,6 +327,11 @@ class Pedido(models.Model):
     )
 
     # Integração Asaas
+    forma_pagamento = models.CharField(
+        "Forma de pagamento", max_length=10, choices=FormaPagamento.choices,
+        default=FormaPagamento.PIX,
+        help_text="Cartão = o pedido já vai para a cozinha e a maquininha vai junto na entrega.",
+    )
     asaas_cobranca_id = models.CharField("ID da cobrança (Asaas)", max_length=60, blank=True, db_index=True)
     asaas_pix_copia_cola = models.TextField("Pix Copia e Cola", blank=True)
 
@@ -523,6 +533,7 @@ MENSAGENS_PADRAO = {
     "ESCOLHER_PROTEINA": "Escolha a *proteína* na lista abaixo:",
     "ESCOLHER_ACOMPANHAMENTOS": "Escolha os acompanhamentos (mínimo 1, máximo {lim}).",
     "PEDIR_MAIS": "Quer adicionar *mais alguma coisa* ao pedido?",
+    "ESCOLHER_PAGAMENTO": "Como você prefere pagar?",
     "RESUMO_CARRINHO": "Confira seu pedido abaixo e escolha uma opção:",
     "PERGUNTAR_ADICIONAR": "Quer incluir *bebida*, *sobremesa* ou *outra refeição*?",
     "AGUARDANDO_PAGAMENTO": "Estamos aguardando o pagamento. Para um novo pedido, digite *cancelar*.",

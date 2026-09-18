@@ -55,7 +55,9 @@ def gerar_comanda_texto(pedido: Pedido) -> str:
 
     # O pedido so esta pago se o bot cobrou (Pix) E o pagamento foi confirmado.
     # Sem isso, quem entrega precisa saber que ainda vai receber na porta.
-    pago = bool(pedido.asaas_cobranca_id) and pedido.status != Pedido.Status.AGUARDANDO_PAGAMENTO
+    cartao = pedido.forma_pagamento == Pedido.FormaPagamento.CARTAO
+    pago = (not cartao and bool(pedido.asaas_cobranca_id)
+            and pedido.status != Pedido.Status.AGUARDANDO_PAGAMENTO)
 
     linhas.append(SUBLINHA)
     linhas.append(("TOTAL:").ljust(20) + _moeda(pedido.valor_total).rjust(LARGURA - 20))
@@ -63,13 +65,21 @@ def gerar_comanda_texto(pedido: Pedido) -> str:
         linhas.append("Taxa entrega:")
         linhas.append(_moeda(pedido.taxa_entrega).rjust(LARGURA))
     rotulo = "PAGO PELO CLIENTE:" if pago else "A RECEBER:"
+    if cartao:
+        rotulo = "COBRAR NO CARTAO:"
     linhas.append(rotulo.ljust(20) + _moeda(pedido.valor_a_cobrar).rjust(LARGURA - 20))
     if pedido.observacoes:
         linhas.append(SUBLINHA)
         linhas.append("OBS: " + pedido.observacoes)
 
     linhas.append(LINHA)
-    linhas.append(_centro("PAGO VIA PIX - PREPARAR" if pago else "COBRAR NA ENTREGA"))
+    if cartao:
+        aviso = "LEVAR MAQUININHA - CARTAO"
+    elif pago:
+        aviso = "PAGO VIA PIX - PREPARAR"
+    else:
+        aviso = "COBRAR NA ENTREGA"
+    linhas.append(_centro(aviso))
     linhas.append(LINHA)
     linhas.append("")  # avanço de papel
     linhas.append("")

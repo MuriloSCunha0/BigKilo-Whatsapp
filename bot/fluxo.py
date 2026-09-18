@@ -762,13 +762,17 @@ def _checkout(sessao, perfil=None):
     # PAGAMENTO para sempre: entra direto em PREPARANDO. Com pagamento exigido vale o
     # "imprimir ao fechar" (cozinha comeca antes) ou espera a confirmacao do Pix.
     exigir_pagamento = getattr(cfg, "exigir_pagamento", True)
+    forma = sessao.carrinho_json.get("forma_pagamento") or Pedido.FormaPagamento.PIX
+    # No cartão o cliente paga na porta: não há Pix a esperar, o pedido já vai para a
+    # cozinha e a comanda sai na hora.
+    cobra_pix = exigir_pagamento and forma == Pedido.FormaPagamento.PIX
     status_inicial = (
         Pedido.Status.PREPARANDO
-        if (not exigir_pagamento or getattr(cfg, "imprimir_ao_fechar", True))
+        if (not cobra_pix or getattr(cfg, "imprimir_ao_fechar", True))
         else Pedido.Status.AGUARDANDO_PAGAMENTO
     )
     pedido = Pedido.objects.create(
-        cliente=cliente, status=status_inicial,
+        cliente=cliente, status=status_inicial, forma_pagamento=forma,
         endereco_entrega=end.get("rua", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
         bairro=end.get("bairro", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
         cep=end.get("cep", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
@@ -791,7 +795,7 @@ def _checkout(sessao, perfil=None):
     # Sem cobranca nao ha o que aguardar: a conversa volta ao menu, senao o cliente
     # fica preso no "estamos aguardando o pagamento" sem nunca sair de la.
     sessao.estado_atual = (
-        SessaoBot.Estado.AGUARDANDO_PAGAMENTO if exigir_pagamento
+        SessaoBot.Estado.AGUARDANDO_PAGAMENTO if cobra_pix
         else SessaoBot.Estado.MENU_PRINCIPAL
     )
     sessao.carrinho_json = _carrinho_vazio()
@@ -818,26 +822,62 @@ def _checkout(sessao, perfil=None):
             linhas.append(f"Taxa de entrega: {_moeda(taxa)}")
     linhas.append(f"Total: {_moeda(total)}")
     linhas.append("")
-    if exigir_pagamento:
+    onde = "na retirada" if pedido.tipo_entrega == Pedido.TipoEntrega.RETIRADA else "na entrega"
+    if cobra_pix:
         linhas.append(f"💳 Agora pague os *{_moeda(total)}* do pedido pelo Pix. Gerando seu Pix...")
+    elif forma == Pedido.FormaPagamento.CARTAO:
+        linhas.append(f"💳 Pagamento: *cartão {onde}* — a maquininha vai junto.")
+        linhas.append(f"Valor a pagar: *{_moeda(total)}*")
+        linhas.append("Já estamos preparando! 🍽️")
     else:
         linhas.append(f"✅ Pedido confirmado! Os *{_moeda(total)}* são combinados direto com a loja.")
         linhas.append("Já estamos preparando! 🍽️")
-    # Sem cobranca nao devolve id de checkout: e ele que dispara a geracao do Pix.
-    return (pedido.pk if exigir_pagamento else None), avisos + ["\n".join(linhas)]
+    # So o Pix devolve id de checkout: e ele que dispara a geracao da cobranca.
+    return (pedido.pk if cobra_pix else None), avisos + ["\n".join(linhas)]
+
+
+def _tela_forma_pagamento(sessao, perfil=None) -> list:
+    """Pix agora ou cartão na entrega. No cartão o pedido já vai para a cozinha."""
+    sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_PAGAMENTO
+    _set_menu(sessao, {})
+    cfg = ConfiguracaoLoja.get()
+    itens = sessao.carrinho_json.get("itens") or []
+    produtos = sum(Decimal(str(i["subtotal"])) for i in itens)
+    tipo = sessao.carrinho_json.get("tipo_entrega", Pedido.TipoEntrega.ENTREGA)
+    taxa = Decimal("0.00") if tipo == Pedido.TipoEntrega.RETIRADA else cfg.taxa_entrega
+    onde = "na retirada" if tipo == Pedido.TipoEntrega.RETIRADA else "na entrega"
+    corpo = (
+        f"{mensagem('ESCOLHER_PAGAMENTO', _cliente(sessao), perfil=perfil)}\n"
+        f"Total: *{_moeda(produtos + taxa)}*"
+    )
+    return [
+        botoes(
+            corpo,
+            [
+                {"id": "pag_cartao", "titulo": f"Cartão {onde}"},
+                {"id": "pag_pix", "titulo": "Pix agora"},
+            ],
+        )
+    ]
 
 
 def _iniciar_fechamento(sessao, perfil=None):
     if not sessao.carrinho_json.get("itens"):
         return None, ["Seu carrinho está vazio."] + _tela_menu(sessao)
-    
+
+    # Endereço primeiro, forma de pagamento depois: é a ordem que o cliente espera.
     tipo = sessao.carrinho_json.get("tipo_entrega", Pedido.TipoEntrega.ENTREGA)
     if tipo == Pedido.TipoEntrega.ENTREGA:
         end = sessao.carrinho_json.get("endereco") or {}
         if not end.get("rua"):
             sessao.estado_atual = SessaoBot.Estado.PEDINDO_ENDERECO_COMPLETO
             return None, [mensagem("PEDIR_ENDERECO_COMPLETO", _cliente(sessao), perfil=perfil)]
-    
+
+    # Sem cobrança configurada não há o que escolher; senão pergunta Pix ou cartão.
+    if (getattr(ConfiguracaoLoja.get(), "exigir_pagamento", True)
+            and not sessao.carrinho_json.get("forma_pagamento")):
+        return None, _tela_forma_pagamento(sessao, perfil)
+
     return _checkout(sessao, perfil)
 
 
@@ -1287,6 +1327,20 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         sessao.save()
         return out
 
+    if estado == SessaoBot.Estado.ESCOLHENDO_PAGAMENTO:
+        alvo = texto.strip()
+        if alvo in {"pag_cartao", "pag_pix"} or low in {"cartao", "cartão", "pix"}:
+            forma = (Pedido.FormaPagamento.CARTAO
+                     if alvo == "pag_cartao" or low in {"cartao", "cartão"}
+                     else Pedido.FormaPagamento.PIX)
+            sessao.carrinho_json["forma_pagamento"] = forma
+            pid, msgs = _iniciar_fechamento(sessao, perfil)
+            out["mensagens"], out["checkout_pedido_id"] = msgs, pid
+        else:
+            out["mensagens"] = [_ERR_BOTOES] + _tela_forma_pagamento(sessao, perfil)
+        sessao.save()
+        return out
+
     if estado == SessaoBot.Estado.CORRIGINDO_PEDIDO:
         alvo = texto.strip()
         if alvo.startswith("rm:"):
@@ -1313,7 +1367,9 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     if estado == SessaoBot.Estado.PEDINDO_ENDERECO_COMPLETO:
         sessao.carrinho_json.setdefault("endereco", {})["rua"] = texto
-        pid, msgs = _checkout(sessao, perfil)
+        # Via _iniciar_fechamento, não _checkout direto: falta perguntar a forma de
+        # pagamento, e chamar o checkout aqui pulava essa etapa.
+        pid, msgs = _iniciar_fechamento(sessao, perfil)
         out["mensagens"], out["checkout_pedido_id"] = msgs, pid
         sessao.save()
         return out
