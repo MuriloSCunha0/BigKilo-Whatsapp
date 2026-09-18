@@ -1413,7 +1413,13 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         return out
 
     if estado == SessaoBot.Estado.AGUARDANDO_PAGAMENTO:
-        out["mensagens"] = [mensagem("AGUARDANDO_PAGAMENTO", _cliente(sessao), perfil=perfil)]
+        # Único estado onde o cliente ficava sem botão: a saída era digitar "cancelar".
+        out["mensagens"] = [
+            botoes(
+                mensagem("AGUARDANDO_PAGAMENTO", _cliente(sessao), perfil=perfil),
+                [{"id": ID_RECOMECAR, "titulo": "🔄 Fazer novo pedido"}],
+            )
+        ]
         sessao.save()
         return out
 

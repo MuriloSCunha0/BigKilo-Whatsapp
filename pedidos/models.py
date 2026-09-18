@@ -536,7 +536,7 @@ MENSAGENS_PADRAO = {
     "ESCOLHER_PAGAMENTO": "Como você prefere pagar?",
     "RESUMO_CARRINHO": "Confira seu pedido abaixo e escolha uma opção:",
     "PERGUNTAR_ADICIONAR": "Quer incluir *bebida*, *sobremesa* ou *outra refeição*?",
-    "AGUARDANDO_PAGAMENTO": "Estamos aguardando o pagamento. Para um novo pedido, digite *cancelar*.",
+    "AGUARDANDO_PAGAMENTO": "Estamos aguardando a confirmação do seu pagamento. 🙂",
     "PAGAMENTO_CONFIRMADO": (
         "✅ Pagamento confirmado! Seu pedido já está sendo preparado.\n"
         "Já já chega aí! 🍽️"
