@@ -56,8 +56,7 @@ def gerar_comanda_texto(pedido: Pedido) -> str:
     # O pedido so esta pago se o bot cobrou (Pix) E o pagamento foi confirmado.
     # Sem isso, quem entrega precisa saber que ainda vai receber na porta.
     cartao = pedido.forma_pagamento == Pedido.FormaPagamento.CARTAO
-    pago = (not cartao and bool(pedido.asaas_cobranca_id)
-            and pedido.status != Pedido.Status.AGUARDANDO_PAGAMENTO)
+    pago = not cartao and pedido.pago_em is not None
 
     linhas.append(SUBLINHA)
     linhas.append(("TOTAL:").ljust(20) + _moeda(pedido.valor_total).rjust(LARGURA - 20))
@@ -68,6 +67,16 @@ def gerar_comanda_texto(pedido: Pedido) -> str:
     if cartao:
         rotulo = "COBRAR NO CARTAO:"
     linhas.append(rotulo.ljust(20) + _moeda(pedido.valor_a_cobrar).rjust(LARGURA - 20))
+
+    # Forma de pagamento explicita: quem monta e quem entrega precisa ler de relance
+    # se ja foi pago ou se leva a maquininha.
+    if cartao:
+        forma = "CARTAO (cobrar na entrega)"
+    elif pago:
+        forma = "PIX (pago)"
+    else:
+        forma = "PIX (aguardando)"
+    linhas.append("PAGAMENTO: ".ljust(12) + forma)
     if pedido.observacoes:
         linhas.append(SUBLINHA)
         linhas.append("OBS: " + pedido.observacoes)

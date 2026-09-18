@@ -332,6 +332,10 @@ class Pedido(models.Model):
         default=FormaPagamento.PIX,
         help_text="Cartão = o pedido já vai para a cozinha e a maquininha vai junto na entrega.",
     )
+    pago_em = models.DateTimeField(
+        "Pago em", null=True, blank=True,
+        help_text="Preenchido quando o pagamento e confirmado. Vazio = ainda nao pago.",
+    )
     asaas_cobranca_id = models.CharField("ID da cobrança (Asaas)", max_length=60, blank=True, db_index=True)
     asaas_pix_copia_cola = models.TextField("Pix Copia e Cola", blank=True)
 

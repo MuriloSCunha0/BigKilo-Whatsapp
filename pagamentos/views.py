@@ -40,9 +40,15 @@ def _confirmar_pagamento(cobranca_id: str):
         )
         if not pedido:
             return None
-        if pedido.status == Pedido.Status.AGUARDANDO_PAGAMENTO:
-            pedido.status = Pedido.Status.PREPARANDO
-            pedido.save(update_fields=["status", "atualizado_em"])
+        # O status nao serve como sinal de pagamento: com "imprimir ao fechar" o
+        # pedido ja nasce em PREPARANDO, e a confirmacao nunca disparava.
+        if pedido.pago_em is None:
+            campos = ["pago_em", "atualizado_em"]
+            pedido.pago_em = timezone.now()
+            if pedido.status == Pedido.Status.AGUARDANDO_PAGAMENTO:
+                pedido.status = Pedido.Status.PREPARANDO
+                campos.append("status")
+            pedido.save(update_fields=campos)
             telefone = pedido.cliente.telefone
             texto = mensagem("PAGAMENTO_CONFIRMADO", pedido.cliente)
             # Conversa volta ao início e o aviso entra no histórico.
