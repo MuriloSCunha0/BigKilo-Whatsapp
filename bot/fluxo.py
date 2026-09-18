@@ -993,6 +993,17 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     out = {"mensagens": [], "checkout_pedido_id": None}
 
+    # Pausa: responde só o aviso e não deixa o pedido andar. Vem antes de tudo,
+    # inclusive do atendimento humano, para ninguém ficar com pedido pela metade.
+    cfg_pausa = ConfiguracaoLoja.get()
+    if getattr(cfg_pausa, "bot_pausado", False):
+        if sessao.carrinho_json.get("itens") or sessao.carrinho_json.get("montagem"):
+            sessao.carrinho_json = _carrinho_vazio()
+            sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+            sessao.save()
+        out["mensagens"] = [T(cfg_pausa.mensagem_pausa)]
+        return out
+
     if sessao.estado_atual == SessaoBot.Estado.ATENDIMENTO_HUMANO:
         # Se voltar a digitar "reiniciar", sai do atendimento humano
         if low in {"cancelar", "reiniciar", "recomeçar", "recomecar"}:

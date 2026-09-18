@@ -66,6 +66,20 @@ class ConfiguracaoLoja(models.Model):
         "Chave Pix", max_length=140, blank=True,
         help_text="ℹ️ Sua chave Pix REAL. É ela que gera o 'copia e cola' com o valor do pedido para o cliente pagar.",
     )
+    bot_pausado = models.BooleanField(
+        "Pausar o bot", default=False,
+        help_text="ℹ️ Liga o aviso de pausa: quem mandar mensagem recebe só o texto abaixo "
+                  "e o bot não atende pedidos. Use para feriado, férias ou manutenção.",
+    )
+    mensagem_pausa = models.TextField(
+        "Aviso enquanto pausado",
+        default=(
+            "Olá! 🍽️\n"
+            "No momento os pedidos pelo WhatsApp estão pausados.\n\n"
+            "Voltamos a atender *a partir de segunda-feira*. Até já! 😊"
+        ),
+        help_text="ℹ️ Mensagem enviada a quem chamar enquanto o bot estiver pausado.",
+    )
     exigir_pagamento = models.BooleanField(
         "Exigir pagamento pelo bot", default=True,
         help_text="ℹ️ Desligue para o cliente fechar o pedido SEM Pix (a comanda imprime na hora e o "
