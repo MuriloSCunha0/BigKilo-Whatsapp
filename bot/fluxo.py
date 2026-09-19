@@ -518,15 +518,22 @@ def _tela_resumo_carrinho(sessao, perfil=None) -> list:
         return [T("Seu carrinho está vazio.")] + _tela_menu(sessao, perfil)
     sessao.estado_atual = SessaoBot.Estado.RESUMO_CARRINHO
     _set_menu(sessao, {})
-    return [
-        botoes(
-            _resumo_texto(sessao, perfil),
-            [
-                {"id": "confirmar", "titulo": "Confirmar pedido"},
-                {"id": "corrigir", "titulo": "Corrigir"},
-            ],
-        )
-    ]
+    # A forma de pagamento entra aqui: o WhatsApp aceita 3 botões, então confirmar e
+    # pagar viram um passo só — uma mensagem a menos por pedido.
+    tipo = sessao.carrinho_json.get("tipo_entrega", Pedido.TipoEntrega.ENTREGA)
+    onde = "retirada" if tipo == Pedido.TipoEntrega.RETIRADA else "entrega"
+    if getattr(ConfiguracaoLoja.get(), "exigir_pagamento", True):
+        opcoes = [
+            {"id": "pag_pix", "titulo": "Pagar com Pix"},
+            {"id": "pag_cartao", "titulo": f"Cartão na {onde}"},
+            {"id": "corrigir", "titulo": "Corrigir"},
+        ]
+    else:
+        opcoes = [
+            {"id": "confirmar", "titulo": "Confirmar pedido"},
+            {"id": "corrigir", "titulo": "Corrigir"},
+        ]
+    return [botoes(_resumo_texto(sessao, perfil), opcoes)]
 
 
 def _tela_corrigir(sessao, perfil=None) -> list:
@@ -590,8 +597,32 @@ def _tela_lista_extra(sessao, tipo: str, titulo: str) -> list:
                            _pagina(sessao, "extra"), fixas=voltar)]
 
 
+def _com_aviso(avisos: list, tela: list) -> list:
+    """Prefixa avisos no corpo da primeira tela interativa, em vez de mandar soltos.
+
+    Cada mensagem avulsa vira uma mensagem de serviço cobrada pela Meta a partir de
+    01/10/2026; juntar não muda o que o cliente lê.
+    """
+    avisos = [a for a in avisos if a]
+    if not avisos:
+        return tela
+    for i, m in enumerate(tela):
+        if isinstance(m, dict) and m.get("corpo"):
+            tela = list(tela)
+            tela[i] = dict(m)
+            tela[i]["corpo"] = "\n".join(avisos) + "\n\n" + m["corpo"]
+            return tela
+    return avisos + tela
+
+
 def _pos_item_adicionado(sessao, msgs: list, perfil=None) -> list:
-    return msgs + _tela_perguntar_adicionar(sessao, perfil)
+    """Costura o "Adicionado: X" no topo da próxima tela em vez de mandar solto.
+
+    Cada mensagem avulsa custa uma mensagem de serviço na Meta; juntando, o cliente
+    recebe a mesma informação em uma só.
+    """
+    return _com_aviso([m for m in msgs if isinstance(m, str)],
+                      _tela_perguntar_adicionar(sessao, perfil))
 
 
 
@@ -1097,7 +1128,9 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
                 f"{cfg.hora_fechamento:%H:%M}). Você pode *agendar uma encomenda* "
                 "escolhendo *Encomenda outro dia* no menu."
             )
-        out["mensagens"] = avisos + _entrar_menu(sessao, perfil)
+        # Avisos entram no topo do menu: mensagem avulsa custa uma mensagem de serviço.
+        tela = _entrar_menu(sessao, perfil)
+        out["mensagens"] = _com_aviso(avisos, tela)
         sessao.save()
         return out
 
@@ -1268,6 +1301,16 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     if estado == SessaoBot.Estado.RESUMO_CARRINHO:
         acao = _resolver(sessao, texto) or low
+        alvo = texto.strip()
+        if alvo in {"pag_cartao", "pag_pix"}:
+            sessao.carrinho_json["forma_pagamento"] = (
+                Pedido.FormaPagamento.CARTAO if alvo == "pag_cartao"
+                else Pedido.FormaPagamento.PIX
+            )
+            pid, msgs = _iniciar_fechamento(sessao, perfil)
+            out["mensagens"], out["checkout_pedido_id"] = msgs, pid
+            sessao.save()
+            return out
         if acao in {"confirmar", "fechar"} or low in {"confirmar", "fechar", "finalizar", "1"}:
             pid, msgs = _iniciar_fechamento(sessao, perfil)
             out["mensagens"], out["checkout_pedido_id"] = msgs, pid

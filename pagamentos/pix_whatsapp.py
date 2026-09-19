@@ -120,8 +120,10 @@ def montar_mensagens_pix(pedido, dados_asaas: dict) -> list:
             T("Assim que o pagamento cair, seu pedido vai para a cozinha! 🍽️"),
         ]
 
+    # O copia e cola PRECISA ir sozinho: e assim que o WhatsApp reconhece o codigo e
+    # oferece o botao "Copiar codigo Pix". O texto em volta vai todo numa mensagem so.
     return [
-        T("💸 Pague com o Pix copia e cola abaixo:"),
+        T("💸 Pague com o Pix copia e cola abaixo."
+          "\nAssim que o pagamento cair, seu pedido vai para a cozinha! 🍽️"),
         T(copia or "(payload indisponível)"),
-        T("Assim que o pagamento cair, seu pedido vai para a cozinha! 🍽️"),
     ]
