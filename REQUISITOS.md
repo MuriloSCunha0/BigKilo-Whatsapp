@@ -124,3 +124,46 @@ chapa, filé de frango ou de sobrecoxa, sanduíche de carne assada, **sopa do di
 - **CPF no Asaas**: bot usa `ASAAS_DEFAULT_CPF_CNPJ` (não coleta CPF do cliente).
 - WhatsApp Cloud API: hoje os menus são por número (texto). Pode evoluir para
   botões/listas interativas.
+
+---
+
+## 11. Canal "Sou lojista" (BACKLOG — pedido em 22/09/2026, não implementado)
+
+Pedido do Leandro por WhatsApp em 22/09/2026. Decidido o desenho, **adiado a
+implementação**: o cardápio e os preços de lojista ainda não chegaram.
+
+### O que o cliente pediu
+Uma escolha logo na entrada, **antes do CEP**:
+
+```
+CLIENTES
+LOJISTA  →  Rio Design  |  Shopping Millennium  (mais opções virão)
+```
+
+No canal lojista: **sem taxa de entrega**, e **cardápio e valores próprios**.
+
+### Decisões já tomadas (confirmadas em 22/09/2026)
+- **Qual loja**: depois de escolher o shopping, o bot pergunta o nome/número da
+  loja e o lojista digita (ex.: "Loja 105 - Chilli Beans"). Sem isso o entregador
+  não acha o destino. É o equivalente ao endereço do cliente comum — os outros
+  passos continuam sendo toque, sem digitação.
+- **Pagamento**: igual ao do cliente (Pix ou cartão). Nada muda no checkout.
+- **Cardápio**: cardápio próprio marcado como lojista, com os produtos e preços
+  dele. Serve tanto se forem pratos diferentes quanto os mesmos pratos a outro
+  preço — o restaurante edita pelo painel, como qualquer cardápio.
+
+### Onde mexe (levantado no código, 22/09/2026)
+| Peça | Arquivo | O que fazer |
+|---|---|---|
+| Tela de entrada | `bot/fluxo.py` `_saudacao()` | Hoje já abre com Entrega/Retirada; entra uma tela antes: Cliente / Lojista |
+| Estados novos | `pedidos/models.py` `SessaoBot.Estado` | `ESCOLHENDO_PUBLICO`, `ESCOLHENDO_PONTO_LOJISTA`, `PEDINDO_LOJA` |
+| Pontos de entrega | `pedidos/models.py` | Modelo novo (nome, ativo, ordem) p/ o restaurante cadastrar shoppings pelo painel, sem código |
+| Filtro do cardápio | `bot/fluxo.py` `_disponiveis()` | Chokepoint único: filtra por canal. `Cardapio` ganha campo de canal (cliente / lojista / ambos) |
+| Taxa de entrega | `bot/fluxo.py` linhas 496, 791, 879 | Hoje é `0` só p/ RETIRADA; lojista também entra nessa isenção. Vale extrair um `_taxa_para(sessao)` — a regra está repetida em 4 lugares |
+| Comanda | `pedidos/comanda.py` | Imprimir shopping + loja no lugar do endereço, e marcar que é lojista |
+| Pedido | `pedidos/models.py` `Pedido` | Guardar canal, ponto e loja p/ o pedido não virar entrega comum no painel |
+
+### O que ainda falta para começar
+- [ ] Lista completa dos pontos (só "Rio Design" e "Shopping Millennium" por ora)
+- [ ] Cardápio de lojista: quais itens
+- [ ] Preços de lojista
