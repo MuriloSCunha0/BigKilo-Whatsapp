@@ -9,6 +9,7 @@ Variáveis de ambiente:
   PRINT_API_URL    : URL do sistema. Ex.: https://seu-app.up.railway.app
   PRINT_API_TOKEN  : mesmo valor de IMPRESSAO_API_TOKEN no servidor.
   PRINT_POLL_SECONDS : intervalo entre verificações (padrão 5).
+  PRINT_COPIES     : quantas vias imprimir de cada pedido (padrão 2).
   PRINT_MODE       : file (padrão/demo) | windows | escpos
     - windows : PRINTER_NAME (vazio = impressora padrão). Requer 'pywin32'.
     - escpos  : PRINTER_HOST / PRINTER_PORT (padrão 9100). Requer 'python-escpos'.
@@ -31,6 +32,8 @@ PRINT_MODE = os.getenv("PRINT_MODE", "file").lower()
 PRINTER_NAME = os.getenv("PRINTER_NAME", "")
 PRINTER_HOST = os.getenv("PRINTER_HOST", "")
 PRINTER_PORT = int(os.getenv("PRINTER_PORT", "9100"))
+# Duas vias por pedido: uma vai com o entregador, a outra fica de controle na loja.
+VIAS = max(1, int(os.getenv("PRINT_COPIES", "2")))
 COMANDAS_DIR = Path(__file__).resolve().parent / "comandas"
 
 
@@ -115,6 +118,19 @@ def imprimir_escpos(texto, pid):
 
 IMPRESSORAS = {"file": imprimir_file, "windows": imprimir_windows, "escpos": imprimir_escpos}
 
+
+def imprimir_vias(imprimir, texto, pid, vias=None):
+    """Manda o mesmo pedido N vezes, uma impressão por via.
+
+    São jobs separados de propósito: assim cada via sai com o próprio corte,
+    em vez de uma tira longa que o caixa teria que rasgar no meio.
+    """
+    vias = VIAS if vias is None else vias
+    for n in range(vias):
+        if n:
+            time.sleep(0.5)   # folga entre as vias: térmica engasga com jobs colados
+        imprimir(texto, pid if vias == 1 else f"{pid}-via{n + 1}")
+
 impressos_cache = set()
 
 def processar_pendentes():
@@ -129,7 +145,7 @@ def processar_pendentes():
             continue
             
         try:
-            imprimir(pedido["comanda"], pid)
+            imprimir_vias(imprimir, pedido["comanda"], pid)
             impressos_cache.add(pid)
             marcar_impresso(pid)
         except Exception as exc:
@@ -165,9 +181,10 @@ def listar_impressoras():
 
 def testar_impressao():
     imprimir = IMPRESSORAS.get(PRINT_MODE, imprimir_file)
-    print(f"Enviando comanda de TESTE (modo={PRINT_MODE}, impressora='{PRINTER_NAME or 'padrão'}')...")
-    imprimir(COMANDA_TESTE, "TESTE")
-    print("Pronto. Confira se saiu na impressora.")
+    print(f"Enviando comanda de TESTE em {VIAS} via(s) "
+          f"(modo={PRINT_MODE}, impressora='{PRINTER_NAME or 'padrão'}')...")
+    imprimir_vias(imprimir, COMANDA_TESTE, "TESTE")
+    print(f"Pronto. Devem sair {VIAS} comanda(s) iguais, cada uma cortada.")
 
 
 def _pasta_estavel():
@@ -233,7 +250,8 @@ def main():
     if _garantir_instalado():
         return  # relançou da pasta fixa; este processo encerra
     _minimizar_console()
-    print(f"Agente de impressão Big Kilo (api={API}, modo={PRINT_MODE}, intervalo={INTERVALO_S}s).")
+    print(f"Agente de impressão Big Kilo (api={API}, modo={PRINT_MODE}, "
+          f"vias={VIAS}, intervalo={INTERVALO_S}s).")
     print("Aguardando pedidos pagos... (Ctrl+C para sair)")
     intervalo_atual = INTERVALO_S
     while True:
