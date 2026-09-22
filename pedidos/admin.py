@@ -124,12 +124,13 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
 class EncomendaAdmin(ModelAdmin):
     """Lista de quem pediu encomenda e ainda espera contato."""
 
-    list_display = ("quando", "quem", "telefone_link", "status", "responder")
+    list_display = ("quando", "quem", "telefone_link", "status", "responder", "ver_conversa")
     list_filter = ("status", "criado_em")
     search_fields = ("cliente__nome_whatsapp", "cliente__telefone", "observacoes")
     list_editable = ("status",)
-    readonly_fields = ("cliente", "criado_em", "responder")
-    fields = ("cliente", "criado_em", "status", "responder", "observacoes", "atendido_em")
+    readonly_fields = ("cliente", "criado_em", "responder", "ver_conversa")
+    fields = ("cliente", "criado_em", "status", "responder", "ver_conversa",
+              "observacoes", "atendido_em")
     date_hierarchy = "criado_em"
 
     def has_add_permission(self, request):
@@ -146,6 +147,15 @@ class EncomendaAdmin(ModelAdmin):
     @admin.display(description="WhatsApp")
     def telefone_link(self, obj):
         return obj.cliente.telefone
+
+    @admin.display(description="Conversa")
+    def ver_conversa(self, obj):
+        """Abre o histórico no inbox já na conversa deste cliente."""
+        return format_html(
+            '<a class="underline" href="/atendimento/?tel={}" target="_blank" '
+            'rel="noopener">Ver conversa no atendimento</a>',
+            "".join(c for c in obj.cliente.telefone if c.isdigit()),
+        )
 
     @admin.display(description="Responder")
     def responder(self, obj):

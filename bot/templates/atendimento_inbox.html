@@ -217,6 +217,13 @@
   carregarConversas();
   setInterval(carregarConversas, 6000);
   setInterval(() => carregarMensagens(false), 4000);
+
+  // /atendimento/?tel=55... abre a conversa direto. Usado pelo botao "Ver conversa"
+  // da Encomenda, para ir do registro ao historico sem procurar na lista.
+  (function(){
+    const alvo = new URLSearchParams(location.search).get('tel');
+    if(alvo) atAbrirConversa(alvo.replace(/\D/g,''));
+  })();
 })();
 </script>
 {% endblock %}
