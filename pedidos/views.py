@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .comanda import gerar_comanda_texto
+from .comanda import comanda_para_impressao
 from .models import (
     FLUXO_ETAPAS,
     FLUXO_GRUPOS,
@@ -302,7 +302,7 @@ def impressao_pendentes(request):
         Pedido.objects.filter(status=Pedido.Status.PREPARANDO, comanda_impressa=False)
         .order_by("criado_em")[:20]
     )
-    data = [{"id": p.id, "comanda": gerar_comanda_texto(p)} for p in pedidos]
+    data = [{"id": p.id, "comanda": comanda_para_impressao(p)} for p in pedidos]
     return JsonResponse({"pedidos": data})
 
 

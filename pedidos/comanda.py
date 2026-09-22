@@ -93,3 +93,24 @@ def gerar_comanda_texto(pedido: Pedido) -> str:
     linhas.append("")  # avanço de papel
     linhas.append("")
     return "\n".join(linhas)
+
+
+# --------------------------------------------------------------------------
+# Duas vias: uma vai com o entregador, a outra fica de controle na loja.
+#
+# O corte vai DENTRO do texto, e não em dois envios separados, porque o agente
+# de impressão já instalado no PC do restaurante manda a comanda inteira num
+# job só e corta apenas no fim. Emendando o comando de corte no meio, as duas
+# vias saem em tiras separadas sem que ninguém precise reinstalar nada lá.
+#
+# Os bytes são os mesmos que o agente usa no fim do cupom (ESC d 4 = avança 4
+# linhas para dar folga; GS V 1 = corte parcial) e atravessam o cp850 intactos,
+# porque caracteres de controle têm o mesmo valor nessa codepage.
+VIAS_COMANDA = 2
+CORTE = "\n" + "\x1b" + "d" + "\x04" + "\x1d" + "V" + "\x01"
+
+
+def comanda_para_impressao(pedido: Pedido, vias: int = VIAS_COMANDA) -> str:
+    """A comanda repetida N vezes, com corte de papel entre uma via e outra."""
+    texto = gerar_comanda_texto(pedido)
+    return CORTE.join([texto] * max(1, vias))
