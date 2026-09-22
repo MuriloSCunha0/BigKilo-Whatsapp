@@ -57,9 +57,14 @@ class ConfiguracaoLojaForm(forms.ModelForm):
 @admin.register(ConfiguracaoLoja)
 class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
     form = ConfiguracaoLojaForm
-    readonly_fields = ("link_mensagens",)
+    readonly_fields = ("link_mensagens", "link_cozinha")
     fieldsets = (
         (_("Identidade"), {"fields": ("nome_loja", "slogan")}),
+        (_("Modo Cozinha"), {
+            "fields": ("link_cozinha",),
+            "description": _("Link para a cozinha marcar o que acabou sem precisar de senha. "
+                             "Abra no celular da loja e use 'Adicionar à tela de início'."),
+        }),
         (_("Mensagens do WhatsApp"), {
             "fields": ("link_mensagens",),
             "description": _("A saudação e os textos do bot ficam em Fluxos de mensagem — não nesta tela."),
@@ -101,6 +106,24 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
     )
 
     @display(description=_("Editar mensagens do bot"))
+    @admin.display(description="Link da cozinha")
+    def link_cozinha(self, obj):
+        """O link inteiro, para copiar e abrir no celular da loja."""
+        url = obj.link_cozinha if obj and obj.pk else ""
+        if not url:
+            return "Salve a configuração uma vez para o link nascer."
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener" style="background:#d97706;color:#fff;'
+            'border-radius:8px;padding:.45rem .9rem;text-decoration:none;">Abrir Modo Cozinha</a>'
+            '<div style="margin-top:.6rem;font-family:ui-monospace,monospace;font-size:.8rem;'
+            'word-break:break-all;background:#f3f4f6;color:#111827;padding:.6rem;border-radius:8px;">{}</div>'
+            '<div style="color:#6b7280;font-size:.85rem;margin-top:.4rem;">'
+            'Quem tem este link marca pratos como esgotados sem senha. Para trocá-lo, '
+            'apague o campo “Link do Modo Cozinha” pelo shell e salve — sai um novo e o antigo para de valer.'
+            '</div>',
+            url, url,
+        )
+
     def link_mensagens(self, obj):
         return format_html(
             '<a class="button" style="background:#d97706;color:#fff;border-radius:8px;padding:.45rem .9rem;'

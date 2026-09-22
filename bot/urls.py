@@ -22,6 +22,9 @@ urlpatterns = [
     path("atendimento/enviar/", views.atendimento_enviar, name="atendimento_enviar"),
     # Aba "Impressão" — download do programa de impressão do restaurante
     path("privacidade/", views.politica_privacidade, name="politica_privacidade"),
+    # Modo Cozinha — tela de turno: um toque marca que o prato acabou
+    path("cozinha/", views.cozinha, name="cozinha"),
+    path("cozinha/alternar/", views.cozinha_alternar, name="cozinha_alternar"),
     path("impressao/", views.impressao_pagina, name="impressao_pagina"),
     path("impressao/baixar/", views.impressao_baixar, name="impressao_baixar"),
     # Simulador de testes (sem WhatsApp real)

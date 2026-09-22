@@ -102,8 +102,13 @@ class Produto(models.Model):
     )
     esgotado = models.BooleanField(
         "Esgotado", default=False,
-        help_text="ℹ️ Marque quando acabar — o item some do cardápio na hora. "
-                  "Continua esgotado até você desmarcar.",
+        help_text="ℹ️ Marque quando acabar — o item some do cardápio na hora e volta "
+                  "sozinho no dia seguinte. Para tirar de vez, desmarque 'Ativo'.",
+    )
+    esgotado_em = models.DateField(
+        "Esgotado em", null=True, blank=True, editable=False,
+        help_text="Dia em que foi marcado como esgotado. Preenchido sozinho; "
+                  "serve para o item voltar ao cardápio na virada do dia.",
     )
     sempre_disponivel = models.BooleanField(
         "Sempre disponível", default=False,
@@ -141,6 +146,18 @@ class Produto(models.Model):
     criado_em = models.DateTimeField("Criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # Carimba o dia do "acabou" venha de onde vier (painel, modo cozinha, script),
+        # para a validade valer sempre e não só quando alguém lembrar de preencher.
+        if self.esgotado and self.esgotado_em is None:
+            self.esgotado_em = timezone.localdate()
+        elif not self.esgotado:
+            self.esgotado_em = None
+        campos = kwargs.get("update_fields")
+        if campos is not None and "esgotado" in campos and "esgotado_em" not in campos:
+            kwargs["update_fields"] = list(campos) + ["esgotado_em"]
+        return super().save(*args, **kwargs)
+
     class Meta:
         verbose_name = "Produto"
         verbose_name_plural = "Produtos"
@@ -159,8 +176,21 @@ class Produto(models.Model):
             return "Fora de cardápio"
         return "; ".join(c.nome for c in cards)
 
+    @property
+    def esgotado_hoje(self) -> bool:
+        """Esgotado vale só pelo dia em que foi marcado.
+
+        Quem marca no meio do almoço não volta à noite para desmarcar, e o prato
+        sumia calado por dias. Para tirar de vez existe o 'ativo'.
+        """
+        if not self.esgotado:
+            return False
+        if self.esgotado_em is None:      # marcado antes deste campo existir
+            return True
+        return self.esgotado_em >= timezone.localdate()
+
     def disponivel_em(self, momento=None, exclusivo_ativo=None) -> bool:
-        if not self.ativo or self.esgotado or not self.categoria.ativa:
+        if not self.ativo or self.esgotado_hoje or not self.categoria.ativa:
             return False
             
         momento = momento or timezone.localtime()
@@ -194,7 +224,11 @@ class Produto(models.Model):
         return False
 
     def disponivel_na_data(self, data, exclusivo_ativo=None) -> bool:
-        if not self.ativo or self.esgotado or not self.categoria.ativa:
+        # Esgotado de hoje não barra encomenda para depois: até lá repõe.
+        esgotado_na_data = self.esgotado and (
+            self.esgotado_em is None or self.esgotado_em >= data
+        )
+        if not self.ativo or esgotado_na_data or not self.categoria.ativa:
             return False
         if self.sempre_disponivel:
             return True

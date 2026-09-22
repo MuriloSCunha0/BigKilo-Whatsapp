@@ -1,5 +1,7 @@
 from decimal import ROUND_HALF_UP, Decimal
 
+import secrets
+
 from django.db import models
 from django.utils import timezone
 
@@ -90,6 +92,11 @@ class ConfiguracaoLoja(models.Model):
         help_text="ℹ️ Desligue para o cliente fechar o pedido SEM Pix (a comanda imprime na hora e o "
                   "pagamento é combinado na loja). Útil para testar a impressão.",
     )
+    token_cozinha = models.CharField(
+        "Link do Modo Cozinha", max_length=40, blank=True, editable=False,
+        help_text="Chave secreta do link que a cozinha salva na tela inicial do celular. "
+                  "Apague este campo para gerar um novo e derrubar o antigo.",
+    )
     imprimir_ao_fechar = models.BooleanField(
         "Imprimir ao fechar o pedido", default=True,
         help_text="ℹ️ Imprime a comanda assim que o cliente fecha o pedido (a cozinha já começa), sem esperar "
@@ -117,7 +124,19 @@ class ConfiguracaoLoja(models.Model):
 
     def save(self, *args, **kwargs):
         self.pk = 1  # garante registro único
+        if not self.token_cozinha:
+            # Nasce sozinho: se alguém apagar o campo, o link antigo morre e sai um novo.
+            self.token_cozinha = secrets.token_urlsafe(24)
+            campos = kwargs.get("update_fields")
+            if campos is not None and "token_cozinha" not in campos:
+                kwargs["update_fields"] = list(campos) + ["token_cozinha"]
         super().save(*args, **kwargs)
+
+    @property
+    def link_cozinha(self) -> str:
+        from django.conf import settings
+        base = (getattr(settings, "BASE_URL", "") or "").rstrip("/")
+        return f"{base}/cozinha/?k={self.token_cozinha}"
 
     @classmethod
     def get(cls):

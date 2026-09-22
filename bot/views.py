@@ -5,6 +5,7 @@ POST -> recepção de mensagens, processadas pela máquina de estados.
 """
 
 import json
+import secrets
 import logging
 from pathlib import Path
 import hmac
@@ -564,3 +565,91 @@ def simulador_pagar(request):
         estado_atual=SessaoBot.Estado.MENU_PRINCIPAL, carrinho_json={}
     )
     return JsonResponse({"ok": True, "pedido": pedido.pk, "mensagem": confirmacao})
+
+
+# ===================== Modo Cozinha (marcar o que acabou, no meio do turno) =====================
+def _cozinha_liberado(request, cfg, chave=None) -> bool:
+    """Dois jeitos de entrar: logado no painel, ou pelo link secreto do celular.
+
+    O link existe porque o objetivo é dois toques no meio do almoço: quem está na
+    cozinha não vai parar para fazer login. O estrago máximo de quem tiver o link
+    é marcar prato como esgotado — nada de dinheiro nem dado de cliente — e o
+    link é trocável no painel.
+    """
+    if request.user.is_authenticated and request.user.is_staff:
+        return True
+    chave = (chave if chave is not None else request.GET.get("k") or "").strip()
+    return bool(cfg.token_cozinha) and secrets.compare_digest(chave, cfg.token_cozinha)
+
+
+def _cozinha_itens():
+    """O que está no ar hoje, mais o que foi marcado como esgotado hoje.
+
+    Sem os esgotados a pessoa não teria como desfazer o toque errado — eles somem
+    de `disponivel_agora` justamente por estarem marcados.
+    """
+    from cardapio.models import Categoria, Produto
+
+    hoje = timezone.localdate()
+    # Faxina preguiçosa: o "acabou" de ontem já não vale para o bot, então limpa a
+    # marca para o painel não mostrar checkbox ligado num prato que está sendo servido.
+    Produto.objects.filter(esgotado=True, esgotado_em__lt=hoje).update(
+        esgotado=False, esgotado_em=None
+    )
+    qs = (
+        Produto.objects.filter(ativo=True, categoria__ativa=True)
+        .select_related("categoria")
+        .prefetch_related("cardapios__agenda")
+        .order_by("categoria__ordem", "categoria__nome", "nome")
+    )
+    grupos, ordem = {}, []
+    for p in qs:
+        esgotado = p.esgotado and (p.esgotado_em is None or p.esgotado_em >= hoje)
+        if not esgotado and not p.disponivel_agora:
+            continue                      # não é de hoje: não polui a tela
+        nome = p.categoria.nome
+        if nome not in grupos:
+            grupos[nome] = []
+            ordem.append(nome)
+        grupos[nome].append({"id": p.id, "nome": p.nome, "esgotado": esgotado})
+    return [{"categoria": n, "itens": grupos[n]} for n in ordem]
+
+
+def cozinha(request):
+    """Tela de turno: lista o que está no ar hoje, um toque marca que acabou."""
+    from pedidos.models import ConfiguracaoLoja
+
+    cfg = ConfiguracaoLoja.get()
+    if not _cozinha_liberado(request, cfg):
+        raise Http404()
+    return render(request, "cozinha.html", {
+        "grupos": _cozinha_itens(),
+        "chave": request.GET.get("k", ""),
+        "nome_loja": cfg.nome_loja,
+        "hoje": timezone.localdate(),
+    })
+
+
+@csrf_exempt
+@require_POST
+def cozinha_alternar(request):
+    """Liga/desliga o 'acabou' de um item e devolve como ele ficou."""
+    from cardapio.models import Produto
+    from pedidos.models import ConfiguracaoLoja
+
+    cfg = ConfiguracaoLoja.get()
+    dados = json.loads(request.body or b"{}")
+    if not _cozinha_liberado(request, cfg, chave=str(dados.get("k") or "")):
+        return JsonResponse({"ok": False, "erro": "sem permissão"}, status=403)
+
+    produto = Produto.objects.filter(id=dados.get("produto_id"), ativo=True).first()
+    if not produto:
+        return JsonResponse({"ok": False, "erro": "produto não encontrado"}, status=404)
+
+    hoje = timezone.localdate()
+    esgotado_hoje = produto.esgotado and (produto.esgotado_em is None or produto.esgotado_em >= hoje)
+    produto.esgotado = not esgotado_hoje
+    produto.esgotado_em = None if esgotado_hoje else hoje
+    produto.save(update_fields=["esgotado", "esgotado_em", "atualizado_em"])
+    logger.info("Modo cozinha: %s -> esgotado=%s", produto.nome, produto.esgotado)
+    return JsonResponse({"ok": True, "esgotado": produto.esgotado, "nome": produto.nome})

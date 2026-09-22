@@ -290,17 +290,18 @@ UNFOLD = {
         "show_search": True,
         "show_all_applications": False,
         "navigation": [
+            # Ordem por frequência de uso no turno, não por estrutura do banco:
+            # o que se toca todo dia fica aberto, setup e consulta vão para
+            # os grupos recolhíveis lá embaixo.
             {
-                "title": "Início",
+                "title": "Dia a dia",
                 "separator": True,
                 "items": [
                     {"title": "Painel (resumo)", "icon": "dashboard", "link": "/admin/"},
+                    {"title": "Modo Cozinha", "icon": "skillet", "link": "/cozinha/"},
                     {"title": "Pedidos", "icon": "receipt_long", "link": "/admin/pedidos/pedido/"},
                     {"title": "Encomendas", "icon": "event_note", "link": "/admin/pedidos/encomenda/"},
                     {"title": "Atendimento (conversas)", "icon": "forum", "link": "/atendimento/"},
-                    {"title": "Conectar WhatsApp", "icon": "qr_code_2", "link": "/whatsapp/conexao/"},
-                    {"title": "Impressão (baixar programa)", "icon": "print", "link": "/impressao/"},
-                    {"title": "Simulador (testar bot)", "icon": "chat", "link": "/simulador/"},
                 ],
             },
             {
@@ -309,34 +310,32 @@ UNFOLD = {
                 "items": [
                     {"title": "Produtos", "icon": "lunch_dining", "link": "/admin/cardapio/produto/"},
                     {"title": "Cardápios", "icon": "menu_book", "link": "/admin/cardapio/cardapio/"},
-                    {"title": "Categorias", "icon": "category", "link": "/admin/cardapio/categoria/"},
                     {"title": "Promoções", "icon": "local_offer", "link": "/admin/cardapio/promocao/"},
+                    {"title": "Categorias", "icon": "category", "link": "/admin/cardapio/categoria/"},
                 ],
             },
             {
-                "title": "Configuração da loja",
-                "separator": True,
-                "items": [
-                    {"title": "Dados da loja", "icon": "storefront", "link": "/admin/pedidos/configuracaoloja/"},
-                    {"title": "Fluxos de mensagem", "icon": "chat_bubble", "link": "/admin/pedidos/perfilfluxo/"},
-                    {"title": "Áreas de entrega", "icon": "map", "link": "/admin/pedidos/areaentrega/"},
-                ],
-            },
-            {
-                "title": "Clientes e conversas",
-                "separator": True,
-                "items": [
-                    {"title": "Clientes", "icon": "group", "link": "/admin/pedidos/cliente/"},
-                    {"title": "Conversas (WhatsApp)", "icon": "forum", "link": "/admin/pedidos/sessaobot/"},
-                ],
-            },
-            {
-                "title": "Avançado",
+                "title": "Configuração",
                 "separator": True,
                 "collapsible": True,
                 "items": [
+                    {"title": "Dados da loja", "icon": "storefront", "link": "/admin/pedidos/configuracaoloja/"},
+                    {"title": "Áreas de entrega", "icon": "map", "link": "/admin/pedidos/areaentrega/"},
+                    {"title": "Fluxos de mensagem", "icon": "chat_bubble", "link": "/admin/pedidos/perfilfluxo/"},
                     {"title": "Usuários do painel", "icon": "manage_accounts", "link": "/admin/auth/user/"},
-                    {"title": "Grupos", "icon": "groups", "link": "/admin/auth/group/"},
+                ],
+            },
+            {
+                "title": "Instalação e testes",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {"title": "Conectar WhatsApp", "icon": "qr_code_2", "link": "/whatsapp/conexao/"},
+                    {"title": "Impressão (baixar programa)", "icon": "print", "link": "/impressao/"},
+                    {"title": "Simulador (testar bot)", "icon": "chat", "link": "/simulador/"},
+                    {"title": "Clientes", "icon": "group", "link": "/admin/pedidos/cliente/"},
+                    {"title": "Sessões do bot (técnico)", "icon": "bug_report", "link": "/admin/pedidos/sessaobot/"},
+                    {"title": "Grupos de acesso", "icon": "groups", "link": "/admin/auth/group/"},
                 ],
             },
         ],
