@@ -1,0 +1,113 @@
+{# Modal com o historico do WhatsApp, no mesmo visual do inbox de Atendimento.
+   Incluido na lista e na ficha de Encomenda: o botao "Ver conversa" chama ecAbrirConversa(). #}
+<style>
+  #ecOv{ position:fixed; inset:0; background:rgba(17,24,39,.6); z-index:10000;
+         display:none; align-items:center; justify-content:center; padding:1.5rem 1rem; }
+  #ecOv.open{ display:flex; }
+  #ecCard{ width:100%; max-width:560px; height:min(78vh,700px); background:#efeae2; border-radius:14px;
+           box-shadow:0 20px 60px rgba(0,0,0,.45); overflow:hidden;
+           /* o card e flex; sem min-height:0 no corpo a conversa fica cortada sem rolagem */
+           display:flex; flex-direction:column; }
+  html.dark #ecCard{ background:#0b141a; }
+  #ecHead{ background:#075e54; color:#fff; padding:.6rem .9rem; display:flex; align-items:center; gap:.6rem; flex:none; }
+  #ecAv{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.22); color:#fff;
+         display:flex; align-items:center; justify-content:center; font-size:.8rem; font-weight:700; flex:none; }
+  #ecHead .who{ min-width:0; flex:1; }
+  #ecHead .who b{ display:block; font-size:.95rem; }
+  #ecHead .who span{ font-size:.72rem; opacity:.85; }
+  .ecHeadBtn{ background:rgba(255,255,255,.18); color:#fff; border:none; border-radius:8px; padding:.4rem .7rem;
+    font-size:.8rem; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:.3rem; }
+  .ecHeadBtn:hover{ background:rgba(255,255,255,.3); }
+  #ecBody{ flex:1; min-height:0; overflow-y:auto; padding:1rem .9rem; display:flex; flex-direction:column; gap:.4rem;
+    background-image:radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px); background-size:22px 22px; }
+  html.dark #ecBody{ background-image:radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px); }
+  .ecBub{ max-width:78%; padding:.45rem .65rem .3rem; border-radius:8px; font-size:.86rem; line-height:1.4;
+    white-space:pre-wrap; word-wrap:break-word; box-shadow:0 1px 1px rgba(0,0,0,.12); color:#111b21; }
+  .ecBub.cliente{ align-self:flex-start; background:#fff; border-top-left-radius:0; }
+  .ecBub.nos{ align-self:flex-end; background:#d9fdd3; border-top-right-radius:0; }
+  html.dark .ecBub{ color:#e9edef; }
+  html.dark .ecBub.cliente{ background:#202c33; }
+  html.dark .ecBub.nos{ background:#005c4b; }
+  .ecBub .t{ display:block; text-align:right; font-size:.6rem; color:#667781; margin-top:.15rem; }
+  html.dark .ecBub .t{ color:#8696a0; }
+  #ecVazio{ margin:auto; color:#667781; font-size:.85rem; text-align:center; }
+  #ecFoot{ flex:none; display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;
+           padding:.55rem .9rem; background:#f0f2f5; border-top:1px solid #d1d7db; }
+  html.dark #ecFoot{ background:#111b21; border-color:#222d34; }
+  .ecBtn{ border:none; border-radius:9px; padding:.5rem .9rem; font-size:.82rem; font-weight:700; cursor:pointer;
+    display:inline-flex; align-items:center; gap:.35rem; text-decoration:none; }
+  .ecBtn.wa{ background:#16a34a; color:#fff; }
+  .ecBtn.sec{ background:#fff; color:#374151; border:1px solid #d1d7db; }
+  html.dark .ecBtn.sec{ background:#202c33; color:#e9edef; border-color:#222d34; }
+  #ecHint{ font-size:.72rem; color:#667781; margin-left:auto; }
+</style>
+
+<div id="ecOv" role="dialog" aria-modal="true" aria-label="Conversa do cliente">
+  <div id="ecCard">
+    <div id="ecHead">
+      <div id="ecAv">–</div>
+      <div class="who"><b id="ecNome">Conversa</b><span id="ecStatus">carregando…</span></div>
+      <button type="button" class="ecHeadBtn" onclick="ecFecharConversa()" aria-label="Fechar">✕</button>
+    </div>
+    <div id="ecBody"><div id="ecVazio">Carregando conversa…</div></div>
+    <div id="ecFoot">
+      <a class="ecBtn wa" id="ecWa" href="#" target="_blank" rel="noopener">💬 Responder no WhatsApp</a>
+      <a class="ecBtn sec" id="ecFull" href="#" target="_blank" rel="noopener">Abrir no Atendimento</a>
+      <span id="ecHint">atualiza sozinho a cada 4s</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const U_MSG = '/atendimento/mensagens/';
+  let tel = null, timer = null;
+  const $ = id => document.getElementById(id);
+  const esc = s => (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const inic = n => (n||'?').trim().split(/\s+/).slice(0,2).map(p=>p[0]||'').join('').toUpperCase() || '?';
+
+  async function carregar(rolar){
+    if(!tel) return;
+    try{
+      const d = await (await fetch(U_MSG + '?telefone=' + encodeURIComponent(tel))).json();
+      if(!d.ok) return;
+      $('ecNome').textContent = d.nome;
+      $('ecAv').textContent = inic(d.nome);
+      $('ecStatus').textContent = d.em_atendimento
+        ? 'em atendimento humano' : 'atendimento automático (bot)';
+      const body = $('ecBody');
+      // so cola no fim se o usuario ja estava perto dele, senao atrapalha quem leu pra cima
+      const perto = body.scrollHeight - body.scrollTop - body.clientHeight < 80;
+      body.innerHTML = (d.mensagens||[]).map(m =>
+        '<div class="ecBub ' + m.de + '">' + esc(m.texto) +
+        '<span class="t">' + esc(m.quando) + '</span></div>').join('')
+        || '<div id="ecVazio">Sem mensagens ainda.</div>';
+      if(rolar || perto) body.scrollTop = body.scrollHeight;
+    }catch(e){}
+  }
+
+  window.ecAbrirConversa = function(telefone, waUrl){
+    tel = String(telefone||'').replace(/\D/g,'');
+    if(!tel) return;
+    $('ecBody').innerHTML = '<div id="ecVazio">Carregando conversa…</div>';
+    $('ecWa').href = waUrl || ('https://wa.me/' + tel);
+    $('ecFull').href = '/atendimento/?tel=' + tel;
+    $('ecOv').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    carregar(true);
+    clearInterval(timer);
+    timer = setInterval(() => carregar(false), 4000);
+  };
+
+  window.ecFecharConversa = function(){
+    clearInterval(timer); timer = null; tel = null;
+    $('ecOv').classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape' && $('ecOv').classList.contains('open')) ecFecharConversa();
+  });
+  $('ecOv').addEventListener('click', e => { if(e.target.id === 'ecOv') ecFecharConversa(); });
+})();
+</script>

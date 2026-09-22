@@ -1,3 +1,5 @@
+import json
+
 from django import forms
 from django.contrib import admin
 from django.db.models import Sum
@@ -124,7 +126,10 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
 class EncomendaAdmin(ModelAdmin):
     """Lista de quem pediu encomenda e ainda espera contato."""
 
-    list_display = ("quando", "quem", "telefone_link", "status", "responder", "ver_conversa")
+    list_display = ("quando", "quem", "telefone_link", "status", "ver_conversa", "responder")
+    list_display_links = ("quando",)
+    change_list_template = "admin/pedidos/encomenda/change_list.html"
+    change_form_template = "admin/pedidos/encomenda/change_form.html"
     list_filter = ("status", "criado_em")
     search_fields = ("cliente__nome_whatsapp", "cliente__telefone", "observacoes")
     list_editable = ("status",)
@@ -150,11 +155,12 @@ class EncomendaAdmin(ModelAdmin):
 
     @admin.display(description="Conversa")
     def ver_conversa(self, obj):
-        """Abre o histórico no inbox já na conversa deste cliente."""
+        """Abre o historico do WhatsApp num modal, sem sair da tela."""
         return format_html(
-            '<a class="underline" href="/atendimento/?tel={}" target="_blank" '
-            'rel="noopener">Ver conversa no atendimento</a>',
-            "".join(c for c in obj.cliente.telefone if c.isdigit()),
+            '<button type="button" class="bg-green-600 text-white px-3 py-1 rounded '
+            'font-semibold" onclick="ecAbrirConversa({}, {})">&#128172; Ver conversa</button>',
+            json.dumps("".join(c for c in obj.cliente.telefone if c.isdigit())),
+            json.dumps(obj.link_whatsapp),
         )
 
     @admin.display(description="Responder")
