@@ -8,6 +8,7 @@ Fluxo: saudação -> CEP -> menu -> montagem -> confirmação -> resumo carrinho
 from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
+from django.conf import settings
 from django.utils import timezone
 
 from asgiref.sync import sync_to_async
@@ -1143,6 +1144,12 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             aviso = mensagem("ENCOMENDA_CONTATO", _cliente(sessao), perfil=perfil)
             sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
             sessao.carrinho_json = _carrinho_vazio()
+            # Avisa a loja: sem isto o cliente recebia a promessa de contato e
+            # ninguém ficava sabendo que havia alguém esperando.
+            from pedidos.avisos import avisar_encomenda
+            cli = Cliente.objects.filter(telefone=sessao.telefone).first()
+            if cli:
+                avisar_encomenda(cli, base_url=getattr(settings, "BASE_URL", ""))
             out["mensagens"] = [aviso]
             sessao.save()
             return out

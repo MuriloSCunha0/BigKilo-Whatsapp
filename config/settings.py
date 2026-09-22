@@ -228,6 +228,30 @@ ASAAS_DEFAULT_CPF_CNPJ = os.getenv("ASAAS_DEFAULT_CPF_CNPJ", "")
 # Token que o agente de impressão usa para acessar a API (header X-Print-Token).
 IMPRESSAO_API_TOKEN = os.getenv("IMPRESSAO_API_TOKEN", "")
 
+
+# URL publica da aplicacao, usada nos links dos avisos por e-mail.
+BASE_URL = os.getenv("BASE_URL", "")
+if not BASE_URL and os.getenv("RAILWAY_PUBLIC_DOMAIN"):
+    BASE_URL = "https://" + os.environ["RAILWAY_PUBLIC_DOMAIN"]
+
+# ==== E-mail (aviso de encomenda ao dono) ====
+# Sem EMAIL_HOST_USER o envio e ignorado em silencio: o atendimento ao cliente
+# nunca pode quebrar porque o SMTP caiu.
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("1", "true", "yes")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL", f"Big Kilo <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "",
+)
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend" if EMAIL_HOST_USER
+    else "django.core.mail.backends.dummy.EmailBackend",
+)
+
 # ==== Modo de simulação (testes sem credenciais reais) ====
 # Quando True: Asaas gera um Pix fake e o WhatsApp apenas registra no log (não envia).
 # Defina MODO_SIMULACAO=False no .env quando tiver as credenciais reais.

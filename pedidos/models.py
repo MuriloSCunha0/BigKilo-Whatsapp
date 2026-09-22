@@ -66,6 +66,11 @@ class ConfiguracaoLoja(models.Model):
         "Chave Pix", max_length=140, blank=True,
         help_text="ℹ️ Sua chave Pix REAL. É ela que gera o 'copia e cola' com o valor do pedido para o cliente pagar.",
     )
+    email_encomendas = models.EmailField(
+        "E-mail para avisos de encomenda", blank=True, default="ltratch@yahoo.com.br",
+        help_text="ℹ️ Recebe um aviso sempre que alguém pedir encomenda pelo bot, "
+                  "com link para responder o cliente no WhatsApp.",
+    )
     bot_pausado = models.BooleanField(
         "Pausar o bot", default=False,
         help_text="ℹ️ Liga o aviso de pausa: quem mandar mensagem recebe só o texto abaixo "
