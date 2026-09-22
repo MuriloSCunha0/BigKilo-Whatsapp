@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.db.models import Sum
+from django.utils import timezone
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -13,6 +14,7 @@ from config.admin_mixins import LocalizedAdminMixin, LocalizedInlineMixin
 from .models import (
     AreaEntrega,
     Cliente,
+    Encomenda,
     ConfiguracaoLoja,
     FLUXO_ETAPAS,
     VARIAVEIS_DESC,
@@ -116,6 +118,42 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
         from django.shortcuts import redirect
         obj = ConfiguracaoLoja.get()
         return redirect("admin:pedidos_configuracaoloja_change", obj.pk)
+
+
+@admin.register(Encomenda)
+class EncomendaAdmin(ModelAdmin):
+    """Lista de quem pediu encomenda e ainda espera contato."""
+
+    list_display = ("quando", "quem", "telefone_link", "status", "responder")
+    list_filter = ("status", "criado_em")
+    search_fields = ("cliente__nome_whatsapp", "cliente__telefone", "observacoes")
+    list_editable = ("status",)
+    readonly_fields = ("cliente", "criado_em", "responder")
+    fields = ("cliente", "criado_em", "status", "responder", "observacoes", "atendido_em")
+    date_hierarchy = "criado_em"
+
+    def has_add_permission(self, request):
+        return False        # nasce pelo bot, nao na mao
+
+    @admin.display(description="Pedida em", ordering="criado_em")
+    def quando(self, obj):
+        return timezone.localtime(obj.criado_em).strftime("%d/%m/%Y %H:%M")
+
+    @admin.display(description="Cliente", ordering="cliente__nome_whatsapp")
+    def quem(self, obj):
+        return obj.cliente.nome_whatsapp or "(sem nome)"
+
+    @admin.display(description="WhatsApp")
+    def telefone_link(self, obj):
+        return obj.cliente.telefone
+
+    @admin.display(description="Responder")
+    def responder(self, obj):
+        return format_html(
+            '<a class="bg-primary-600 text-white px-3 py-1 rounded" '
+            'href="{}" target="_blank" rel="noopener">Abrir no WhatsApp</a>',
+            obj.link_whatsapp,
+        )
 
 
 @admin.register(AreaEntrega)

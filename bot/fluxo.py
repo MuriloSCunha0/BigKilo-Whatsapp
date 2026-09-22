@@ -1144,12 +1144,18 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             aviso = mensagem("ENCOMENDA_CONTATO", _cliente(sessao), perfil=perfil)
             sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
             sessao.carrinho_json = _carrinho_vazio()
-            # Avisa a loja: sem isto o cliente recebia a promessa de contato e
-            # ninguém ficava sabendo que havia alguém esperando.
+            # Registra e avisa: sem isto o cliente recebia a promessa de contato e
+            # nada aparecia no painel nem na caixa de ninguém.
             from pedidos.avisos import avisar_encomenda
+            from pedidos.models import Encomenda
             cli = Cliente.objects.filter(telefone=sessao.telefone).first()
             if cli:
-                avisar_encomenda(cli, base_url=getattr(settings, "BASE_URL", ""))
+                enc = Encomenda.objects.filter(
+                    cliente=cli, status=Encomenda.Status.AGUARDANDO
+                ).first()
+                if not enc:          # não duplica se o cliente tocar duas vezes
+                    enc = Encomenda.objects.create(cliente=cli)
+                avisar_encomenda(cli, base_url=getattr(settings, "BASE_URL", ""), encomenda=enc)
             out["mensagens"] = [aviso]
             sessao.save()
             return out

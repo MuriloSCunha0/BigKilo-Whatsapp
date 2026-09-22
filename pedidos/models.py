@@ -274,6 +274,48 @@ class SessaoBot(models.Model):
         return f"{self.telefone} [{self.get_estado_atual_display()}]"
 
 
+class Encomenda(models.Model):
+    """Pedido de encomenda feito pelo bot, aguardando contato humano.
+
+    A encomenda não é fechada pelo bot (itens, data e pagamento são combinados a
+    dois), então ela não vira Pedido. Sem este registro, o interesse do cliente
+    não aparecia em lugar nenhum do painel.
+    """
+
+    class Status(models.TextChoices):
+        AGUARDANDO = "AGUARDANDO", "Aguardando contato"
+        EM_CONTATO = "EM_CONTATO", "Em negociação"
+        FECHADA = "FECHADA", "Fechada"
+        PERDIDA = "PERDIDA", "Perdida"
+
+    cliente = models.ForeignKey(
+        "pedidos.Cliente", on_delete=models.PROTECT, related_name="encomendas",
+        verbose_name="Cliente",
+    )
+    status = models.CharField(
+        "Situação", max_length=12, choices=Status.choices, default=Status.AGUARDANDO, db_index=True,
+    )
+    observacoes = models.TextField(
+        "Observações", blank=True,
+        help_text="ℹ️ O que o cliente pediu, data combinada, valores — anote aqui.",
+    )
+    criado_em = models.DateTimeField("Pedida em", auto_now_add=True, db_index=True)
+    atendido_em = models.DateTimeField("Atendida em", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Encomenda"
+        verbose_name_plural = "Encomendas"
+        ordering = ["-criado_em"]
+
+    def __str__(self):
+        return f"Encomenda de {self.cliente.nome_whatsapp or self.cliente.telefone}"
+
+    @property
+    def link_whatsapp(self) -> str:
+        from .avisos import link_whatsapp
+        return link_whatsapp(self.cliente.telefone, self.cliente.nome_whatsapp)
+
+
 class LogMensagem(models.Model):
     """Histórico do bate-papo (cliente x bot), para o lojista acompanhar a conversa."""
 
