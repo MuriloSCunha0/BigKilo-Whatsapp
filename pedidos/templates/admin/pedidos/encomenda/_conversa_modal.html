@@ -1,5 +1,8 @@
-{# Modal com o historico do WhatsApp, no mesmo visual do inbox de Atendimento.
-   Incluido na lista e na ficha de Encomenda: o botao "Ver conversa" chama ecAbrirConversa(). #}
+{% comment %}
+Modal com o historico do WhatsApp, no mesmo visual do inbox de Atendimento.
+Incluido na lista e na ficha de Encomenda: o botao "Ver conversa" chama ecAbrirConversa().
+O {# #} do Django so vale numa linha; em varias ele vaza como texto na tela.
+{% endcomment %}
 <style>
   #ecOv{ position:fixed; inset:0; background:rgba(17,24,39,.6); z-index:10000;
          display:none; align-items:center; justify-content:center; padding:1.5rem 1rem; }
