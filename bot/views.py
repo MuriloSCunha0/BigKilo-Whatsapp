@@ -602,6 +602,16 @@ def _cozinha_itens():
         .prefetch_related("cardapios__agenda")
         .order_by("categoria__ordem", "categoria__nome", "nome")
     )
+    # Proteína e acompanhamento são o que acaba no meio do almoço; adicional e
+    # bebida quase nunca. Ordenar por isso poupa rolagem em quem está com pressa.
+    PRIORIDADE = {
+        Categoria.Tipo.PROTEINA: 0, Categoria.Tipo.ACOMPANHAMENTO: 1,
+        Categoria.Tipo.GRELHADO: 2, Categoria.Tipo.ESPETINHO: 3,
+        Categoria.Tipo.SOPA: 4, Categoria.Tipo.SANDUICHE: 5,
+        Categoria.Tipo.SOBREMESA: 6, Categoria.Tipo.BEBIDA: 7,
+    }
+    qs = sorted(qs, key=lambda x: (PRIORIDADE.get(x.categoria.tipo, 8),
+                                   x.categoria.ordem, x.categoria.nome, x.nome))
     grupos, ordem = {}, []
     for p in qs:
         esgotado = p.esgotado and (p.esgotado_em is None or p.esgotado_em >= hoje)
@@ -622,12 +632,36 @@ def cozinha(request):
     cfg = ConfiguracaoLoja.get()
     if not _cozinha_liberado(request, cfg):
         raise Http404()
+    from pedidos.models import Pedido
+
+    grupos = _cozinha_itens()
     return render(request, "cozinha.html", {
-        "grupos": _cozinha_itens(),
+        "grupos": grupos,
         "chave": request.GET.get("k", ""),
         "nome_loja": cfg.nome_loja,
         "hoje": timezone.localdate(),
+        "pausado": cfg.bot_pausado,
+        "acabaram": sum(1 for g in grupos for i in g["itens"] if i["esgotado"]),
+        "em_preparo": Pedido.objects.filter(status=Pedido.Status.PREPARANDO).count(),
+        "do_painel": request.user.is_authenticated and request.user.is_staff,
     })
+
+
+@csrf_exempt
+@require_POST
+def cozinha_pausar(request):
+    """Fecha ou reabre o delivery na hora — acabou a comida, para de entrar pedido."""
+    from pedidos.models import ConfiguracaoLoja
+
+    cfg = ConfiguracaoLoja.get()
+    dados = json.loads(request.body or b"{}")
+    if not _cozinha_liberado(request, cfg, chave=str(dados.get("k") or "")):
+        return JsonResponse({"ok": False, "erro": "sem permissão"}, status=403)
+
+    cfg.bot_pausado = not cfg.bot_pausado
+    cfg.save(update_fields=["bot_pausado"])
+    logger.info("Modo cozinha: delivery %s", "pausado" if cfg.bot_pausado else "reaberto")
+    return JsonResponse({"ok": True, "pausado": cfg.bot_pausado})
 
 
 @csrf_exempt

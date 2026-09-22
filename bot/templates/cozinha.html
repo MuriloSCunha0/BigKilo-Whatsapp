@@ -16,6 +16,32 @@
   header h1{ margin:0; font-size:1.15rem; }
   header p{ margin:.2rem 0 0; font-size:.82rem; opacity:.92; }
   main{ max-width:560px; margin:0 auto; padding:.75rem .75rem calc(2rem + env(safe-area-inset-bottom)); }
+  /* Barra de acoes: alvo grande, porque a tela e usada com a mao ocupada. */
+  .voltar{ flex:none; display:inline-flex; align-items:center; justify-content:center;
+           width:40px; height:40px; margin:-.4rem .2rem -.4rem -.4rem; border-radius:12px;
+           background:rgba(255,255,255,.18); color:#fff; text-decoration:none; font-size:1.4rem; }
+  .voltar:active{ background:rgba(255,255,255,.34); }
+  .topo{ display:flex; align-items:center; gap:.5rem; }
+  .topo .txt{ min-width:0; flex:1; }
+  #acoes{ display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin:.75rem 0 .25rem; }
+  .acao{ display:flex; flex-direction:column; gap:.15rem; align-items:flex-start;
+         background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:.8rem .85rem;
+         font-size:.95rem; font-weight:700; color:#111827; cursor:pointer; text-align:left;
+         min-height:64px; justify-content:center; text-decoration:none; }
+  .acao small{ font-weight:600; font-size:.74rem; color:#6b7280; }
+  .acao.perigo{ background:#fff7ed; border-color:#fed7aa; color:#9a3412; }
+  .acao.perigo small{ color:#b45309; }
+  .acao.aberto{ background:#ecfdf5; border-color:#a7f3d0; color:#065f46; }
+  .acao.aberto small{ color:#047857; }
+  /* Busca: com 40+ itens rolar ate o prato custa mais que digitar 3 letras. */
+  #busca{ width:100%; padding:.85rem .9rem; font-size:1rem; border:1px solid #e5e7eb;
+          border-radius:14px; background:#fff; color:#111827; margin-top:.5rem; }
+  #busca:focus{ outline:2px solid #d97706; outline-offset:1px; }
+  #filtros{ display:flex; gap:.4rem; margin:.55rem 0 .25rem; }
+  .chip{ flex:1; padding:.5rem .6rem; border-radius:999px; border:1px solid #e5e7eb; background:#fff;
+         color:#374151; font-size:.82rem; font-weight:700; cursor:pointer; }
+  .chip.on{ background:#111827; color:#fff; border-color:#111827; }
+  .oculto{ display:none !important; }
   h2{ font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:#6b7280;
       margin:1.2rem .35rem .45rem; }
   /* Linha inteira e o botao: no meio do almoco ninguem acerta um alvo pequeno. */
@@ -44,22 +70,47 @@
 </head>
 <body>
 <header>
-  <h1>🍳 Modo Cozinha</h1>
-  <p>Toque no prato que acabou · tudo volta sozinho amanhã</p>
+  <div class="topo">
+    {% if do_painel %}<a class="voltar" href="/admin/" aria-label="Voltar ao painel">&#8592;</a>{% endif %}
+    <div class="txt">
+      <h1>🍳 Modo Cozinha</h1>
+      <p>Toque no prato que acabou · tudo volta sozinho amanhã</p>
+    </div>
+  </div>
 </header>
 
 <main>
+  <div id="acoes">
+    <button type="button" class="acao {% if pausado %}perigo{% else %}aberto{% endif %}" id="btPausa">
+      <span id="pausaTitulo">{% if pausado %}⏸️ Delivery fechado{% else %}🟢 Delivery aberto{% endif %}</span>
+      <small id="pausaSub">{% if pausado %}toque para reabrir{% else %}toque para fechar agora{% endif %}</small>
+    </button>
+    <a class="acao" href="/admin/pedidos/pedido/?status__exact=PREPARANDO">
+      <span>👨‍🍳 {{ em_preparo }} em preparo</span>
+      <small>ver os pedidos</small>
+    </a>
+  </div>
+
+  <input id="busca" type="search" placeholder="🔎 Buscar prato…" autocomplete="off" enterkeyhint="search">
+  <div id="filtros">
+    <button type="button" class="chip on" data-filtro="tudo">Tudo</button>
+    <button type="button" class="chip" data-filtro="acabou">Só o que acabou (<span id="nAcabou">{{ acabaram }}</span>)</button>
+  </div>
   {% for grupo in grupos %}
-    <h2>{{ grupo.categoria }}</h2>
-    {% for item in grupo.itens %}
-      <button class="item{% if item.esgotado %} off{% endif %}" data-id="{{ item.id }}">
-        <span class="nome">{{ item.nome }}</span>
-        <span class="tag">{% if item.esgotado %}acabou{% else %}no ar{% endif %}</span>
-      </button>
-    {% endfor %}
+    <section class="grupo">
+      <h2>{{ grupo.categoria }}</h2>
+      {% for item in grupo.itens %}
+        <button class="item{% if item.esgotado %} off{% endif %}" data-id="{{ item.id }}"
+                data-nome="{{ item.nome|lower }}">
+          <span class="nome">{{ item.nome }}</span>
+          <span class="tag">{% if item.esgotado %}acabou{% else %}no ar{% endif %}</span>
+        </button>
+      {% endfor %}
+    </section>
   {% empty %}
     <div class="vazio">Nenhum item no ar agora.<br>Fora do horário dos cardápios de hoje.</div>
   {% endfor %}
+  <div class="vazio oculto" id="semResultado">Nenhum prato com esse nome.</div>
 
   <p class="rodape">
     {{ hoje|date:"l, d/m/Y" }}<br>
@@ -96,6 +147,7 @@
       btn.classList.toggle('off', d.esgotado);
       btn.querySelector('.tag').textContent = d.esgotado ? 'acabou' : 'no ar';
       recado(d.esgotado ? d.nome + ' saiu do cardápio' : d.nome + ' voltou ao cardápio');
+      if(window.__contarAcabou) window.__contarAcabou();
       if(navigator.vibrate) navigator.vibrate(15);
     }catch(e){
       recado('Sem internet. O prato continua no ar.');
@@ -105,6 +157,73 @@
   }
 
   document.querySelectorAll('.item').forEach(b => b.addEventListener('click', () => alternar(b)));
+
+  // ---- Busca + filtro: com 40 itens, achar o prato é o trabalho, não o toque ----
+  const busca = document.getElementById('busca');
+  const chips = [...document.querySelectorAll('.chip')];
+  let filtro = 'tudo';
+
+  function aplicar(){
+    const termo = busca.value.trim().toLowerCase();
+    let visiveis = 0;
+    document.querySelectorAll('.grupo').forEach(sec => {
+      let noGrupo = 0;
+      sec.querySelectorAll('.item').forEach(b => {
+        const casaTermo  = !termo || b.dataset.nome.includes(termo);
+        const casaFiltro = filtro === 'tudo' || b.classList.contains('off');
+        const mostra = casaTermo && casaFiltro;
+        b.classList.toggle('oculto', !mostra);
+        if(mostra){ noGrupo++; visiveis++; }
+      });
+      sec.classList.toggle('oculto', noGrupo === 0);
+    });
+    document.getElementById('semResultado').classList.toggle('oculto', visiveis > 0);
+  }
+
+  busca.addEventListener('input', aplicar);
+  chips.forEach(c => c.addEventListener('click', () => {
+    chips.forEach(o => o.classList.toggle('on', o === c));
+    filtro = c.dataset.filtro;
+    aplicar();
+  }));
+
+  function contarAcabou(){
+    document.getElementById('nAcabou').textContent =
+      document.querySelectorAll('.item.off').length;
+  }
+
+  // ---- Fechar/reabrir o delivery ----
+  const btPausa = document.getElementById('btPausa');
+  btPausa.addEventListener('click', async () => {
+    const fechando = !btPausa.classList.contains('perigo');
+    const pergunta = fechando
+      ? 'Fechar o delivery agora? Quem mandar mensagem vai receber o aviso de que está fechado.'
+      : 'Reabrir o delivery? O bot volta a aceitar pedidos.';
+    if(!confirm(pergunta)) return;
+    btPausa.disabled = true;
+    try{
+      const r = await fetch('/cozinha/pausar/', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({k: CHAVE}),
+      });
+      const d = await r.json();
+      if(!d.ok){ recado('Não deu para mudar. Tente de novo.'); return; }
+      btPausa.classList.toggle('perigo', d.pausado);
+      btPausa.classList.toggle('aberto', !d.pausado);
+      document.getElementById('pausaTitulo').textContent =
+        d.pausado ? '⏸️ Delivery fechado' : '🟢 Delivery aberto';
+      document.getElementById('pausaSub').textContent =
+        d.pausado ? 'toque para reabrir' : 'toque para fechar agora';
+      recado(d.pausado ? 'Delivery fechado — o bot avisa quem escrever'
+                       : 'Delivery reaberto — o bot volta a aceitar pedidos');
+    }catch(e){
+      recado('Sem internet. Nada mudou.');
+    }finally{
+      btPausa.disabled = false;
+    }
+  });
+
+  window.__contarAcabou = contarAcabou;
 })();
 </script>
 </body>

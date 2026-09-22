@@ -25,6 +25,7 @@ urlpatterns = [
     # Modo Cozinha — tela de turno: um toque marca que o prato acabou
     path("cozinha/", views.cozinha, name="cozinha"),
     path("cozinha/alternar/", views.cozinha_alternar, name="cozinha_alternar"),
+    path("cozinha/pausar/", views.cozinha_pausar, name="cozinha_pausar"),
     path("impressao/", views.impressao_pagina, name="impressao_pagina"),
     path("impressao/baixar/", views.impressao_baixar, name="impressao_baixar"),
     # Simulador de testes (sem WhatsApp real)
