@@ -196,8 +196,11 @@
   const btPausa = document.getElementById('btPausa');
   btPausa.addEventListener('click', async () => {
     const fechando = !btPausa.classList.contains('perigo');
+    const TEM_IFOOD = {{ tem_ifood|yesno:"true,false" }};
     const pergunta = fechando
-      ? 'Fechar o delivery agora? Quem mandar mensagem vai receber o aviso de que está fechado.'
+      ? (TEM_IFOOD
+          ? 'Fechar o delivery agora? Quem mandar mensagem será direcionado para o iFood.'
+          : 'Fechar o delivery agora? Quem mandar mensagem vai receber o aviso de que está fechado.')
       : 'Reabrir o delivery? O bot volta a aceitar pedidos.';
     if(!confirm(pergunta)) return;
     btPausa.disabled = true;
@@ -214,8 +217,10 @@
         d.pausado ? '⏸️ Delivery fechado' : '🟢 Delivery aberto';
       document.getElementById('pausaSub').textContent =
         d.pausado ? 'toque para reabrir' : 'toque para fechar agora';
-      recado(d.pausado ? 'Delivery fechado — o bot avisa quem escrever'
-                       : 'Delivery reaberto — o bot volta a aceitar pedidos');
+      recado(d.pausado
+        ? (TEM_IFOOD ? 'Delivery fechado — o bot manda os clientes para o iFood'
+                     : 'Delivery fechado — o bot avisa quem escrever')
+        : 'Delivery reaberto — o bot volta a aceitar pedidos');
     }catch(e){
       recado('Sem internet. Nada mudou.');
     }finally{

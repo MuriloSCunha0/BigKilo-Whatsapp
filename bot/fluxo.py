@@ -1033,7 +1033,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             sessao.carrinho_json = _carrinho_vazio()
             sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
             sessao.save()
-        out["mensagens"] = [T(cfg_pausa.mensagem_pausa)]
+        out["mensagens"] = [T(cfg_pausa.texto_pausa())]
         return out
 
     if sessao.estado_atual == SessaoBot.Estado.ATENDIMENTO_HUMANO:

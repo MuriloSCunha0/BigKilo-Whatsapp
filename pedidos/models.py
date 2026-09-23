@@ -82,10 +82,16 @@ class ConfiguracaoLoja(models.Model):
         "Aviso enquanto pausado",
         default=(
             "Olá! 🍽️\n"
-            "No momento os pedidos pelo WhatsApp estão pausados.\n\n"
-            "Voltamos a atender *a partir de segunda-feira*. Até já! 😊"
+            "No momento não estamos aceitando pedidos pelo WhatsApp.\n\n"
+            "Volte mais tarde ou peça por outro canal. Até já! 😊"
         ),
         help_text="ℹ️ Mensagem enviada a quem chamar enquanto o bot estiver pausado.",
+    )
+    link_ifood = models.URLField(
+        "Link do iFood", max_length=300, blank=True,
+        help_text="ℹ️ Cole o link da loja no iFood. Com o delivery fechado, quem mandar "
+                  "mensagem recebe este link para pedir por lá. Deixe vazio para só avisar "
+                  "que está fechado.",
     )
     exigir_pagamento = models.BooleanField(
         "Exigir pagamento pelo bot", default=True,
@@ -131,6 +137,22 @@ class ConfiguracaoLoja(models.Model):
             if campos is not None and "token_cozinha" not in campos:
                 kwargs["update_fields"] = list(campos) + ["token_cozinha"]
         super().save(*args, **kwargs)
+
+    def texto_pausa(self) -> str:
+        """O aviso de delivery fechado, com o caminho do iFood quando houver.
+
+        Fechar sem dar uma saída manda o cliente embora; com o link ele pede
+        pelo iFood e a venda não se perde.
+        """
+        texto = (self.mensagem_pausa or "").strip()
+        link = (self.link_ifood or "").strip()
+        if not link:
+            return texto
+        convite = (
+            "🛵 *Mas você pode pedir agora pelo iFood:*\n"
+            f"{link}"
+        )
+        return f"{texto}\n\n{convite}" if texto else convite
 
     @property
     def link_cozinha(self) -> str:

@@ -644,6 +644,7 @@ def cozinha(request):
         "acabaram": sum(1 for g in grupos for i in g["itens"] if i["esgotado"]),
         "em_preparo": Pedido.objects.filter(status=Pedido.Status.PREPARANDO).count(),
         "do_painel": request.user.is_authenticated and request.user.is_staff,
+        "tem_ifood": bool(cfg.link_ifood),
     })
 
 

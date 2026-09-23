@@ -103,6 +103,12 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
                              "'Imprimir ao fechar' manda a comanda pra cozinha assim que o cliente fecha o pedido."),
         }),
         (_("Funcionamento"), {"fields": ("dias_funcionamento", "hora_abertura", "hora_fechamento")}),
+        (_("Delivery fechado"), {
+            "fields": ("bot_pausado", "mensagem_pausa", "link_ifood"),
+            "description": _("Com o delivery fechado o bot não aceita pedidos e responde este aviso. "
+                             "Se houver link do iFood, ele vai junto — assim o cliente pede por lá "
+                             "em vez de ir embora. Dá para abrir e fechar também pelo Modo Cozinha."),
+        }),
     )
 
     @display(description=_("Editar mensagens do bot"))
