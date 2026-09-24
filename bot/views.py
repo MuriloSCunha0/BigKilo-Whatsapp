@@ -583,10 +583,14 @@ def _cozinha_liberado(request, cfg, chave=None) -> bool:
 
 
 def _cozinha_itens():
-    """O que está no ar hoje, mais o que foi marcado como esgotado hoje.
+    """O cardápio do DIA inteiro (almoço + jantar), mais o que já foi marcado hoje.
 
-    Sem os esgotados a pessoa não teria como desfazer o toque errado — eles somem
-    de `disponivel_agora` justamente por estarem marcados.
+    Dia e não "agora" de propósito: a cozinha chega de manhã, antes de o cardápio
+    do almoço entrar no ar às 11h, e precisa ver o que vai servir para preparar.
+    Com a janela corrente a tela ficava quase vazia e parecia cardápio quebrado.
+
+    Os esgotados continuam listados porque, marcados, somem da disponibilidade —
+    sem eles não haveria como desfazer um toque errado.
     """
     from cardapio.models import Categoria, Produto
 
@@ -615,8 +619,8 @@ def _cozinha_itens():
     grupos, ordem = {}, []
     for p in qs:
         esgotado = p.esgotado and (p.esgotado_em is None or p.esgotado_em >= hoje)
-        if not esgotado and not p.disponivel_agora:
-            continue                      # não é de hoje: não polui a tela
+        if not esgotado and not p.disponivel_na_data(hoje):
+            continue                      # não é do cardápio de hoje: não polui a tela
         nome = p.categoria.nome
         if nome not in grupos:
             grupos[nome] = []
@@ -645,6 +649,8 @@ def cozinha(request):
         "em_preparo": Pedido.objects.filter(status=Pedido.Status.PREPARANDO).count(),
         "do_painel": request.user.is_authenticated and request.user.is_staff,
         "tem_ifood": bool(cfg.link_ifood),
+        "loja_aberta": cfg.esta_aberta,
+        "abre": cfg.hora_abertura,
     })
 
 
