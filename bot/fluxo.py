@@ -1231,7 +1231,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             # Pulamos o CEP e vamos pro menu
             avisos = ["📍 Retirada na loja confirmada!"]
             if not cfg.esta_aberta:
-                avisos.append(_aviso_fechado(cfg, com_encomenda=True))
+                avisos.append(_aviso_fechado(cfg))
             out["mensagens"] = avisos + _entrar_menu(sessao, perfil)
             sessao.save()
             return out
@@ -1264,7 +1264,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         # mesmo fechado; o pedido para HOJE fica barrado no menu).
         avisos = ["📍 CEP confirmado!"]
         if not cfg.esta_aberta:
-            avisos.append(_aviso_fechado(cfg, com_encomenda=True))
+            avisos.append(_aviso_fechado(cfg))
         # Avisos entram no topo do menu: mensagem avulsa custa uma mensagem de serviço.
         tela = _entrar_menu(sessao, perfil)
         out["mensagens"] = _com_aviso(avisos, tela)
@@ -1299,7 +1299,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         imediato = low in {"1", "2", "fechar", "finalizar"} or low in MENU_CATEGORIAS
         if imediato and loja_fechada and not encomenda:
             out["mensagens"] = [
-                _aviso_fechado(cfg, com_encomenda=True)
+                _aviso_fechado(cfg)
             ] + _tela_menu(sessao)
             sessao.save()
             return out
@@ -1680,18 +1680,14 @@ def _e_lojista(sessao) -> bool:
     return (sessao.carrinho_json.get("canal") or "") == Pedido.Canal.LOJISTA
 
 
-def _aviso_fechado(cfg, com_encomenda=False) -> str:
+def _aviso_fechado(cfg) -> str:
     """A frase de loja fechada, igual em todo lugar.
 
-    Estava escrita em quatro pontos com redações diferentes. A dica de encomenda só
-    entra onde ela existe — o lojista não tem esse caminho, e oferecer o que não há
-    só confunde.
+    Estava escrita em quatro pontos com redações diferentes. Curta de propósito: a
+    opção de encomenda já aparece tocável no menu, então explicá-la aqui só repete.
     """
-    texto = (f"ℹ️ Estamos fechados no momento, horário de funcionamento das "
-             f"{cfg.hora_abertura:%H:%M} às {cfg.hora_fechamento:%H:%M}.")
-    if com_encomenda:
-        texto += " Você pode *agendar uma encomenda* escolhendo *Encomenda outro dia* no menu."
-    return texto
+    return (f"ℹ️ Estamos fechados no momento, horário de funcionamento das "
+            f"{cfg.hora_abertura:%H:%M} às {cfg.hora_fechamento:%H:%M}.")
 
 
 def _menu_do_canal(sessao, perfil=None) -> list:
