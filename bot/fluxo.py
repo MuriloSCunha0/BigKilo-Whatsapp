@@ -1138,17 +1138,17 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         dados = sessao.carrinho_json.get("lojista") or {}
         dados["loja"] = loja[:120]
         sessao.carrinho_json["lojista"] = dados
-        avisos = [f"📍 {dados.get('ponto_nome', 'Shopping')} · {dados['loja']}"]
-        if not cfg.esta_aberta:
-            avisos.append(
-                f"ℹ️ Estamos fechados agora (das {cfg.hora_abertura:%H:%M} às "
-                f"{cfg.hora_fechamento:%H:%M})."
-            )
-        out["mensagens"] = _com_aviso(avisos, _tela_menu_lojista(sessao, perfil))
+        cabecalho = f"📍 {dados.get('ponto_nome', 'Shopping')} · {dados['loja']}"
+        out["mensagens"] = _com_aviso([cabecalho], _tela_menu_lojista(sessao, perfil))
         sessao.save()
         return out
 
     if estado == SessaoBot.Estado.LOJISTA_MENU:
+        if not cfg.esta_aberta:
+            # Sem "opção inválida": ele não errou, a loja é que está fechada.
+            out["mensagens"] = _tela_menu_lojista(sessao, perfil)
+            sessao.save()
+            return out
         if low == "quentinha":
             out["mensagens"] = _tela_quentinha_proteina(sessao, perfil)
         elif low == "bebida":
@@ -1231,11 +1231,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             # Pulamos o CEP e vamos pro menu
             avisos = ["📍 Retirada na loja confirmada!"]
             if not cfg.esta_aberta:
-                avisos.append(
-                    f"ℹ️ Estamos fechados agora (das {cfg.hora_abertura:%H:%M} às "
-                    f"{cfg.hora_fechamento:%H:%M}). Você pode *agendar uma encomenda* "
-                    "escolhendo *Encomenda outro dia* no menu."
-                )
+                avisos.append(_aviso_fechado(cfg, com_encomenda=True))
             out["mensagens"] = avisos + _entrar_menu(sessao, perfil)
             sessao.save()
             return out
@@ -1268,11 +1264,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         # mesmo fechado; o pedido para HOJE fica barrado no menu).
         avisos = ["📍 CEP confirmado!"]
         if not cfg.esta_aberta:
-            avisos.append(
-                f"ℹ️ Estamos fechados agora (das {cfg.hora_abertura:%H:%M} às "
-                f"{cfg.hora_fechamento:%H:%M}). Você pode *agendar uma encomenda* "
-                "escolhendo *Encomenda outro dia* no menu."
-            )
+            avisos.append(_aviso_fechado(cfg, com_encomenda=True))
         # Avisos entram no topo do menu: mensagem avulsa custa uma mensagem de serviço.
         tela = _entrar_menu(sessao, perfil)
         out["mensagens"] = _com_aviso(avisos, tela)
@@ -1307,8 +1299,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         imediato = low in {"1", "2", "fechar", "finalizar"} or low in MENU_CATEGORIAS
         if imediato and loja_fechada and not encomenda:
             out["mensagens"] = [
-                f"Estamos fechados agora (das {cfg.hora_abertura:%H:%M} às {cfg.hora_fechamento:%H:%M}). "
-                "Para receber outro dia, escolha *Encomenda outro dia* no menu. 🙂"
+                _aviso_fechado(cfg, com_encomenda=True)
             ] + _tela_menu(sessao)
             sessao.save()
             return out
@@ -1689,6 +1680,20 @@ def _e_lojista(sessao) -> bool:
     return (sessao.carrinho_json.get("canal") or "") == Pedido.Canal.LOJISTA
 
 
+def _aviso_fechado(cfg, com_encomenda=False) -> str:
+    """A frase de loja fechada, igual em todo lugar.
+
+    Estava escrita em quatro pontos com redações diferentes. A dica de encomenda só
+    entra onde ela existe — o lojista não tem esse caminho, e oferecer o que não há
+    só confunde.
+    """
+    texto = (f"ℹ️ Estamos fechados no momento, horário de funcionamento das "
+             f"{cfg.hora_abertura:%H:%M} às {cfg.hora_fechamento:%H:%M}.")
+    if com_encomenda:
+        texto += " Você pode *agendar uma encomenda* escolhendo *Encomenda outro dia* no menu."
+    return texto
+
+
 def _menu_do_canal(sessao, perfil=None) -> list:
     """Menu inicial do canal em que a pessoa está — cliente ou lojista."""
     return _tela_menu_lojista(sessao, perfil) if _e_lojista(sessao) else _tela_menu(sessao, perfil)
@@ -1740,6 +1745,12 @@ def _tela_pedir_loja(sessao, ponto) -> list:
 def _tela_menu_lojista(sessao, perfil=None) -> list:
     """Menu curto: quem pede no meio do expediente não quer navegar cardápio."""
     sessao.estado_atual = SessaoBot.Estado.LOJISTA_MENU
+    cfg = ConfiguracaoLoja.get()
+    # Fechado não há o que pedir, e o lojista não tem encomenda como saída: mostrar
+    # o cardápio seria oferecer o que não dá para entregar.
+    if not cfg.esta_aberta:
+        _set_menu(sessao, {})
+        return [T(_aviso_fechado(cfg))]
     itens = sessao.carrinho_json.get("itens") or []
     _set_menu(sessao, {"quentinha": "quentinha", "bebida": "bebida",
                        "sobremesa": "sobremesa", "fechar": "fechar"})
