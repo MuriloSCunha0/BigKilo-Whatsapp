@@ -63,6 +63,9 @@ MENU_CATEGORIAS = {
 ESTADOS_TEXTO_LIVRE = {
     SessaoBot.Estado.PEDINDO_CEP,
     SessaoBot.Estado.PEDINDO_ENDERECO_COMPLETO,
+    # O nome da loja é o único campo digitado do lojista: um shopping tem centenas
+    # de lojas, então lista não serve. Todo o resto do caminho dele é toque.
+    SessaoBot.Estado.PEDINDO_LOJA,
 }
 
 _MSG_INTERATIVO = T("Toque em uma das opções acima para continuar.")
@@ -493,10 +496,14 @@ def _resumo_texto(sessao, perfil=None) -> str:
         linhas.append(_linha_item_carrinho(it))
 
     produtos = sum(Decimal(str(i["subtotal"])) for i in itens)
-    taxa = Decimal("0.00") if tipo == Pedido.TipoEntrega.RETIRADA else cfg.taxa_entrega
+    taxa = _taxa_entrega(sessao, cfg)
     linhas.append("")
     if tipo == Pedido.TipoEntrega.RETIRADA:
         linhas.append("🏬 *Retirada na loja*")
+    elif _e_lojista(sessao):
+        loj = sessao.carrinho_json.get("lojista") or {}
+        linhas.append("🏬 *Entrega na sua loja*")
+        linhas.append(f"📍 {loj.get('ponto_nome', '')} · {loj.get('loja', '')}".rstrip(" ·"))
     else:
         linhas.append("🛵 *Entrega em domicílio*")
         end = (sessao.carrinho_json.get("endereco") or {})
@@ -516,7 +523,7 @@ def _tela_resumo_carrinho(sessao, perfil=None) -> list:
     """Última conferência antes de fechar: o cliente confirma ou corrige."""
     if not (sessao.carrinho_json.get("itens") or []):
         sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
-        return [T("Seu carrinho está vazio.")] + _tela_menu(sessao, perfil)
+        return _com_aviso(["Seu carrinho está vazio."], _menu_do_canal(sessao, perfil))
     sessao.estado_atual = SessaoBot.Estado.RESUMO_CARRINHO
     _set_menu(sessao, {})
     # A forma de pagamento entra aqui: o WhatsApp aceita 3 botões, então confirmar e
@@ -542,7 +549,7 @@ def _tela_corrigir(sessao, perfil=None) -> list:
     itens = sessao.carrinho_json.get("itens") or []
     if not itens:
         sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
-        return [T("Seu pedido ficou vazio.")] + _tela_menu(sessao, perfil)
+        return _com_aviso(["Seu pedido ficou vazio."], _menu_do_canal(sessao, perfil))
     sessao.estado_atual = SessaoBot.Estado.CORRIGINDO_PEDIDO
     _set_menu(sessao, {})
     linhas = []
@@ -562,6 +569,10 @@ def _tela_corrigir(sessao, perfil=None) -> list:
 
 
 def _tela_perguntar_adicionar(sessao, perfil=None) -> list:
+    # O lojista tem menu próprio: cair aqui ofereceria "montar refeição por peso",
+    # que não existe no caminho dele. Vale para todas as entradas desta tela.
+    if _e_lojista(sessao):
+        return _tela_menu_lojista(sessao, perfil)
     sessao.estado_atual = SessaoBot.Estado.PERGUNTANDO_ADICIONAR
     cliente = _cliente(sessao)
     # Sempre manda para o cardápio completo. Antes, quem tinha pedido uma grande
@@ -752,7 +763,7 @@ def _add_faixa(sessao, faixa) -> list[str]:
 def _checkout(sessao, perfil=None):
     itens = sessao.carrinho_json["itens"]
     if not itens:
-        return None, ["Seu carrinho está vazio."] + _tela_menu(sessao)
+        return None, _com_aviso(["Seu carrinho está vazio."], _menu_do_canal(sessao))
 
     validos, removidos = [], []
     for it in itens:
@@ -766,7 +777,7 @@ def _checkout(sessao, perfil=None):
         avisos.append("⚠️ Estes itens acabaram e saíram do pedido: " + ", ".join(removidos) + ".")
     if not validos:
         sessao.carrinho_json["itens"] = []
-        return None, avisos + ["Seu pedido ficou sem itens. 😕"] + _tela_menu(sessao)
+        return None, _com_aviso(avisos + ["Seu pedido ficou sem itens. 😕"], _menu_do_canal(sessao))
     sessao.carrinho_json["itens"] = validos
     itens = validos
 
@@ -788,7 +799,7 @@ def _checkout(sessao, perfil=None):
         except ValueError:
             pass
 
-    taxa = Decimal("0.00") if tipo_entrega == Pedido.TipoEntrega.RETIRADA else cfg.taxa_entrega
+    taxa = _taxa_entrega(sessao, cfg)
 
     # Sem exigir pagamento o pedido nunca ficaria pago e travaria em AGUARDANDO_-
     # PAGAMENTO para sempre: entra direto em PREPARANDO. Com pagamento exigido vale o
@@ -803,15 +814,23 @@ def _checkout(sessao, perfil=None):
         if (not cobra_pix or getattr(cfg, "imprimir_ao_fechar", True))
         else Pedido.Status.AGUARDANDO_PAGAMENTO
     )
+    # No lojista o destino é uma loja de shopping, não uma rua: os campos de
+    # endereço ficam vazios de propósito e o caminho vai em ponto_lojista/loja.
+    lojista = sessao.carrinho_json.get("lojista") or {}
+    e_lojista = _e_lojista(sessao)
+    tem_endereco = tipo_entrega == Pedido.TipoEntrega.ENTREGA and not e_lojista
     pedido = Pedido.objects.create(
         cliente=cliente, status=status_inicial, forma_pagamento=forma,
-        endereco_entrega=end.get("rua", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
-        bairro=end.get("bairro", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
-        cep=end.get("cep", "") if tipo_entrega == Pedido.TipoEntrega.ENTREGA else "",
+        endereco_entrega=end.get("rua", "") if tem_endereco else "",
+        bairro=end.get("bairro", "") if tem_endereco else "",
+        cep=end.get("cep", "") if tem_endereco else "",
         taxa_entrega=taxa,
         data_agendada=data_obj,
         hora_agendada=hora_obj,
         tipo_entrega=tipo_entrega,
+        canal=Pedido.Canal.LOJISTA if e_lojista else Pedido.Canal.CLIENTE,
+        ponto_lojista_id=lojista.get("ponto_id") if e_lojista else None,
+        loja_lojista=lojista.get("loja", "") if e_lojista else "",
     )
     for it in itens:
         item = ItemPedido.objects.create(
@@ -876,7 +895,7 @@ def _tela_forma_pagamento(sessao, perfil=None) -> list:
     itens = sessao.carrinho_json.get("itens") or []
     produtos = sum(Decimal(str(i["subtotal"])) for i in itens)
     tipo = sessao.carrinho_json.get("tipo_entrega", Pedido.TipoEntrega.ENTREGA)
-    taxa = Decimal("0.00") if tipo == Pedido.TipoEntrega.RETIRADA else cfg.taxa_entrega
+    taxa = _taxa_entrega(sessao, cfg)
     onde = "na retirada" if tipo == Pedido.TipoEntrega.RETIRADA else "na entrega"
     corpo = (
         f"{mensagem('ESCOLHER_PAGAMENTO', _cliente(sessao), perfil=perfil)}\n"
@@ -895,11 +914,13 @@ def _tela_forma_pagamento(sessao, perfil=None) -> list:
 
 def _iniciar_fechamento(sessao, perfil=None):
     if not sessao.carrinho_json.get("itens"):
-        return None, ["Seu carrinho está vazio."] + _tela_menu(sessao)
+        return None, _com_aviso(["Seu carrinho está vazio."], _menu_do_canal(sessao))
 
     # Endereço primeiro, forma de pagamento depois: é a ordem que o cliente espera.
+    # O lojista já informou shopping e loja — pedir rua a ele travaria o pedido,
+    # porque endereço de rua ele não tem para dar.
     tipo = sessao.carrinho_json.get("tipo_entrega", Pedido.TipoEntrega.ENTREGA)
-    if tipo == Pedido.TipoEntrega.ENTREGA:
+    if tipo == Pedido.TipoEntrega.ENTREGA and not _e_lojista(sessao):
         end = sessao.carrinho_json.get("endereco") or {}
         if not end.get("rua"):
             sessao.estado_atual = SessaoBot.Estado.PEDINDO_ENDERECO_COMPLETO
@@ -1056,21 +1077,144 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     estado = sessao.estado_atual
     cep_ok = _cep_validado(sessao.carrinho_json)
 
+    # O lojista não tem CEP a validar: o destino dele é a loja que já informou.
+    # Sem isto, todo "oi" dele voltaria para a tela de boas-vindas em looping.
+    lojista_pronto = _e_lojista(sessao) and (sessao.carrinho_json.get("lojista") or {}).get("loja")
+
     if low in SAUDACOES and estado != SessaoBot.Estado.AGUARDANDO_PAGAMENTO:
-        if cep_ok:
+        if lojista_pronto:
+            out["mensagens"] = _tela_menu_lojista(sessao, perfil)
+        elif cep_ok:
             out["mensagens"] = _tela_menu(sessao)
         else:
             out["mensagens"] = _saudacao(sessao, perfil)
         sessao.save()
         return out
 
-    if estado == SessaoBot.Estado.MENU_PRINCIPAL and not cep_ok:
+    if estado == SessaoBot.Estado.MENU_PRINCIPAL and not cep_ok and not lojista_pronto:
         out["mensagens"] = _saudacao(sessao, perfil)
         sessao.save()
         return out
 
     if estado in (SessaoBot.Estado.PEDINDO_ENDERECO, SessaoBot.Estado.PEDINDO_RUA):
         out["mensagens"] = _saudacao(sessao, perfil)
+        sessao.save()
+        return out
+
+    if estado == SessaoBot.Estado.ESCOLHENDO_PUBLICO:
+        if low == "lojista":
+            sessao.carrinho_json["canal"] = Pedido.Canal.LOJISTA
+            sessao.carrinho_json["tipo_entrega"] = Pedido.TipoEntrega.ENTREGA
+            out["mensagens"] = _tela_pontos_lojista(sessao, perfil)
+        elif low == "cliente":
+            sessao.carrinho_json["canal"] = Pedido.Canal.CLIENTE
+            out["mensagens"] = _tela_tipo_entrega(sessao, perfil)
+        else:
+            out["mensagens"] = [_ERR_LISTA] + _saudacao(sessao, perfil)
+        sessao.save()
+        return out
+
+    if estado == SessaoBot.Estado.ESCOLHENDO_PONTO:
+        from pedidos.models import PontoLojista
+
+        pid = _resolver(sessao, texto)
+        ponto = PontoLojista.objects.filter(id=pid, ativo=True).first() if pid else None
+        if not ponto:
+            out["mensagens"] = [_ERR_LISTA] + _tela_pontos_lojista(sessao, perfil)
+        else:
+            sessao.carrinho_json["lojista"] = {"ponto_id": ponto.id, "ponto_nome": ponto.nome,
+                                               "loja": ""}
+            out["mensagens"] = _tela_pedir_loja(sessao, ponto)
+        sessao.save()
+        return out
+
+    if estado == SessaoBot.Estado.PEDINDO_LOJA:
+        loja = (texto or "").strip()
+        if len(loja) < 2:
+            out["mensagens"] = [T("Preciso do nome ou número da sua loja para a entrega chegar. "
+                                  "_Ex.: Loja 105 — Chilli Beans_")]
+            sessao.save()
+            return out
+        dados = sessao.carrinho_json.get("lojista") or {}
+        dados["loja"] = loja[:120]
+        sessao.carrinho_json["lojista"] = dados
+        avisos = [f"📍 {dados.get('ponto_nome', 'Shopping')} · {dados['loja']}"]
+        if not cfg.esta_aberta:
+            avisos.append(
+                f"ℹ️ Estamos fechados agora (das {cfg.hora_abertura:%H:%M} às "
+                f"{cfg.hora_fechamento:%H:%M})."
+            )
+        out["mensagens"] = _com_aviso(avisos, _tela_menu_lojista(sessao, perfil))
+        sessao.save()
+        return out
+
+    if estado == SessaoBot.Estado.LOJISTA_MENU:
+        if low == "quentinha":
+            out["mensagens"] = _tela_quentinha_proteina(sessao, perfil)
+        elif low == "bebida":
+            out["mensagens"] = _tela_lista_extra(sessao, Categoria.Tipo.BEBIDA, "Bebidas")
+        elif low == "sobremesa":
+            out["mensagens"] = _tela_lista_extra(sessao, Categoria.Tipo.SOBREMESA, "Sobremesas")
+        elif low == "fechar":
+            out["mensagens"] = _tela_resumo_carrinho(sessao, perfil)
+        elif low == ID_RECOMECAR:
+            lojista = sessao.carrinho_json.get("lojista")
+            sessao.carrinho_json = _carrinho_vazio()
+            sessao.carrinho_json["canal"] = Pedido.Canal.LOJISTA
+            sessao.carrinho_json["lojista"] = lojista
+            out["mensagens"] = _com_aviso(["🔄 Pedido reiniciado."],
+                                          _tela_menu_lojista(sessao, perfil))
+        else:
+            out["mensagens"] = [_ERR_LISTA] + _tela_menu_lojista(sessao, perfil)
+        sessao.save()
+        return out
+
+    if estado == SessaoBot.Estado.LOJISTA_PROTEINA:
+        if texto.strip() == ID_MAIS:
+            _virar_pagina(sessao, "quentinha")
+            out["mensagens"] = _tela_quentinha_proteina(sessao, perfil)
+            sessao.save()
+            return out
+        pid = _resolver(sessao, texto)
+        if pid == "voltar":
+            out["mensagens"] = _tela_menu_lojista(sessao, perfil)
+        elif not pid:
+            out["mensagens"] = [_ERR_LISTA] + _tela_quentinha_proteina(sessao, perfil)
+        else:
+            produto = Produto.objects.filter(id=pid).first()
+            if not produto:
+                out["mensagens"] = [_ERR_LISTA] + _tela_quentinha_proteina(sessao, perfil)
+            else:
+                out["mensagens"] = _tela_quentinha_salada(sessao, produto)
+        sessao.save()
+        return out
+
+    if estado == SessaoBot.Estado.LOJISTA_SALADA:
+        escolha = _resolver(sessao, texto)
+        nomes = {k: nome for k, nome, _ in SALADAS_QUENTINHA}
+        pid = (sessao.carrinho_json.get("quentinha") or {}).get("produto_id")
+        produto = Produto.objects.filter(id=pid).first() if pid else None
+        if not produto:
+            out["mensagens"] = _tela_quentinha_proteina(sessao, perfil)
+        elif escolha not in nomes:
+            out["mensagens"] = [_ERR_LISTA] + _tela_quentinha_salada(sessao, produto)
+        else:
+            msgs = _add_quentinha(sessao, produto, nomes[escolha])
+            out["mensagens"] = _com_aviso(msgs, _tela_menu_lojista(sessao, perfil))
+        sessao.save()
+        return out
+
+    if estado == SessaoBot.Estado.SANDUICHE_SALADA:
+        escolha = _resolver(sessao, texto)
+        pid = (sessao.carrinho_json.get("fixo") or {}).get("produto_id")
+        produto = Produto.objects.filter(id=pid).first() if pid else None
+        if not produto:
+            out["mensagens"] = _tela_menu(sessao, perfil)
+        elif escolha not in (SALADA_SIM, SALADA_NAO):
+            out["mensagens"] = [_ERR_BOTOES] + _tela_sanduiche_salada(sessao, produto)
+        else:
+            msgs = _add_sanduiche(sessao, produto, escolha == SALADA_SIM)
+            out["mensagens"] = _pos_item_adicionado(sessao, msgs, perfil)
         sessao.save()
         return out
 
@@ -1457,6 +1601,10 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             produto = Produto.objects.get(id=pid)
             if produto.modo_venda == Produto.ModoVenda.FAIXA:
                 out["mensagens"] = _tela_faixas(sessao, produto)
+            elif produto.categoria.tipo == Categoria.Tipo.SANDUICHE:
+                # A arte anuncia "salada opcional": perguntar evita sanduíche
+                # chegando com salada para quem não queria, e vice-versa.
+                out["mensagens"] = _tela_sanduiche_salada(sessao, produto)
             else:
                 msgs = _add_unidade(sessao, produto)
                 out["mensagens"] = _pos_item_adicionado(sessao, msgs, perfil)
@@ -1496,20 +1644,198 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
 
 def _saudacao(sessao, perfil=None) -> list[str]:
+    """Primeira tela: cliente ou lojista.
+
+    Vem antes do CEP porque o lojista não tem CEP a informar — o destino dele é uma
+    loja de shopping, com taxa própria e um cardápio curto.
+    """
+    from pedidos.models import PontoLojista
+
     cliente = _cliente(sessao)
+    texto_boas_vindas = mensagem("BOAS_VINDAS", cliente, perfil=perfil)
+
+    # Sem ponto cadastrado não há caminho de lojista a oferecer: abre direto no
+    # fluxo do cliente, como era antes.
+    if not PontoLojista.objects.filter(ativo=True).exists():
+        return _tela_tipo_entrega(sessao, perfil, cabecalho=texto_boas_vindas)
+
+    sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_PUBLICO
+    _set_menu(sessao, {"cliente": "cliente", "lojista": "lojista"})
+    linhas = [
+        {"id": "cliente", "titulo": "🏠 Sou cliente", "descricao": "Entrega em casa ou retirada na loja"},
+        {"id": "lojista", "titulo": "🏬 Sou lojista", "descricao": "Entrega na sua loja do shopping"},
+    ]
+    corpo = f"{texto_boas_vindas}\n\nO pedido é para você ou para a sua loja?"
+    return [lista(corpo, "Ver opções", linhas)]
+
+
+def _tela_tipo_entrega(sessao, perfil=None, cabecalho="") -> list[str]:
+    """Entrega ou retirada — o caminho do cliente comum."""
     sessao.estado_atual = SessaoBot.Estado.TIPO_ENTREGA_INICIAL
     _set_menu(sessao, {"1": "entrega", "2": "retirada"})
-    
     linhas = [
         {"id": "1", "titulo": "🛵 Entrega em domicílio", "descricao": "Calcularemos a taxa pelo CEP"},
         {"id": "2", "titulo": "🏬 Vou retirar na loja", "descricao": "Sem taxa de frete"},
     ]
-    
-    texto_boas_vindas = mensagem('BOAS_VINDAS', cliente, perfil=perfil)
-    corpo = f"{texto_boas_vindas}\n\nComo você deseja receber o seu pedido?"
-    
+    corpo = "Como você deseja receber o seu pedido?"
+    if cabecalho:
+        corpo = f"{cabecalho}\n\n{corpo}"
     return [lista(corpo, "Opções de Entrega", linhas)]
 
+
+
+# ===================== Caminho do lojista =====================
+def _e_lojista(sessao) -> bool:
+    return (sessao.carrinho_json.get("canal") or "") == Pedido.Canal.LOJISTA
+
+
+def _menu_do_canal(sessao, perfil=None) -> list:
+    """Menu inicial do canal em que a pessoa está — cliente ou lojista."""
+    return _tela_menu_lojista(sessao, perfil) if _e_lojista(sessao) else _tela_menu(sessao, perfil)
+
+
+def _taxa_entrega(sessao, cfg) -> Decimal:
+    """A taxa do pedido, num lugar só.
+
+    Estava repetida em quatro pontos do fluxo (resumo, checkout, total e conferência).
+    Com o lojista virando uma terceira regra, esquecer uma cópia significaria cobrar
+    frete errado — de quem retira ou de quem é lojista.
+    """
+    from pedidos.models import PontoLojista
+
+    if sessao.carrinho_json.get("tipo_entrega") == Pedido.TipoEntrega.RETIRADA:
+        return Decimal("0.00")
+    if _e_lojista(sessao):
+        pid = (sessao.carrinho_json.get("lojista") or {}).get("ponto_id")
+        ponto = PontoLojista.objects.filter(id=pid).first() if pid else None
+        if ponto:
+            return ponto.taxa_entrega
+    return cfg.taxa_entrega
+
+
+def _tela_pontos_lojista(sessao, perfil=None) -> list:
+    """Os shoppings atendidos, para tocar — nada de digitar endereço."""
+    from pedidos.models import PontoLojista
+
+    pontos = list(PontoLojista.objects.filter(ativo=True))
+    if not pontos:
+        return _tela_tipo_entrega(sessao, perfil)
+    sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_PONTO
+    _set_menu(sessao, {f"pt:{p.id}": p.id for p in pontos})
+    linhas = [{"id": f"pt:{p.id}", "titulo": p.nome, "descricao": p.endereco} for p in pontos[:10]]
+    return [lista("Em qual shopping fica a sua loja?", "Ver shoppings", linhas)]
+
+
+def _tela_pedir_loja(sessao, ponto) -> list:
+    """Único ponto digitado do fluxo: sem o nome da loja o entregador não acha o destino."""
+    sessao.estado_atual = SessaoBot.Estado.PEDINDO_LOJA
+    _set_menu(sessao, {})
+    return [T(
+        f"📍 {ponto.nome} confirmado!\n\n"
+        "Agora me diga o *nome ou número da sua loja*, para o entregador levar certinho.\n"
+        "_Ex.: Loja 105 — Chilli Beans_"
+    )]
+
+
+def _tela_menu_lojista(sessao, perfil=None) -> list:
+    """Menu curto: quem pede no meio do expediente não quer navegar cardápio."""
+    sessao.estado_atual = SessaoBot.Estado.LOJISTA_MENU
+    itens = sessao.carrinho_json.get("itens") or []
+    _set_menu(sessao, {"quentinha": "quentinha", "bebida": "bebida",
+                       "sobremesa": "sobremesa", "fechar": "fechar"})
+    linhas = [
+        {"id": "quentinha", "titulo": "🍱 Quentinha Padrão",
+         "descricao": "Proteína + arroz, feijão, farofa e salada"},
+        {"id": "bebida", "titulo": "🥤 Bebidas", "descricao": "Refrigerante, suco, mate"},
+        {"id": "sobremesa", "titulo": "🍮 Sobremesa", "descricao": "Para adoçar o dia"},
+    ]
+    cab = ""
+    if itens:
+        total = sum(Decimal(str(i["subtotal"])) for i in itens)
+        cab = f"🛒 Carrinho: {len(itens)} item(ns) — {_moeda(total)}\n\n"
+        linhas.append({"id": "fechar", "titulo": "✅ Fechar pedido",
+                       "descricao": "Conferir e pagar"})
+        linhas.append({"id": ID_RECOMECAR, "titulo": "🔄 Recomeçar pedido",
+                       "descricao": "Esvazia o carrinho"})
+    return [lista(cab + "O que você deseja?", "Ver opções", linhas)]
+
+
+def _tela_quentinha_proteina(sessao, perfil=None) -> list:
+    """As proteínas da quentinha, cada uma com seu preço e sua janela de horário."""
+    produtos = _disponiveis(Categoria.Tipo.QUENTINHA)
+    if not produtos:
+        quando = _horario_disponibilidade(Categoria.Tipo.QUENTINHA)
+        aviso = "No momento não há quentinha disponível."
+        if quando:
+            aviso += f"\n🕒 Servimos {quando}."
+        return _com_aviso([aviso], _tela_menu_lojista(sessao, perfil))
+    sessao.estado_atual = SessaoBot.Estado.LOJISTA_PROTEINA
+    rows, mapa = _rows_produtos(produtos, com_preco=True, cliente=_cliente(sessao),
+                                max_rows=MAX_ACOMP_LISTADOS)
+    mapa["voltar"] = "voltar"
+    _set_menu(sessao, mapa)
+    _marcar_tela(sessao, "quentinha")
+    voltar = [{"id": "voltar", "titulo": "↩️ Voltar", "descricao": "Sem escolher"}]
+    corpo = ("🍱 *Quentinha Padrão*\nVem com arroz, feijão, farofa e salada.\n\n"
+             "Escolha a proteína:")
+    return [lista_paginada(corpo, "Ver proteínas", rows,
+                           _pagina(sessao, "quentinha"), fixas=voltar)]
+
+
+# A salada vai no campo `variacao` do item, que já é impresso na comanda — assim a
+# cozinha vê a escolha sem precisar de campo novo.
+SALADAS_QUENTINHA = [
+    ("sal:verde", "Salada Verde", "Alface e tomate"),
+    ("sal:maionese", "Salada de Maionese", "A clássica da casa"),
+]
+
+
+def _tela_quentinha_salada(sessao, produto) -> list:
+    sessao.carrinho_json["quentinha"] = {"produto_id": produto.id}
+    sessao.estado_atual = SessaoBot.Estado.LOJISTA_SALADA
+    _set_menu(sessao, {k: k for k, _, _ in SALADAS_QUENTINHA})
+    linhas = [{"id": k, "titulo": nome, "descricao": desc} for k, nome, desc in SALADAS_QUENTINHA]
+    return [lista(f"*{produto.nome}* escolhida!\n\nQual salada vai junto?", "Ver saladas", linhas)]
+
+
+def _add_quentinha(sessao, produto, salada_nome: str) -> list[str]:
+    preco = preco_para(produto, _cliente(sessao))
+    sessao.carrinho_json["itens"].append({
+        "modo": ItemPedido.Modo.FIXO, "produto_id": produto.id, "peso_g": None,
+        "variacao": salada_nome, "acompanhamentos": [],
+        "preco_unitario": str(preco), "quantidade": 1, "subtotal": str(preco),
+    })
+    sessao.carrinho_json["quentinha"] = {}
+    return [f"✅ Adicionado: {produto.nome} com {salada_nome} — {_moeda(preco)}"]
+
+
+# ===================== Sanduíche: com ou sem salada =====================
+SALADA_SIM, SALADA_NAO = "sand:sim", "sand:nao"
+
+
+def _tela_sanduiche_salada(sessao, produto) -> list:
+    """A arte diz "salada opcional", então o bot pergunta em vez de supor."""
+    sessao.carrinho_json["fixo"] = {"produto_id": produto.id}
+    sessao.estado_atual = SessaoBot.Estado.SANDUICHE_SALADA
+    _set_menu(sessao, {SALADA_SIM: SALADA_SIM, SALADA_NAO: SALADA_NAO})
+    preco = preco_para(produto, _cliente(sessao))
+    return [botoes(
+        f"*{produto.nome}* — {_moeda(preco)}\n\nQuer com salada? (alface e tomate, sem custo)",
+        [{"id": SALADA_SIM, "titulo": "Com salada"},
+         {"id": SALADA_NAO, "titulo": "Sem salada"}],
+    )]
+
+
+def _add_sanduiche(sessao, produto, com_salada: bool) -> list[str]:
+    preco = preco_para(produto, _cliente(sessao))
+    rotulo = "com salada" if com_salada else "sem salada"
+    sessao.carrinho_json["itens"].append({
+        "modo": ItemPedido.Modo.FIXO, "produto_id": produto.id, "peso_g": None,
+        "variacao": rotulo, "acompanhamentos": [],
+        "preco_unitario": str(preco), "quantidade": 1, "subtotal": str(preco),
+    })
+    sessao.carrinho_json["fixo"] = {}
+    return [f"✅ Adicionado: {produto.nome} ({rotulo}) — {_moeda(preco)}"]
 
 
 def _registrar_conversa(telefone: str, texto_in: str, mensagens_out: list):

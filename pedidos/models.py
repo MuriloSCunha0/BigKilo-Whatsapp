@@ -298,6 +298,13 @@ class SessaoBot(models.Model):
         ENCOMENDA_FUTURA = "ENCOMENDA_FUTURA", "Encomenda futura (Data)"
         ENCOMENDA_HORARIO = "ENCOMENDA_HORARIO", "Encomenda futura (Horário)"
         TIPO_ENTREGA_INICIAL = "TIPO_ENTREGA_INICIAL", "Escolhendo Entrega/Retirada Inicial"
+        ESCOLHENDO_PUBLICO = "ESCOLHENDO_PUBLICO", "Cliente ou lojista?"
+        ESCOLHENDO_PONTO = "ESCOLHENDO_PONTO", "Lojista: em qual shopping?"
+        PEDINDO_LOJA = "PEDINDO_LOJA", "Lojista: qual loja?"
+        LOJISTA_MENU = "LOJISTA_MENU", "Lojista: menu"
+        LOJISTA_PROTEINA = "LOJISTA_PROTEINA", "Lojista: escolhendo proteína"
+        LOJISTA_SALADA = "LOJISTA_SALADA", "Lojista: escolhendo salada"
+        SANDUICHE_SALADA = "SANDUICHE_SALADA", "Sanduíche: com salada?"
         ESCOLHENDO_TIPO_ENTREGA = "ESCOLHENDO_TIPO_ENTREGA", "Escolhendo Entrega/Retirada"
 
     telefone = models.CharField("Telefone", max_length=20, primary_key=True)
@@ -394,6 +401,10 @@ class Pedido(models.Model):
         PIX = "PIX", "Pix (antes de preparar)"
         CARTAO = "CARTAO", "Cartão na entrega"
 
+    class Canal(models.TextChoices):
+        CLIENTE = "CLIENTE", "Cliente"
+        LOJISTA = "LOJISTA", "Lojista (shopping)"
+
     cliente = models.ForeignKey(
         Cliente, on_delete=models.PROTECT, related_name="pedidos", verbose_name="Cliente"
     )
@@ -426,6 +437,21 @@ class Pedido(models.Model):
     )
     tipo_entrega = models.CharField(
         "Como vai receber", max_length=20, choices=TipoEntrega.choices, default=TipoEntrega.ENTREGA
+    )
+
+    # Lojista: venda para as lojas dos shoppings vizinhos. Mesmo preço do cliente,
+    # taxa de entrega menor, e o destino é uma loja e não uma rua — por isso o
+    # endereço fica nestes campos e não em endereco_entrega.
+    canal = models.CharField(
+        "Canal", max_length=10, choices=Canal.choices, default=Canal.CLIENTE, db_index=True,
+    )
+    ponto_lojista = models.ForeignKey(
+        "PontoLojista", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="pedidos", verbose_name="Shopping",
+    )
+    loja_lojista = models.CharField(
+        "Loja", max_length=120, blank=True,
+        help_text="Nome/número da loja dentro do shopping, para o entregador achar.",
     )
 
     # Integração Asaas
@@ -471,6 +497,40 @@ class Pedido(models.Model):
         """
         taxa = self.taxa_entrega or Decimal("0.00")
         return (self.valor_total + taxa).quantize(CENTAVO, rounding=ROUND_HALF_UP)
+
+
+class PontoLojista(models.Model):
+    """Shopping para onde o restaurante entrega direto nas lojas.
+
+    Fica em tabela e não no código porque o Leandro vai acrescentar outros, e cada
+    um pode ter a sua taxa — o Millennium é o próprio prédio do restaurante, o Rio
+    Design é o vizinho de porta.
+    """
+
+    nome = models.CharField(
+        "Nome", max_length=24,
+        help_text="ℹ️ Como aparece para o lojista. O WhatsApp corta em 24 letras.",
+    )
+    endereco = models.CharField(
+        "Endereço", max_length=72, blank=True,
+        help_text="ℹ️ Aparece embaixo do nome, como referência. Até 72 letras.",
+    )
+    taxa_entrega = models.DecimalField(
+        "Taxa de entrega", max_digits=8, decimal_places=2, default=Decimal("2.90"),
+        help_text="ℹ️ Frete cobrado dos lojistas deste ponto.",
+    )
+    ativo = models.BooleanField(
+        "Ativo", default=True, help_text="ℹ️ Desmarque para parar de atender sem apagar.",
+    )
+    ordem = models.PositiveIntegerField("Ordem", default=0, help_text="ℹ️ 0 aparece primeiro.")
+
+    class Meta:
+        verbose_name = "Ponto de entrega (lojista)"
+        verbose_name_plural = "Pontos de entrega (lojista)"
+        ordering = ["ordem", "nome"]
+
+    def __str__(self):
+        return self.nome
 
 
 class ItemPedido(models.Model):

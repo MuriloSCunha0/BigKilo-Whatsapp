@@ -14,6 +14,7 @@ from cardapio.models import DIAS_SEMANA
 from config.admin_mixins import LocalizedAdminMixin, LocalizedInlineMixin
 
 from .models import (
+    PontoLojista,
     AreaEntrega,
     Cliente,
     Encomenda,
@@ -199,6 +200,15 @@ class EncomendaAdmin(ModelAdmin):
             'href="{}" target="_blank" rel="noopener">Abrir no WhatsApp</a>',
             obj.link_whatsapp,
         )
+
+
+@admin.register(PontoLojista)
+class PontoLojistaAdmin(ModelAdmin):
+    """Shoppings para onde o restaurante entrega direto nas lojas."""
+
+    list_display = ("nome", "endereco", "taxa_entrega", "ativo", "ordem")
+    list_editable = ("taxa_entrega", "ativo", "ordem")
+    list_display_links = ("nome",)
 
 
 @admin.register(AreaEntrega)

@@ -43,6 +43,9 @@ class Categoria(models.Model):
         BEBIDA = "BEBIDA", "Bebida"
         SOBREMESA = "SOBREMESA", "Sobremesa"
         ADICIONAL = "ADICIONAL", "Adicional"
+        # Tipo à parte de propósito: como o cardápio do cliente é filtrado por tipo,
+        # a quentinha nunca vaza para quem não entrou pelo caminho do lojista.
+        QUENTINHA = "QUENTINHA", "Quentinha (lojista)"
         OUTRO = "OUTRO", "Outro"
 
     nome = models.CharField("Nome", max_length=80, help_text="ℹ️ Ex.: Proteínas, Bebidas, Sobremesas.")

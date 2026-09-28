@@ -31,7 +31,15 @@ def gerar_comanda_texto(pedido: Pedido) -> str:
         linhas.append(LINHA)
     linhas.append(SUBLINHA)
 
-    if pedido.endereco_entrega:
+    # No lojista o destino e uma loja de shopping. Sem esta secao a comanda sairia
+    # sem endereco nenhum, porque os campos de rua ficam vazios de proposito.
+    if pedido.canal == Pedido.Canal.LOJISTA:
+        linhas.append(LINHA)
+        linhas.append(_centro("*** LOJISTA ***"))
+        linhas.append(f"Local: {pedido.ponto_lojista.nome if pedido.ponto_lojista else '-'}")
+        linhas.append(f"Loja:  {pedido.loja_lojista or '-'}")
+        linhas.append(LINHA)
+    elif pedido.endereco_entrega:
         linhas.append("ENTREGA:")
         linhas.append(pedido.endereco_entrega)
         if pedido.bairro:
