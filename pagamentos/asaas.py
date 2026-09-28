@@ -39,6 +39,10 @@ async def _obter_ou_criar_cliente(http: httpx.AsyncClient, cliente) -> str:
     payload = {
         "name": cliente.nome_whatsapp or f"Cliente {cliente.telefone}",
         "mobilePhone": _so_digitos(cliente.telefone),
+        # O Asaas cobra por notificação enviada, e aqui ela é pura duplicação: o
+        # bot já manda o Pix copia e cola pelo WhatsApp. O cliente é obrigatório
+        # em toda cobrança, então não dá para não criá-lo — dá para criá-lo mudo.
+        "notificationDisabled": True,
     }
     cpf = _so_digitos(settings.ASAAS_DEFAULT_CPF_CNPJ)
     if cpf:
