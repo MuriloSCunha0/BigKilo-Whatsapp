@@ -73,10 +73,17 @@ class ConfiguracaoLoja(models.Model):
         help_text="ℹ️ Recebe um aviso sempre que alguém pedir encomenda pelo bot, "
                   "com link para responder o cliente no WhatsApp.",
     )
+    # Os dois canais fecham separado: pode faltar entregador para a rua e o shopping
+    # continuar sendo atendido a pé, ou o contrário.
     bot_pausado = models.BooleanField(
-        "Pausar o bot", default=False,
-        help_text="ℹ️ Liga o aviso de pausa: quem mandar mensagem recebe só o texto abaixo "
-                  "e o bot não atende pedidos. Use para feriado, férias ou manutenção.",
+        "Fechar delivery para clientes", default=False,
+        help_text="ℹ️ Clientes que mandarem mensagem recebem só o aviso abaixo, "
+                  "sem conseguir pedir. Os lojistas continuam sendo atendidos.",
+    )
+    pausado_lojista = models.BooleanField(
+        "Fechar delivery para lojistas", default=False,
+        help_text="ℹ️ Lojistas dos shoppings recebem só o aviso abaixo. "
+                  "Os clientes continuam sendo atendidos.",
     )
     mensagem_pausa = models.TextField(
         "Aviso enquanto pausado",

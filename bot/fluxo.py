@@ -1048,8 +1048,20 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     # Pausa: responde só o aviso e não deixa o pedido andar. Vem antes de tudo,
     # inclusive do atendimento humano, para ninguém ficar com pedido pela metade.
+    #
+    # Os canais fecham separado. Com só um fechado ainda não se sabe quem está
+    # falando, então deixa passar até a tela "cliente ou lojista" e barra o lado
+    # fechado lá — barrar antes recusaria quem o restaurante ainda quer atender.
     cfg_pausa = ConfiguracaoLoja.get()
-    if getattr(cfg_pausa, "bot_pausado", False):
+    pausa_cliente = getattr(cfg_pausa, "bot_pausado", False)
+    pausa_lojista = getattr(cfg_pausa, "pausado_lojista", False)
+    canal_sessao = sessao.carrinho_json.get("canal") or ""
+    barrado = (
+        (pausa_cliente and pausa_lojista)
+        or (pausa_lojista and canal_sessao == Pedido.Canal.LOJISTA)
+        or (pausa_cliente and canal_sessao == Pedido.Canal.CLIENTE)
+    )
+    if barrado:
         if sessao.carrinho_json.get("itens") or sessao.carrinho_json.get("montagem"):
             sessao.carrinho_json = _carrinho_vazio()
             sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
@@ -1102,7 +1114,15 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         return out
 
     if estado == SessaoBot.Estado.ESCOLHENDO_PUBLICO:
-        if low == "lojista":
+        # Com um canal fechado, é aqui que a pessoa se identifica — e só agora dá
+        # para dizer a ela que o lado dela está fechado.
+        if low == "lojista" and pausa_lojista:
+            sessao.carrinho_json["canal"] = Pedido.Canal.LOJISTA
+            out["mensagens"] = [T(cfg.texto_pausa())]
+        elif low == "cliente" and pausa_cliente:
+            sessao.carrinho_json["canal"] = Pedido.Canal.CLIENTE
+            out["mensagens"] = [T(cfg.texto_pausa())]
+        elif low == "lojista":
             sessao.carrinho_json["canal"] = Pedido.Canal.LOJISTA
             sessao.carrinho_json["tipo_entrega"] = Pedido.TipoEntrega.ENTREGA
             out["mensagens"] = _tela_pontos_lojista(sessao, perfil)

@@ -105,10 +105,11 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
         }),
         (_("Funcionamento"), {"fields": ("dias_funcionamento", "hora_abertura", "hora_fechamento")}),
         (_("Delivery fechado"), {
-            "fields": ("bot_pausado", "mensagem_pausa", "link_ifood"),
-            "description": _("Com o delivery fechado o bot não aceita pedidos e responde este aviso. "
-                             "Se houver link do iFood, ele vai junto — assim o cliente pede por lá "
-                             "em vez de ir embora. Dá para abrir e fechar também pelo Modo Cozinha."),
+            "fields": (("bot_pausado", "pausado_lojista"), "mensagem_pausa", "link_ifood"),
+            "description": _("Os dois canais fecham separado: pode faltar entregador para a rua e "
+                             "o shopping continuar sendo atendido a pé. Quem estiver no canal "
+                             "fechado recebe só o aviso abaixo, com o link do iFood se houver. "
+                             "Dá para abrir e fechar também pelo Modo Cozinha."),
         }),
     )
 

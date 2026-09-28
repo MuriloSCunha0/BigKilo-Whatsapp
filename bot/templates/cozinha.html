@@ -24,6 +24,8 @@
   .topo{ display:flex; align-items:center; gap:.5rem; }
   .topo .txt{ min-width:0; flex:1; }
   #acoes{ display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin:.75rem 0 .25rem; }
+  /* Sao 3 cartoes: o ultimo ocupa a linha inteira em vez de ficar meio vazio. */
+  #acoes > :last-child{ grid-column:1 / -1; }
   .acao{ display:flex; flex-direction:column; gap:.15rem; align-items:flex-start;
          background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:.8rem .85rem;
          font-size:.95rem; font-weight:700; color:#111827; cursor:pointer; text-align:left;
@@ -83,13 +85,19 @@
 
 <main>
   <div id="acoes">
-    <button type="button" class="acao {% if pausado %}perigo{% else %}aberto{% endif %}" id="btPausa">
-      <span id="pausaTitulo">{% if pausado %}⏸️ Delivery fechado{% else %}🟢 Delivery aberto{% endif %}</span>
-      <small id="pausaSub">{% if pausado %}toque para reabrir{% else %}toque para fechar agora{% endif %}</small>
+    <button type="button" class="acao {% if pausado %}perigo{% else %}aberto{% endif %}"
+            data-canal="cliente" data-rotulo="clientes">
+      <span class="t">{% if pausado %}⏸️ Clientes fechado{% else %}🟢 Clientes aberto{% endif %}</span>
+      <small class="s">{% if pausado %}toque para reabrir{% else %}entrega em casa{% endif %}</small>
+    </button>
+    <button type="button" class="acao {% if pausado_lojista %}perigo{% else %}aberto{% endif %}"
+            data-canal="lojista" data-rotulo="lojistas">
+      <span class="t">{% if pausado_lojista %}⏸️ Lojistas fechado{% else %}🟢 Lojistas aberto{% endif %}</span>
+      <small class="s">{% if pausado_lojista %}toque para reabrir{% else %}entrega nos shoppings{% endif %}</small>
     </button>
     <a class="acao" href="/admin/pedidos/pedido/?status__exact=PREPARANDO">
-      <span>👨‍🍳 {{ em_preparo }} em preparo</span>
-      <small>ver os pedidos</small>
+      <span class="t">👨‍🍳 {{ em_preparo }} em preparo</span>
+      <small class="s">ver os pedidos</small>
     </a>
   </div>
 
@@ -198,40 +206,44 @@
       document.querySelectorAll('.item.off').length;
   }
 
-  // ---- Fechar/reabrir o delivery ----
-  const btPausa = document.getElementById('btPausa');
-  btPausa.addEventListener('click', async () => {
-    const fechando = !btPausa.classList.contains('perigo');
-    const TEM_IFOOD = {{ tem_ifood|yesno:"true,false" }};
-    const pergunta = fechando
-      ? (TEM_IFOOD
-          ? 'Fechar o delivery agora? Quem mandar mensagem será direcionado para o iFood.'
-          : 'Fechar o delivery agora? Quem mandar mensagem vai receber o aviso de que está fechado.')
-      : 'Reabrir o delivery? O bot volta a aceitar pedidos.';
-    if(!confirm(pergunta)) return;
-    btPausa.disabled = true;
-    try{
-      const r = await fetch('/cozinha/pausar/', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({k: CHAVE}),
-      });
-      const d = await r.json();
-      if(!d.ok){ recado('Não deu para mudar. Tente de novo.'); return; }
-      btPausa.classList.toggle('perigo', d.pausado);
-      btPausa.classList.toggle('aberto', !d.pausado);
-      document.getElementById('pausaTitulo').textContent =
-        d.pausado ? '⏸️ Delivery fechado' : '🟢 Delivery aberto';
-      document.getElementById('pausaSub').textContent =
-        d.pausado ? 'toque para reabrir' : 'toque para fechar agora';
-      recado(d.pausado
-        ? (TEM_IFOOD ? 'Delivery fechado — o bot manda os clientes para o iFood'
-                     : 'Delivery fechado — o bot avisa quem escrever')
-        : 'Delivery reaberto — o bot volta a aceitar pedidos');
-    }catch(e){
-      recado('Sem internet. Nada mudou.');
-    }finally{
-      btPausa.disabled = false;
-    }
+  // ---- Fechar/reabrir cada delivery ----
+  // Os dois canais são independentes de propósito: pode faltar entregador para a
+  // rua e o shopping seguir sendo atendido a pé, ou o contrário.
+  const TEM_IFOOD = {{ tem_ifood|yesno:"true,false" }};
+  const SUB_ABERTO = {cliente: 'entrega em casa', lojista: 'entrega nos shoppings'};
+  const NOME = {cliente: 'Clientes', lojista: 'Lojistas'};
+
+  document.querySelectorAll('.acao[data-canal]').forEach(bt => {
+    bt.addEventListener('click', async () => {
+      const canal = bt.dataset.canal, quem = bt.dataset.rotulo;
+      const fechando = !bt.classList.contains('perigo');
+      const pergunta = fechando
+        ? (TEM_IFOOD
+            ? 'Fechar o delivery para ' + quem + '? Quem mandar mensagem será direcionado para o iFood.'
+            : 'Fechar o delivery para ' + quem + '? Eles recebem o aviso de que está fechado.')
+        : 'Reabrir o delivery para ' + quem + '?';
+      if(!confirm(pergunta)) return;
+      bt.disabled = true;
+      try{
+        const r = await fetch('/cozinha/pausar/', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({k: CHAVE, canal: canal}),
+        });
+        const d = await r.json();
+        if(!d.ok){ recado('Não deu para mudar. Tente de novo.'); return; }
+        bt.classList.toggle('perigo', d.pausado);
+        bt.classList.toggle('aberto', !d.pausado);
+        bt.querySelector('.t').textContent =
+          (d.pausado ? '⏸️ ' : '🟢 ') + NOME[canal] + (d.pausado ? ' fechado' : ' aberto');
+        bt.querySelector('.s').textContent =
+          d.pausado ? 'toque para reabrir' : SUB_ABERTO[canal];
+        recado('Delivery ' + (d.pausado ? 'fechado' : 'reaberto') + ' para ' + quem);
+      }catch(e){
+        recado('Sem internet. Nada mudou.');
+      }finally{
+        bt.disabled = false;
+      }
+    });
   });
 
   window.__contarAcabou = contarAcabou;

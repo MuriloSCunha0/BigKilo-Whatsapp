@@ -645,6 +645,7 @@ def cozinha(request):
         "nome_loja": cfg.nome_loja,
         "hoje": timezone.localdate(),
         "pausado": cfg.bot_pausado,
+        "pausado_lojista": cfg.pausado_lojista,
         "acabaram": sum(1 for g in grupos for i in g["itens"] if i["esgotado"]),
         "em_preparo": Pedido.objects.filter(status=Pedido.Status.PREPARANDO).count(),
         "do_painel": request.user.is_authenticated and request.user.is_staff,
@@ -665,10 +666,13 @@ def cozinha_pausar(request):
     if not _cozinha_liberado(request, cfg, chave=str(dados.get("k") or "")):
         return JsonResponse({"ok": False, "erro": "sem permissão"}, status=403)
 
-    cfg.bot_pausado = not cfg.bot_pausado
-    cfg.save(update_fields=["bot_pausado"])
-    logger.info("Modo cozinha: delivery %s", "pausado" if cfg.bot_pausado else "reaberto")
-    return JsonResponse({"ok": True, "pausado": cfg.bot_pausado})
+    # Um canal de cada vez: falta de entregador para a rua não impede a entrega a pé
+    # nos shoppings, e vice-versa.
+    campo = "pausado_lojista" if dados.get("canal") == "lojista" else "bot_pausado"
+    setattr(cfg, campo, not getattr(cfg, campo))
+    cfg.save(update_fields=[campo])
+    logger.info("Modo cozinha: %s -> %s", campo, getattr(cfg, campo))
+    return JsonResponse({"ok": True, "campo": campo, "pausado": getattr(cfg, campo)})
 
 
 @csrf_exempt
