@@ -127,43 +127,53 @@ chapa, filé de frango ou de sobrecoxa, sanduíche de carne assada, **sopa do di
 
 ---
 
-## 11. Canal "Sou lojista" (BACKLOG — pedido em 22/09/2026, não implementado)
+## 11. Canal "Sou lojista" — ✅ implementado em 28/09/2026
 
-Pedido do Leandro por WhatsApp em 22/09/2026. Decidido o desenho, **adiado a
-implementação**: o cardápio e os preços de lojista ainda não chegaram.
+Pedido do Leandro em 22/09/2026, detalhado em 28/09/2026 e entregue no mesmo dia.
 
-### O que o cliente pediu
-Uma escolha logo na entrada, **antes do CEP**:
+### Como ficou
+Tela de abertura pergunta **Cliente ou Lojista**, antes do CEP. O lojista escolhe o
+shopping numa lista tocável (nome curto no título, endereço na descrição), digita o
+nome da loja — único campo digitado do fluxo, porque um shopping tem centenas de
+lojas e lista não serve — e cai num menu curto: Quentinha Padrão, bebidas, sobremesa.
 
-```
-CLIENTES
-LOJISTA  →  Rio Design  |  Shopping Millennium  (mais opções virão)
-```
+**Quentinha Padrão** (proteína + arroz, feijão, farofa e salada), com escolha de
+salada depois da proteína:
 
-No canal lojista: **sem taxa de entrega**, e **cardápio e valores próprios**.
-
-### Decisões já tomadas (confirmadas em 22/09/2026)
-- **Qual loja**: depois de escolher o shopping, o bot pergunta o nome/número da
-  loja e o lojista digita (ex.: "Loja 105 - Chilli Beans"). Sem isso o entregador
-  não acha o destino. É o equivalente ao endereço do cliente comum — os outros
-  passos continuam sendo toque, sem digitação.
-- **Pagamento**: igual ao do cliente (Pix ou cartão). Nada muda no checkout.
-- **Cardápio**: cardápio próprio marcado como lojista, com os produtos e preços
-  dele. Serve tanto se forem pratos diferentes quanto os mesmos pratos a outro
-  preço — o restaurante edita pelo painel, como qualquer cardápio.
-
-### Onde mexe (levantado no código, 22/09/2026)
-| Peça | Arquivo | O que fazer |
+| Proteína | Preço | Horário |
 |---|---|---|
-| Tela de entrada | `bot/fluxo.py` `_saudacao()` | Hoje já abre com Entrega/Retirada; entra uma tela antes: Cliente / Lojista |
-| Estados novos | `pedidos/models.py` `SessaoBot.Estado` | `ESCOLHENDO_PUBLICO`, `ESCOLHENDO_PONTO_LOJISTA`, `PEDINDO_LOJA` |
-| Pontos de entrega | `pedidos/models.py` | Modelo novo (nome, ativo, ordem) p/ o restaurante cadastrar shoppings pelo painel, sem código |
-| Filtro do cardápio | `bot/fluxo.py` `_disponiveis()` | Chokepoint único: filtra por canal. `Cardapio` ganha campo de canal (cliente / lojista / ambos) |
-| Taxa de entrega | `bot/fluxo.py` linhas 496, 791, 879 | Hoje é `0` só p/ RETIRADA; lojista também entra nessa isenção. Vale extrair um `_taxa_para(sessao)` — a regra está repetida em 4 lugares |
-| Comanda | `pedidos/comanda.py` | Imprimir shopping + loja no lugar do endereço, e marcar que é lojista |
-| Pedido | `pedidos/models.py` `Pedido` | Guardar canal, ponto e loja p/ o pedido não virar entrega comum no painel |
+| Frango Ensopado | R$ 29,90 | 11:00–19:20 |
+| Filé de Frango | R$ 31,90 | 11:00–15:30 |
+| Linguiça de Churrasco | R$ 33,90 | 11:00–19:20 |
 
-### O que ainda falta para começar
-- [ ] Lista completa dos pontos (só "Rio Design" e "Shopping Millennium" por ora)
-- [ ] Cardápio de lojista: quais itens
-- [ ] Preços de lojista
+**Preço é o mesmo do cliente; o que muda é o frete: R$ 2,90**, contra a taxa cheia
+do cliente comum. Fica no cadastro do ponto, não no código.
+
+Pontos cadastrados: Shopping Millennium (Av. das Américas, 7707 — é o prédio do
+próprio restaurante) e Rio Design (7777 — vizinho de porta). Os dois dentro da faixa
+de CEP 22793 que já era atendida.
+
+### Decisões
+- Quentinha é um `Categoria.Tipo` próprio (`QUENTINHA`): como o cardápio do cliente
+  é filtrado por tipo, ela nunca vaza para quem não entrou pelo caminho do lojista.
+- A salada vai no campo `variacao` do item, que já era impresso na comanda.
+- No pedido, `canal`/`ponto_lojista`/`loja_lojista`; os campos de rua ficam vazios
+  de propósito, e a comanda imprime um bloco LOJISTA com shopping e loja.
+- A regra da taxa saiu de 4 cópias espalhadas pelo fluxo para `_taxa_entrega()`.
+
+## 12. Sanduíches — ✅ atualizado em 28/09/2026
+
+Arte nova do cliente. Preços aplicados na produção:
+
+| Sanduíche | Antes | Agora |
+|---|---|---|
+| Frango Desfiado no Pão Francês | R$ 16,90 | **R$ 15,90** |
+| Frango Desfiado no Pão Brioche | R$ 19,90 | **R$ 18,90** |
+| Carne Assada no Pão Francês | R$ 19,90 | R$ 19,90 |
+| Carne Assada no Pão Brioche | R$ 24,90 | **R$ 22,90** |
+
+Saíram do cardápio só-jantar e passaram a valer **todo dia, 11:00–19:20**
+(`sempre_disponivel` + janela de horário no produto).
+
+Depois de escolher, o bot pergunta **com ou sem salada** (sem custo, como diz a
+arte) e a resposta sai impressa na comanda.
