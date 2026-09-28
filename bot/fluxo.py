@@ -683,7 +683,7 @@ def _tela_categoria(sessao, tipo, titulo) -> list:
         aviso = f"No momento não há {titulo.lower()} disponíveis."
         if quando:
             aviso += f"\n🕒 Servimos {titulo.lower()} {quando}."
-        return [T(aviso)] + _tela_menu(sessao)
+        return _com_aviso([aviso], _menu_do_canal(sessao))
     sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_FIXO
     sessao.carrinho_json["_ultimo_tipo_fixo"] = {"tipo": tipo, "titulo": titulo}
     rows, mapa = _rows_produtos(produtos, com_preco=True, cliente=_cliente(sessao),
@@ -1171,6 +1171,10 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             return out
         if low == "quentinha":
             out["mensagens"] = _tela_quentinha_proteina(sessao, perfil)
+        elif low == "sanduiche":
+            out["mensagens"] = _tela_categoria(sessao, Categoria.Tipo.SANDUICHE, "Sanduíches")
+        elif low == "sopa":
+            out["mensagens"] = _tela_categoria(sessao, Categoria.Tipo.SOPA, "Sopas")
         elif low == "bebida":
             out["mensagens"] = _tela_lista_extra(sessao, Categoria.Tipo.BEBIDA, "Bebidas")
         elif low == "sobremesa":
@@ -1768,11 +1772,13 @@ def _tela_menu_lojista(sessao, perfil=None) -> list:
         _set_menu(sessao, {})
         return [T(_aviso_fechado(cfg))]
     itens = sessao.carrinho_json.get("itens") or []
-    _set_menu(sessao, {"quentinha": "quentinha", "bebida": "bebida",
-                       "sobremesa": "sobremesa", "fechar": "fechar"})
+    _set_menu(sessao, {"quentinha": "quentinha", "sanduiche": "sanduiche", "sopa": "sopa",
+                       "bebida": "bebida", "sobremesa": "sobremesa", "fechar": "fechar"})
     linhas = [
         {"id": "quentinha", "titulo": "🍱 Quentinha Padrão",
          "descricao": "Proteína + arroz, feijão, farofa e salada"},
+        {"id": "sanduiche", "titulo": "🥪 Sanduíches", "descricao": "No pão francês ou brioche"},
+        {"id": "sopa", "titulo": "🍲 Sopas", "descricao": "Caldo do dia"},
         {"id": "bebida", "titulo": "🥤 Bebidas", "descricao": "Refrigerante, suco, mate"},
         {"id": "sobremesa", "titulo": "🍮 Sobremesa", "descricao": "Para adoçar o dia"},
     ]
@@ -1840,12 +1846,31 @@ def _add_quentinha(sessao, produto, salada_nome: str) -> list[str]:
 SALADA_SIM, SALADA_NAO = "sand:sim", "sand:nao"
 
 
+NOME_SALADA_SANDUICHE = "Alface e Tomate"
+
+
+def _salada_sanduiche_disponivel() -> bool:
+    """A salada é um produto de verdade, então a cozinha pode marcá-la como esgotada.
+
+    Sem esta checagem o bot seguiria oferecendo "com salada" depois de o alface
+    acabar, e a comanda pediria o que não existe.
+    """
+    p = Produto.objects.filter(
+        nome__iexact=NOME_SALADA_SANDUICHE, categoria__tipo=Categoria.Tipo.ADICIONAL
+    ).first()
+    return bool(p and p.disponivel_agora)
+
+
 def _tela_sanduiche_salada(sessao, produto) -> list:
     """A arte diz "salada opcional", então o bot pergunta em vez de supor."""
+    preco = preco_para(produto, _cliente(sessao))
+    if not _salada_sanduiche_disponivel():
+        msgs = _add_sanduiche(sessao, produto, com_salada=False)
+        return _com_aviso(["ℹ️ A salada acabou hoje — o sanduíche vai sem."] + msgs,
+                          _tela_perguntar_adicionar(sessao))
     sessao.carrinho_json["fixo"] = {"produto_id": produto.id}
     sessao.estado_atual = SessaoBot.Estado.SANDUICHE_SALADA
     _set_menu(sessao, {SALADA_SIM: SALADA_SIM, SALADA_NAO: SALADA_NAO})
-    preco = preco_para(produto, _cliente(sessao))
     return [botoes(
         f"*{produto.nome}* — {_moeda(preco)}\n\nQuer com salada? (alface e tomate, sem custo)",
         [{"id": SALADA_SIM, "titulo": "Com salada"},
