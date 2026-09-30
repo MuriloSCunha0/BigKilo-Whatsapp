@@ -593,6 +593,7 @@ def _cozinha_itens():
     sem eles não haveria como desfazer um toque errado.
     """
     from cardapio.models import Categoria, Produto
+    from pedidos.models import ConfiguracaoLoja
 
     hoje = timezone.localdate()
     # Faxina preguiçosa: o "acabou" de ontem já não vale para o bot, então limpa a
@@ -621,31 +622,51 @@ def _cozinha_itens():
         esgotado = p.esgotado and (p.esgotado_em is None or p.esgotado_em >= hoje)
         if not esgotado and not p.disponivel_na_data(hoje):
             continue                      # não é do cardápio de hoje: não polui a tela
-        # Preço fixo entra num campo só; faixa (sopa, por tamanho) entra num campo por
-        # tamanho. Montagem fica de fora porque cobra pela tabela de peso da loja —
-        # ali o campo mudaria um número que o bot nem consulta.
-        preco_editavel = p.modo_venda in (Produto.ModoVenda.UNIDADE, Produto.ModoVenda.ADICIONAL)
-        faixas = ([{"id": f.id, "rotulo": f.rotulo,
-                    "preco": f"{f.preco:.2f}".replace(".", ",")}
-                   for f in p.faixas.all()]
-                  if p.modo_venda == Produto.ModoVenda.FAIXA else [])
         segue = p.vinculado_a.nome if p.vinculado_a_id else ""
         nome = p.categoria.nome
         if nome not in grupos:
             grupos[nome] = []
             ordem.append(nome)
-        grupos[nome].append({
+        grupos[nome].append(_linha_cozinha(p, esgotado, segue))
+    # A quentinha do lojista é proteína + salada. Mostrar só as proteínas obrigava a
+    # procurar a salada lá em Acompanhamentos para saber se ela ainda está de pé.
+    cfg = ConfiguracaoLoja.get()
+    saladas = list(cfg.quentinha_saladas.filter(ativo=True))
+    if saladas:
+        grupo_quent = next((n for n in ordem
+                            if any(i["quentinha"] for i in grupos[n])), None)
+        if grupo_quent:
+            for sal in saladas:
+                esg = sal.esgotado and (sal.esgotado_em is None or sal.esgotado_em >= hoje)
+                linha = _linha_cozinha(sal, esg, sal.vinculado_a.nome if sal.vinculado_a_id else "")
+                # É o mesmo produto do cardápio: acabou aqui, acabou lá. Dizer isso na
+                # linha evita a impressão de que dá para ter salada só para um lado.
+                linha["tambem_em"] = sal.categoria.nome
+                grupos[grupo_quent].append(linha)
+    return [{"categoria": n, "itens": grupos[n]} for n in ordem]
+
+
+def _linha_cozinha(p, esgotado, segue):
+    """Uma linha da tela de turno."""
+    from cardapio.models import Categoria, Produto
+
+    preco_editavel = p.modo_venda in (Produto.ModoVenda.UNIDADE, Produto.ModoVenda.ADICIONAL)
+    faixas = ([{"id": f.id, "rotulo": f.rotulo, "preco": f"{f.preco:.2f}".replace(".", ",")}
+               for f in p.faixas.all()]
+              if p.modo_venda == Produto.ModoVenda.FAIXA else [])
+    return {
             "id": p.id,
             "nome": p.nome,
-            "esgotado": esgotado or bool(segue and not p.disponivel_na_data(hoje)),
+            "quentinha": p.categoria.tipo == Categoria.Tipo.QUENTINHA,
+            "tambem_em": "",
+            "esgotado": esgotado or bool(segue and not p.disponivel_na_data(timezone.localdate())),
             "segue": segue,
             "segue_id": p.vinculado_a_id or "",
             "preco": f"{p.preco:.2f}".replace(".", ",") if preco_editavel else "",
             "preco_editavel": preco_editavel,
             "faixas_json": json.dumps(faixas),
             "motivo_preco": "" if faixas else _MOTIVO_PRECO.get(p.modo_venda, ""),
-        })
-    return [{"categoria": n, "itens": grupos[n]} for n in ordem]
+    }
 
 
 _MOTIVO_PRECO = {

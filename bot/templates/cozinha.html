@@ -70,7 +70,8 @@
           font-size:1.1rem; cursor:pointer; color:#374151; }
   .lapis:active{ background:#f3f4f6; }
   .linha.off .lapis{ background:#fef2f2; border-color:#fecaca; }
-  .segue-txt{ display:block; font-size:.72rem; font-weight:600; color:#6b7280; margin-top:.15rem; }
+  .segue-txt, .tambem-txt{ display:block; font-size:.72rem; font-weight:600; color:#6b7280;
+                           margin-top:.15rem; text-decoration:none; }
   .linha.off .segue-txt{ color:#b91c1c; }
   /* Editor: abre no lugar da linha, sem tirar a pessoa da tela. */
   .editor{ background:#fff; border:1px solid #d97706; border-radius:14px; padding:.85rem;
@@ -153,6 +154,7 @@
             <span class="nome">
               {{ item.nome }}
               {% if item.segue %}<small class="segue-txt">segue {{ item.segue }}</small>{% endif %}
+              {% if item.tambem_em %}<small class="tambem-txt">também em {{ item.tambem_em }}</small>{% endif %}
             </span>
             <span class="tag">{% if item.esgotado %}acabou{% else %}no ar{% endif %}</span>
           </button>
@@ -209,8 +211,12 @@
       });
       const d = await r.json();
       if(!d.ok){ recado(d.erro || 'Não deu para salvar. Tente de novo.'); return; }
-      linha.classList.toggle('off', d.esgotado);
-      linha.querySelector('.tag').textContent = d.esgotado ? 'acabou' : 'no ar';
+      // O mesmo produto pode estar em dois grupos (a salada aparece em
+      // Acompanhamentos e dentro da Quentinha): as duas linhas mudam juntas.
+      document.querySelectorAll('.linha[data-id="' + linha.dataset.id + '"]').forEach(l => {
+        l.classList.toggle('off', d.esgotado);
+        l.querySelector('.tag').textContent = d.esgotado ? 'acabou' : 'no ar';
+      });
       recado(d.esgotado ? d.nome + ' saiu do cardápio' : d.nome + ' voltou ao cardápio');
       // Quem segue este item acompanha na tela, senão a cozinha marcaria a proteína
       // e continuaria vendo a quentinha dela como "no ar" até recarregar.
@@ -343,9 +349,10 @@
       });
       const d = await r.json();
       if(!d.ok){ recado(d.erro || 'Não deu para salvar.'); return; }
-      const alvo = linha.querySelector('.nome');
-      alvo.childNodes[0].textContent = d.nome + ' ';
-      linha.dataset.nome = d.nome.toLowerCase();
+      document.querySelectorAll('.linha[data-id="' + linha.dataset.id + '"]').forEach(l => {
+        l.querySelector('.nome').childNodes[0].textContent = d.nome + ' ';
+        l.dataset.nome = d.nome.toLowerCase();
+      });
       linha.dataset.preco = d.preco;
       if(d.faixas) linha.dataset.faixas = JSON.stringify(d.faixas);
       linha.dataset.segueId = d.segue_id || '';
