@@ -57,10 +57,35 @@
   .item .nome{ flex:1; min-width:0; }
   .item .tag{ flex:none; font-size:.78rem; font-weight:700; padding:.3rem .6rem; border-radius:999px;
               background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; white-space:nowrap; }
-  .item.off{ background:#fef2f2; border-color:#fecaca; color:#7f1d1d; }
-  .item.off .nome{ text-decoration:line-through; opacity:.75; }
-  .item.off .tag{ background:#fee2e2; color:#b91c1c; border-color:#fecaca; }
-  .item[disabled]{ opacity:.5; }
+  .linha.off .item{ background:#fef2f2; border-color:#fecaca; color:#7f1d1d; }
+  .linha.off .nome{ text-decoration:line-through; opacity:.75; }
+  .linha.off .tag{ background:#fee2e2; color:#b91c1c; border-color:#fecaca; }
+  .linha.off .segue-txt{ text-decoration:none; }
+  .item[disabled]{ opacity:.55; cursor:default; }
+  /* A linha vira flex: o prato ocupa tudo e o lapis fica na ponta, longe do polegar
+     que vai marcar "acabou" -- toque errado no meio do almoco custa caro. */
+  .linha{ display:flex; align-items:stretch; gap:.4rem; margin-bottom:.5rem; }
+  .linha .item{ flex:1; margin-bottom:0; }
+  .lapis{ flex:none; width:56px; border:1px solid #e5e7eb; border-radius:14px; background:#fff;
+          font-size:1.1rem; cursor:pointer; color:#374151; }
+  .lapis:active{ background:#f3f4f6; }
+  .linha.off .lapis{ background:#fef2f2; border-color:#fecaca; }
+  .segue-txt{ display:block; font-size:.72rem; font-weight:600; color:#6b7280; margin-top:.15rem; }
+  .linha.off .segue-txt{ color:#b91c1c; }
+  /* Editor: abre no lugar da linha, sem tirar a pessoa da tela. */
+  .editor{ background:#fff; border:1px solid #d97706; border-radius:14px; padding:.85rem;
+           margin-bottom:.5rem; }
+  .editor label{ display:block; font-size:.74rem; font-weight:700; color:#6b7280;
+                 text-transform:uppercase; letter-spacing:.04em; margin:.2rem 0 .3rem; }
+  .editor input{ width:100%; padding:.75rem .7rem; font-size:1rem; border:1px solid #e5e7eb;
+                 border-radius:10px; background:#fff; color:#111827; }
+  .editor input:focus{ outline:2px solid #d97706; outline-offset:1px; }
+  .editor .aviso{ font-size:.76rem; color:#6b7280; margin-top:.3rem; }
+  .editor .botoes{ display:flex; gap:.5rem; margin-top:.8rem; }
+  .editor .botoes button{ flex:1; border:none; border-radius:10px; padding:.75rem;
+                          font-size:.92rem; font-weight:700; cursor:pointer; }
+  .editor .salvar{ background:#16a34a; color:#fff; }
+  .editor .cancelar{ background:#f3f4f6; color:#374151; }
   .vazio{ background:#fff; border:1px dashed #d1d5db; border-radius:14px; padding:2rem 1rem;
           text-align:center; color:#6b7280; font-size:.92rem; }
   .rodape{ margin-top:1.5rem; text-align:center; color:#6b7280; font-size:.78rem; line-height:1.6; }
@@ -114,11 +139,19 @@
     <section class="grupo">
       <h2>{{ grupo.categoria }}</h2>
       {% for item in grupo.itens %}
-        <button class="item{% if item.esgotado %} off{% endif %}" data-id="{{ item.id }}"
-                data-nome="{{ item.nome|lower }}">
-          <span class="nome">{{ item.nome }}</span>
-          <span class="tag">{% if item.esgotado %}acabou{% else %}no ar{% endif %}</span>
-        </button>
+        <div class="linha{% if item.esgotado %} off{% endif %}{% if item.segue %} segue{% endif %}"
+             data-id="{{ item.id }}" data-nome="{{ item.nome|lower }}"
+             data-preco="{{ item.preco }}" data-editavel="{{ item.preco_editavel|yesno:"1,0" }}"
+             data-motivo="{{ item.motivo_preco }}">
+          <button type="button" class="item" {% if item.segue %}disabled{% endif %}>
+            <span class="nome">
+              {{ item.nome }}
+              {% if item.segue %}<small class="segue-txt">segue {{ item.segue }}</small>{% endif %}
+            </span>
+            <span class="tag">{% if item.esgotado %}acabou{% else %}no ar{% endif %}</span>
+          </button>
+          <button type="button" class="lapis" aria-label="Editar {{ item.nome }}">✏️</button>
+        </div>
       {% endfor %}
     </section>
   {% empty %}
@@ -147,30 +180,119 @@
     sumir = setTimeout(() => aviso.classList.remove('on'), 2600);
   }
 
-  async function alternar(btn){
-    if(btn.disabled) return;
-    btn.disabled = true;
+  async function alternar(linha){
+    const bt = linha.querySelector('.item');
+    if(bt.disabled) return;
+    bt.disabled = true;
     try{
       const r = await fetch('/cozinha/alternar/', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({produto_id: Number(btn.dataset.id), k: CHAVE}),
+        body: JSON.stringify({produto_id: Number(linha.dataset.id), k: CHAVE}),
       });
       const d = await r.json();
-      if(!d.ok){ recado('Não deu para salvar. Tente de novo.'); return; }
-      btn.classList.toggle('off', d.esgotado);
-      btn.querySelector('.tag').textContent = d.esgotado ? 'acabou' : 'no ar';
+      if(!d.ok){ recado(d.erro || 'Não deu para salvar. Tente de novo.'); return; }
+      linha.classList.toggle('off', d.esgotado);
+      linha.querySelector('.tag').textContent = d.esgotado ? 'acabou' : 'no ar';
       recado(d.esgotado ? d.nome + ' saiu do cardápio' : d.nome + ' voltou ao cardápio');
+      // Quem segue este item acompanha na tela, senão a cozinha marcaria a proteína
+      // e continuaria vendo a quentinha dela como "no ar" até recarregar.
+      const seguidores = [...document.querySelectorAll('.linha.segue')].filter(
+        l => (l.querySelector('.segue-txt') || {}).textContent === 'segue ' + d.nome);
+      seguidores.forEach(l => {
+        l.classList.toggle('off', d.esgotado);
+        l.querySelector('.tag').textContent = d.esgotado ? 'acabou' : 'no ar';
+      });
       if(window.__contarAcabou) window.__contarAcabou();
       if(navigator.vibrate) navigator.vibrate(15);
     }catch(e){
       recado('Sem internet. O prato continua no ar.');
     }finally{
-      btn.disabled = false;
+      bt.disabled = false;
     }
   }
 
-  document.querySelectorAll('.item').forEach(b => b.addEventListener('click', () => alternar(b)));
+  document.querySelectorAll('.linha').forEach(linha => {
+    const bt = linha.querySelector('.item');
+    if(!bt.disabled) bt.addEventListener('click', () => alternar(linha));
+    linha.querySelector('.lapis').addEventListener('click', () => abrirEditor(linha));
+  });
+
+  // ---- Editor de nome e preco ----
+  // Abre no lugar da linha: no celular, modal empurraria a lista e a pessoa perderia
+  // de vista qual prato estava mexendo.
+  let editorAberto = null;
+
+  function fecharEditor(){
+    if(!editorAberto) return;
+    const {linha, caixa} = editorAberto;
+    caixa.remove();
+    linha.style.display = '';
+    editorAberto = null;
+  }
+
+  function abrirEditor(linha){
+    fecharEditor();
+    const editavel = linha.dataset.editavel === '1';
+    const caixa = document.createElement('div');
+    caixa.className = 'editor';
+    caixa.innerHTML =
+      '<label>Nome do prato</label>' +
+      '<input class="ed-nome" type="text" maxlength="24" value="">' +
+      '<div class="aviso">O WhatsApp corta em 24 letras.</div>' +
+      (editavel
+        ? '<label>Preço</label><input class="ed-preco" type="text" inputmode="decimal" value="">'
+        : '<div class="aviso">Preço: ' + (linha.dataset.motivo || 'definido em Produtos') + '.</div>') +
+      '<div class="botoes"><button type="button" class="cancelar">Cancelar</button>' +
+      '<button type="button" class="salvar">Salvar</button></div>';
+    linha.style.display = 'none';
+    linha.after(caixa);
+    editorAberto = {linha, caixa};
+
+    const campoNome = caixa.querySelector('.ed-nome');
+    campoNome.value = linha.querySelector('.nome').childNodes[0].textContent.trim();
+    const campoPreco = caixa.querySelector('.ed-preco');
+    if(campoPreco) campoPreco.value = linha.dataset.preco || '';
+    campoNome.focus();
+    campoNome.select();
+
+    caixa.querySelector('.cancelar').addEventListener('click', fecharEditor);
+    caixa.querySelector('.salvar').addEventListener('click', () => salvar(linha, caixa));
+    caixa.addEventListener('keydown', e => {
+      if(e.key === 'Enter') salvar(linha, caixa);
+      if(e.key === 'Escape') fecharEditor();
+    });
+  }
+
+  async function salvar(linha, caixa){
+    const bt = caixa.querySelector('.salvar');
+    const campoPreco = caixa.querySelector('.ed-preco');
+    bt.disabled = true;
+    try{
+      const r = await fetch('/cozinha/editar/', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          k: CHAVE,
+          produto_id: Number(linha.dataset.id),
+          nome: caixa.querySelector('.ed-nome').value,
+          preco: campoPreco ? campoPreco.value : '',
+        }),
+      });
+      const d = await r.json();
+      if(!d.ok){ recado(d.erro || 'Não deu para salvar.'); return; }
+      const alvo = linha.querySelector('.nome');
+      alvo.childNodes[0].textContent = d.nome + ' ';
+      linha.dataset.nome = d.nome.toLowerCase();
+      linha.dataset.preco = d.preco;
+      fecharEditor();
+      recado(d.nome + ' atualizado');
+      if(navigator.vibrate) navigator.vibrate(15);
+    }catch(e){
+      recado('Sem internet. Nada mudou.');
+    }finally{
+      bt.disabled = false;
+    }
+  }
 
   // ---- Busca + filtro: com 40 itens, achar o prato é o trabalho, não o toque ----
   const busca = document.getElementById('busca');
@@ -182,7 +304,7 @@
     let visiveis = 0;
     document.querySelectorAll('.grupo').forEach(sec => {
       let noGrupo = 0;
-      sec.querySelectorAll('.item').forEach(b => {
+      sec.querySelectorAll('.linha').forEach(b => {
         const casaTermo  = !termo || b.dataset.nome.includes(termo);
         const casaFiltro = filtro === 'tudo' || b.classList.contains('off');
         const mostra = casaTermo && casaFiltro;
@@ -203,7 +325,7 @@
 
   function contarAcabou(){
     document.getElementById('nAcabou').textContent =
-      document.querySelectorAll('.item.off').length;
+      document.querySelectorAll('.linha.off').length;
   }
 
   // ---- Fechar/reabrir cada delivery ----

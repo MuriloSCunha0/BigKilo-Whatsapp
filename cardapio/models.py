@@ -113,6 +113,13 @@ class Produto(models.Model):
         help_text="Dia em que foi marcado como esgotado. Preenchido sozinho; "
                   "serve para o item voltar ao cardápio na virada do dia.",
     )
+    vinculado_a = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="derivados", verbose_name="Segue a disponibilidade de",
+        help_text="ℹ️ Para item feito do mesmo ingrediente que outro (ex.: a quentinha de "
+                  "Frango Ensopado usa o mesmo frango da proteína). Quando o item de origem "
+                  "acaba, este some junto — a cozinha marca num lugar só.",
+    )
     sempre_disponivel = models.BooleanField(
         "Sempre disponível", default=False,
         help_text="ℹ️ Marque para itens fixos (carne assada, arroz…): aparecem sempre que a loja está aberta, "
@@ -195,6 +202,10 @@ class Produto(models.Model):
     def disponivel_em(self, momento=None, exclusivo_ativo=None) -> bool:
         if not self.ativo or self.esgotado_hoje or not self.categoria.ativa:
             return False
+        # Acabou o ingrediente de origem, acabou este também: a cozinha marca a
+        # proteína e a quentinha feita dela sai junto, sem ninguém lembrar dos dois.
+        if self.vinculado_a_id and not self.vinculado_a.disponivel_em(momento, exclusivo_ativo):
+            return False
             
         momento = momento or timezone.localtime()
         agora_hora = momento.time()
@@ -232,6 +243,8 @@ class Produto(models.Model):
             self.esgotado_em is None or self.esgotado_em >= data
         )
         if not self.ativo or esgotado_na_data or not self.categoria.ativa:
+            return False
+        if self.vinculado_a_id and not self.vinculado_a.disponivel_na_data(data, exclusivo_ativo):
             return False
         if self.sempre_disponivel:
             return True

@@ -621,12 +621,31 @@ def _cozinha_itens():
         esgotado = p.esgotado and (p.esgotado_em is None or p.esgotado_em >= hoje)
         if not esgotado and not p.disponivel_na_data(hoje):
             continue                      # não é do cardápio de hoje: não polui a tela
+        # Só faz sentido editar o preço onde ele mora no produto. Montagem cobra pela
+        # tabela de peso da loja e faixa tem um preço por tamanho — mostrar um campo
+        # ali faria o toque parecer que mudou algo que não mudou.
+        preco_editavel = p.modo_venda in (Produto.ModoVenda.UNIDADE, Produto.ModoVenda.ADICIONAL)
+        segue = p.vinculado_a.nome if p.vinculado_a_id else ""
         nome = p.categoria.nome
         if nome not in grupos:
             grupos[nome] = []
             ordem.append(nome)
-        grupos[nome].append({"id": p.id, "nome": p.nome, "esgotado": esgotado})
+        grupos[nome].append({
+            "id": p.id,
+            "nome": p.nome,
+            "esgotado": esgotado or bool(segue and not p.disponivel_na_data(hoje)),
+            "segue": segue,
+            "preco": f"{p.preco:.2f}".replace(".", ",") if preco_editavel else "",
+            "preco_editavel": preco_editavel,
+            "motivo_preco": _MOTIVO_PRECO.get(p.modo_venda, ""),
+        })
     return [{"categoria": n, "itens": grupos[n]} for n in ordem]
+
+
+_MOTIVO_PRECO = {
+    "MONTAGEM": "cobrado pela tabela de peso da loja",
+    "FAIXA": "tem um preço por tamanho — edite em Produtos",
+}
 
 
 def cozinha(request):
@@ -653,6 +672,59 @@ def cozinha(request):
         "loja_aberta": cfg.esta_aberta,
         "abre": cfg.hora_abertura,
     })
+
+
+@csrf_exempt
+@require_POST
+def cozinha_editar(request):
+    """Corrige nome e preço sem sair da tela de turno.
+
+    Categoria fica de fora de propósito: mudá-la troca o item de menu no bot e é
+    decisão de cardápio, não de turno — para isso existe a tela de Produtos.
+    """
+    from decimal import Decimal, InvalidOperation
+
+    from cardapio.models import Produto
+    from pedidos.models import ConfiguracaoLoja
+
+    cfg = ConfiguracaoLoja.get()
+    dados = json.loads(request.body or b"{}")
+    if not _cozinha_liberado(request, cfg, chave=str(dados.get("k") or "")):
+        return JsonResponse({"ok": False, "erro": "sem permissão"}, status=403)
+
+    produto = Produto.objects.filter(id=dados.get("produto_id"), ativo=True).first()
+    if not produto:
+        return JsonResponse({"ok": False, "erro": "produto não encontrado"}, status=404)
+
+    campos = ["atualizado_em"]
+    nome = (dados.get("nome") or "").strip()
+    if not nome:
+        return JsonResponse({"ok": False, "erro": "o nome não pode ficar vazio"}, status=400)
+    # O WhatsApp corta a linha da lista em 24 letras; avisar aqui evita o item
+    # chegar ao cliente com o nome cortado e ninguém entender por quê.
+    if len(nome) > 24:
+        return JsonResponse({"ok": False,
+                             "erro": f"máximo 24 letras (esse tem {len(nome)})"}, status=400)
+    if nome != produto.nome:
+        produto.nome = nome
+        campos.append("nome")
+
+    bruto = str(dados.get("preco", "")).strip().replace("R$", "").strip()
+    if bruto and produto.modo_venda in (Produto.ModoVenda.UNIDADE, Produto.ModoVenda.ADICIONAL):
+        try:
+            valor = Decimal(bruto.replace(".", "").replace(",", "."))
+        except InvalidOperation:
+            return JsonResponse({"ok": False, "erro": "preço inválido"}, status=400)
+        if valor < 0:
+            return JsonResponse({"ok": False, "erro": "preço não pode ser negativo"}, status=400)
+        if valor != produto.preco:
+            produto.preco = valor
+            campos.append("preco")
+
+    produto.save(update_fields=campos)
+    logger.info("Modo cozinha: editou #%s -> %s R$%s", produto.id, produto.nome, produto.preco)
+    return JsonResponse({"ok": True, "nome": produto.nome,
+                         "preco": f"{produto.preco:.2f}".replace(".", ",")})
 
 
 @csrf_exempt
@@ -690,6 +762,9 @@ def cozinha_alternar(request):
     produto = Produto.objects.filter(id=dados.get("produto_id"), ativo=True).first()
     if not produto:
         return JsonResponse({"ok": False, "erro": "produto não encontrado"}, status=404)
+
+    if produto.vinculado_a_id:
+        return JsonResponse({"ok": False, "erro": f"segue {produto.vinculado_a.nome}"}, status=409)
 
     hoje = timezone.localdate()
     esgotado_hoje = produto.esgotado and (produto.esgotado_em is None or produto.esgotado_em >= hoje)

@@ -26,6 +26,7 @@ urlpatterns = [
     path("cozinha/", views.cozinha, name="cozinha"),
     path("cozinha/alternar/", views.cozinha_alternar, name="cozinha_alternar"),
     path("cozinha/pausar/", views.cozinha_pausar, name="cozinha_pausar"),
+    path("cozinha/editar/", views.cozinha_editar, name="cozinha_editar"),
     path("impressao/", views.impressao_pagina, name="impressao_pagina"),
     path("impressao/baixar/", views.impressao_baixar, name="impressao_baixar"),
     # Simulador de testes (sem WhatsApp real)
