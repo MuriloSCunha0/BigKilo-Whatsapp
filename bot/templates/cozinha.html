@@ -285,29 +285,18 @@
     caixa.innerHTML =
       '<label>Nome do prato</label>' +
       '<input class="ed-nome" type="text" maxlength="24" value="">' +
-      '<div class="aviso">O WhatsApp corta em 24 letras.</div>' +
-      '<label>Usar um prato já cadastrado</label>' +
       '<select class="ed-catalogo"></select>' +
-      '<div class="aviso">Preenche o nome acima. O prato em si continua sendo este.</div>' +
+      '<div class="aviso">Ou escolha outro prato do cardápio.</div>' +
       camposDePreco(linha) +
-      '<label>Sai de qual produto?</label>' +
-      '<select class="ed-segue"></select>' +
-      '<div class="aviso">Quando aquele acabar, este some junto.</div>' +
       '<div class="botoes"><button type="button" class="cancelar">Cancelar</button>' +
       '<button type="button" class="salvar">Salvar</button></div>';
     linha.style.display = 'none';
     linha.after(caixa);
     editorAberto = {linha, caixa};
 
-    // Os dois seletores saem do mesmo catálogo, clonado
-    const tpl = document.getElementById('tplCatalogo');
-    caixa.querySelectorAll('.ed-catalogo, .ed-segue').forEach(sel => {
-      sel.appendChild(tpl.content.cloneNode(true));
-    });
+    // Trocar o prato: o seletor só preenche o nome, e a pessoa confere antes de salvar.
     const selCatalogo = caixa.querySelector('.ed-catalogo');
-    const selSegue = caixa.querySelector('.ed-segue');
-    selSegue.value = linha.dataset.segueId || '';
-    // Escolher no catálogo preenche o nome; quem decide o resto é a pessoa.
+    selCatalogo.appendChild(document.getElementById('tplCatalogo').content.cloneNode(true));
     selCatalogo.addEventListener('change', () => {
       if(!selCatalogo.value) return;
       caixa.querySelector('.ed-nome').value =
@@ -344,7 +333,6 @@
           preco: campoPreco ? campoPreco.value : '',
           faixas: Object.fromEntries([...caixa.querySelectorAll('.ed-faixa')]
                     .map(i => [i.dataset.faixa, i.value])),
-          vinculado_a: caixa.querySelector('.ed-segue').value || null,
         }),
       });
       const d = await r.json();
@@ -355,13 +343,6 @@
       });
       linha.dataset.preco = d.preco;
       if(d.faixas) linha.dataset.faixas = JSON.stringify(d.faixas);
-      linha.dataset.segueId = d.segue_id || '';
-      const nota = linha.querySelector('.segue-txt');
-      if(d.segue && nota) nota.textContent = 'segue ' + d.segue;
-      else if(d.segue) linha.querySelector('.nome').insertAdjacentHTML(
-        'beforeend', '<small class="segue-txt">segue ' + d.segue + '</small>');
-      else if(nota) nota.remove();
-      linha.classList.toggle('segue', Boolean(d.segue));
       fecharEditor();
       recado(d.nome + ' atualizado');
       if(navigator.vibrate) navigator.vibrate(15);
