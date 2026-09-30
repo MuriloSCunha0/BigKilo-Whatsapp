@@ -1214,16 +1214,16 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         return out
 
     if estado == SessaoBot.Estado.LOJISTA_SALADA:
-        escolha = _resolver(sessao, texto)
-        nomes = {k: nome for k, nome, _ in SALADAS_QUENTINHA}
+        salada_id = _resolver(sessao, texto)
         pid = (sessao.carrinho_json.get("quentinha") or {}).get("produto_id")
         produto = Produto.objects.filter(id=pid).first() if pid else None
+        salada = Produto.objects.filter(id=salada_id).first() if salada_id else None
         if not produto:
             out["mensagens"] = _tela_quentinha_proteina(sessao, perfil)
-        elif escolha not in nomes:
+        elif not salada:
             out["mensagens"] = [_ERR_LISTA] + _tela_quentinha_salada(sessao, produto)
         else:
-            msgs = _add_quentinha(sessao, produto, nomes[escolha])
+            msgs = _add_quentinha(sessao, produto, salada.nome)
             out["mensagens"] = _com_aviso(msgs, _tela_menu_lojista(sessao, perfil))
         sessao.save()
         return out
@@ -1809,7 +1809,7 @@ def _tela_quentinha_proteina(sessao, perfil=None) -> list:
     _set_menu(sessao, mapa)
     _marcar_tela(sessao, "quentinha")
     voltar = [{"id": "voltar", "titulo": "↩️ Voltar", "descricao": "Sem escolher"}]
-    corpo = ("🍱 *Quentinha Padrão*\nVem com arroz, feijão, farofa e salada.\n\n"
+    corpo = (f"🍱 *Quentinha Padrão*\nVem com {ConfiguracaoLoja.get().quentinha_inclui}.\n\n"
              "Escolha a proteína:")
     return [lista_paginada(corpo, "Ver proteínas", rows,
                            _pagina(sessao, "quentinha"), fixas=voltar)]
@@ -1817,17 +1817,28 @@ def _tela_quentinha_proteina(sessao, perfil=None) -> list:
 
 # A salada vai no campo `variacao` do item, que já é impresso na comanda — assim a
 # cozinha vê a escolha sem precisar de campo novo.
-SALADAS_QUENTINHA = [
-    ("sal:verde", "Salada Verde", "Alface e tomate"),
-    ("sal:maionese", "Salada de Maionese", "A clássica da casa"),
-]
+def _saladas_quentinha():
+    """As saladas cadastradas que estão no ar agora.
+
+    São produtos do cardápio, então salada marcada como esgotada no Modo Cozinha
+    some daqui sozinha — sem lista paralela para alguém esquecer de atualizar.
+    """
+    cfg = ConfiguracaoLoja.get()
+    return [p for p in cfg.quentinha_saladas.filter(ativo=True) if p.disponivel_agora]
 
 
 def _tela_quentinha_salada(sessao, produto) -> list:
+    saladas = _saladas_quentinha()
+    if not saladas:
+        # Sem salada cadastrada (ou todas acabaram) a quentinha vai sem, em vez de
+        # prender o lojista numa tela de escolha vazia.
+        msgs = _add_quentinha(sessao, produto, "sem salada")
+        return _com_aviso(msgs, _tela_menu_lojista(sessao))
     sessao.carrinho_json["quentinha"] = {"produto_id": produto.id}
     sessao.estado_atual = SessaoBot.Estado.LOJISTA_SALADA
-    _set_menu(sessao, {k: k for k, _, _ in SALADAS_QUENTINHA})
-    linhas = [{"id": k, "titulo": nome, "descricao": desc} for k, nome, desc in SALADAS_QUENTINHA]
+    _set_menu(sessao, {f"sal:{p.id}": p.id for p in saladas})
+    linhas = [{"id": f"sal:{p.id}", "titulo": p.nome, "descricao": p.descricao or ""}
+              for p in saladas[:10]]
     return [lista(f"*{produto.nome}* escolhida!\n\nQual salada vai junto?", "Ver saladas", linhas)]
 
 

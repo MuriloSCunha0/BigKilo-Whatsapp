@@ -104,6 +104,12 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
                              "'Imprimir ao fechar' manda a comanda pra cozinha assim que o cliente fecha o pedido."),
         }),
         (_("Funcionamento"), {"fields": ("dias_funcionamento", "hora_abertura", "hora_fechamento")}),
+        (_("Quentinha do lojista"), {
+            "fields": ("quentinha_inclui", "quentinha_saladas"),
+            "description": _("O que a quentinha acompanha e quais saladas o lojista escolhe. "
+                             "Use saladas que já existem no cardápio: assim, salada marcada "
+                             "como esgotada no Modo Cozinha some daqui sozinha."),
+        }),
         (_("Delivery fechado"), {
             "fields": (("bot_pausado", "pausado_lojista"), "mensagem_pausa", "link_ifood"),
             "description": _("Os dois canais fecham separado: pode faltar entregador para a rua e "

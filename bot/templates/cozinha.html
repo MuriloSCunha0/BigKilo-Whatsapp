@@ -79,7 +79,9 @@
                  text-transform:uppercase; letter-spacing:.04em; margin:.2rem 0 .3rem; }
   .editor input{ width:100%; padding:.75rem .7rem; font-size:1rem; border:1px solid #e5e7eb;
                  border-radius:10px; background:#fff; color:#111827; }
-  .editor input:focus{ outline:2px solid #d97706; outline-offset:1px; }
+  .editor input:focus, .editor select:focus{ outline:2px solid #d97706; outline-offset:1px; }
+  .editor select{ width:100%; padding:.75rem .7rem; font-size:1rem; border:1px solid #e5e7eb;
+                  border-radius:10px; background:#fff; color:#111827; }
   .editor .aviso{ font-size:.76rem; color:#6b7280; margin-top:.3rem; }
   .editor .faixa{ display:flex; align-items:center; gap:.6rem; margin-bottom:.4rem; }
   .editor .faixa .rot{ flex:none; min-width:74px; font-size:.9rem; font-weight:700; color:#374151; }
@@ -145,7 +147,8 @@
         <div class="linha{% if item.esgotado %} off{% endif %}{% if item.segue %} segue{% endif %}"
              data-id="{{ item.id }}" data-nome="{{ item.nome|lower }}"
              data-preco="{{ item.preco }}" data-editavel="{{ item.preco_editavel|yesno:"1,0" }}"
-             data-faixas="{{ item.faixas_json }}" data-motivo="{{ item.motivo_preco }}">
+             data-faixas="{{ item.faixas_json }}" data-motivo="{{ item.motivo_preco }}"
+             data-segue-id="{{ item.segue_id }}">
           <button type="button" class="item" {% if item.segue %}disabled{% endif %}>
             <span class="nome">
               {{ item.nome }}
@@ -169,6 +172,17 @@
 </main>
 
 <div id="aviso"></div>
+
+{# Catálogo dos seletores do editor: renderizado uma vez e clonado pelo JS, em vez
+   de repetir ~60 <option> em cada linha da tela. #}
+<template id="tplCatalogo">
+  <option value="">— nenhum —</option>
+  {% for grupo in catalogo %}
+    <optgroup label="{{ grupo.categoria }}">
+      {% for item in grupo.itens %}<option value="{{ item.id }}">{{ item.nome }}</option>{% endfor %}
+    </optgroup>
+  {% endfor %}
+</template>
 
 <script>
 (function(){
@@ -266,12 +280,34 @@
       '<label>Nome do prato</label>' +
       '<input class="ed-nome" type="text" maxlength="24" value="">' +
       '<div class="aviso">O WhatsApp corta em 24 letras.</div>' +
+      '<label>Usar um prato já cadastrado</label>' +
+      '<select class="ed-catalogo"></select>' +
+      '<div class="aviso">Preenche o nome acima. O prato em si continua sendo este.</div>' +
       camposDePreco(linha) +
+      '<label>Sai de qual produto?</label>' +
+      '<select class="ed-segue"></select>' +
+      '<div class="aviso">Quando aquele acabar, este some junto.</div>' +
       '<div class="botoes"><button type="button" class="cancelar">Cancelar</button>' +
       '<button type="button" class="salvar">Salvar</button></div>';
     linha.style.display = 'none';
     linha.after(caixa);
     editorAberto = {linha, caixa};
+
+    // Os dois seletores saem do mesmo catálogo, clonado
+    const tpl = document.getElementById('tplCatalogo');
+    caixa.querySelectorAll('.ed-catalogo, .ed-segue').forEach(sel => {
+      sel.appendChild(tpl.content.cloneNode(true));
+    });
+    const selCatalogo = caixa.querySelector('.ed-catalogo');
+    const selSegue = caixa.querySelector('.ed-segue');
+    selSegue.value = linha.dataset.segueId || '';
+    // Escolher no catálogo preenche o nome; quem decide o resto é a pessoa.
+    selCatalogo.addEventListener('change', () => {
+      if(!selCatalogo.value) return;
+      caixa.querySelector('.ed-nome').value =
+        selCatalogo.options[selCatalogo.selectedIndex].textContent.trim();
+      selCatalogo.value = '';
+    });
 
     const campoNome = caixa.querySelector('.ed-nome');
     campoNome.value = linha.querySelector('.nome').childNodes[0].textContent.trim();
@@ -302,6 +338,7 @@
           preco: campoPreco ? campoPreco.value : '',
           faixas: Object.fromEntries([...caixa.querySelectorAll('.ed-faixa')]
                     .map(i => [i.dataset.faixa, i.value])),
+          vinculado_a: caixa.querySelector('.ed-segue').value || null,
         }),
       });
       const d = await r.json();
@@ -311,6 +348,13 @@
       linha.dataset.nome = d.nome.toLowerCase();
       linha.dataset.preco = d.preco;
       if(d.faixas) linha.dataset.faixas = JSON.stringify(d.faixas);
+      linha.dataset.segueId = d.segue_id || '';
+      const nota = linha.querySelector('.segue-txt');
+      if(d.segue && nota) nota.textContent = 'segue ' + d.segue;
+      else if(d.segue) linha.querySelector('.nome').insertAdjacentHTML(
+        'beforeend', '<small class="segue-txt">segue ' + d.segue + '</small>');
+      else if(nota) nota.remove();
+      linha.classList.toggle('segue', Boolean(d.segue));
       fecharEditor();
       recado(d.nome + ' atualizado');
       if(navigator.vibrate) navigator.vibrate(15);

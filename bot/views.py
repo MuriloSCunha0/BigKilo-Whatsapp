@@ -639,6 +639,7 @@ def _cozinha_itens():
             "nome": p.nome,
             "esgotado": esgotado or bool(segue and not p.disponivel_na_data(hoje)),
             "segue": segue,
+            "segue_id": p.vinculado_a_id or "",
             "preco": f"{p.preco:.2f}".replace(".", ",") if preco_editavel else "",
             "preco_editavel": preco_editavel,
             "faixas_json": json.dumps(faixas),
@@ -651,6 +652,23 @@ _MOTIVO_PRECO = {
     "MONTAGEM": "cobrado pela tabela de peso da loja",
     "FAIXA": "sem tamanhos cadastrados — veja em Produtos",
 }
+
+
+def _catalogo_para_escolher():
+    """Todos os produtos ativos, para os seletores do editor.
+
+    Vai agrupado por categoria porque o <select> do celular mostra os grupos, e uma
+    lista corrida de ~60 itens é impossível de achar nada com pressa.
+    """
+    from cardapio.models import Produto
+
+    grupos, ordem = {}, []
+    for p in (Produto.objects.filter(ativo=True).select_related("categoria")
+              .order_by("categoria__nome", "nome")):
+        grupos.setdefault(p.categoria.nome, []).append({"id": p.id, "nome": p.nome})
+        if p.categoria.nome not in ordem:
+            ordem.append(p.categoria.nome)
+    return [{"categoria": n, "itens": grupos[n]} for n in ordem]
 
 
 def cozinha(request):
@@ -674,6 +692,7 @@ def cozinha(request):
         "em_preparo": Pedido.objects.filter(status=Pedido.Status.PREPARANDO).count(),
         "do_painel": request.user.is_authenticated and request.user.is_staff,
         "tem_ifood": bool(cfg.link_ifood),
+        "catalogo": _catalogo_para_escolher(),
         "loja_aberta": cfg.esta_aberta,
         "abre": cfg.hora_abertura,
     })
@@ -754,12 +773,30 @@ def cozinha_editar(request):
                 faixa.preco = v
                 faixa.save(update_fields=["preco"])
 
+    # "Sai de qual produto": vazio desliga o vínculo, um id liga.
+    if "vinculado_a" in dados:
+        alvo = dados.get("vinculado_a") or None
+        if alvo and str(alvo) == str(produto.id):
+            return JsonResponse({"ok": False,
+                                 "erro": "um item não pode sair dele mesmo"}, status=400)
+        if alvo and Produto.objects.filter(id=alvo, vinculado_a_id=produto.id).exists():
+            # A -> B -> A entraria em laço na checagem de disponibilidade.
+            return JsonResponse({"ok": False,
+                                 "erro": "esses dois já se seguem — daria laço"}, status=400)
+        if alvo and not Produto.objects.filter(id=alvo).exists():
+            return JsonResponse({"ok": False, "erro": "produto não encontrado"}, status=400)
+        if str(produto.vinculado_a_id or "") != str(alvo or ""):
+            produto.vinculado_a_id = alvo
+            campos.append("vinculado_a")
+
     produto.save(update_fields=campos)
     logger.info("Modo cozinha: editou #%s -> %s", produto.id, produto.nome)
     return JsonResponse({
         "ok": True,
         "nome": produto.nome,
         "preco": f"{produto.preco:.2f}".replace(".", ","),
+        "segue": produto.vinculado_a.nome if produto.vinculado_a_id else "",
+        "segue_id": produto.vinculado_a_id or "",
         "faixas": [{"id": f.id, "rotulo": f.rotulo,
                     "preco": f"{f.preco:.2f}".replace(".", ",")}
                    for f in produto.faixas.all()],

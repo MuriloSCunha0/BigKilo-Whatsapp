@@ -94,6 +94,19 @@ class ConfiguracaoLoja(models.Model):
         ),
         help_text="ℹ️ Mensagem enviada a quem chamar enquanto o bot estiver pausado.",
     )
+    # A quentinha do lojista era descrita e composta no código. Vindo do banco, o
+    # restaurante gira as saladas e o texto sem precisar de deploy — e salada que
+    # acabou some sozinha, porque são os mesmos produtos do cardápio.
+    quentinha_inclui = models.CharField(
+        "A quentinha vem com", max_length=120, default="arroz, feijão, farofa e salada",
+        help_text="ℹ️ O que acompanha a proteína. Aparece na tela do lojista.",
+    )
+    quentinha_saladas = models.ManyToManyField(
+        "cardapio.Produto", blank=True, related_name="quentinhas_salada",
+        verbose_name="Saladas da quentinha",
+        help_text="ℹ️ As saladas que o lojista escolhe. Use os acompanhamentos que já "
+                  "existem no cardápio: assim, salada marcada como esgotada some daqui também.",
+    )
     link_ifood = models.URLField(
         "Link do iFood", max_length=300, blank=True,
         help_text="ℹ️ Cole o link da loja no iFood. Com o delivery fechado, quem mandar "
