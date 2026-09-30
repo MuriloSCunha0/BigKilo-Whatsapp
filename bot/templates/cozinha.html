@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#d97706">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Cozinha">
 <title>Modo Cozinha · {{ nome_loja }}</title>
@@ -74,20 +75,23 @@
                            margin-top:.15rem; text-decoration:none; }
   .linha.off .segue-txt{ color:#b91c1c; }
   /* Editor: abre no lugar da linha, sem tirar a pessoa da tela. */
-  .editor{ background:#fff; border:1px solid #d97706; border-radius:14px; padding:.85rem;
+  .editor{ background:#fff; border:1px solid #d97706; border-radius:14px; padding:1rem;
            margin-bottom:.5rem; }
+  /* Espaço generoso entre os campos: a tela é usada com pressa e no celular, onde
+     rótulo colado no campo de cima vira uma parede de texto. */
   .editor label{ display:block; font-size:.74rem; font-weight:700; color:#6b7280;
-                 text-transform:uppercase; letter-spacing:.04em; margin:.2rem 0 .3rem; }
+                 text-transform:uppercase; letter-spacing:.04em; margin:1rem 0 .4rem; }
+  .editor > label:first-child{ margin-top:0; }
   .editor input{ width:100%; padding:.75rem .7rem; font-size:1rem; border:1px solid #e5e7eb;
                  border-radius:10px; background:#fff; color:#111827; }
   .editor input:focus, .editor select:focus{ outline:2px solid #d97706; outline-offset:1px; }
   .editor select{ width:100%; padding:.75rem .7rem; font-size:1rem; border:1px solid #e5e7eb;
                   border-radius:10px; background:#fff; color:#111827; }
-  .editor .aviso{ font-size:.76rem; color:#6b7280; margin-top:.3rem; }
+  .editor .aviso{ font-size:.78rem; color:#6b7280; margin-top:.4rem; line-height:1.45; }
   .editor .faixa{ display:flex; align-items:center; gap:.6rem; margin-bottom:.4rem; }
   .editor .faixa .rot{ flex:none; min-width:74px; font-size:.9rem; font-weight:700; color:#374151; }
   .editor .faixa input{ flex:1; }
-  .editor .botoes{ display:flex; gap:.5rem; margin-top:.8rem; }
+  .editor .botoes{ display:flex; gap:.5rem; margin-top:1.25rem; }
   .editor .botoes button{ flex:1; border:none; border-radius:10px; padding:.75rem;
                           font-size:.92rem; font-weight:700; cursor:pointer; }
   .editor .salvar{ background:#16a34a; color:#fff; }
@@ -178,7 +182,7 @@
 {# Catálogo dos seletores do editor: renderizado uma vez e clonado pelo JS, em vez
    de repetir ~60 <option> em cada linha da tela. #}
 <template id="tplCatalogo">
-  <option value="">— nenhum —</option>
+  <option value="">— escolher —</option>
   {% for grupo in catalogo %}
     <optgroup label="{{ grupo.categoria }}">
       {% for item in grupo.itens %}<option value="{{ item.id }}">{{ item.nome }}</option>{% endfor %}
@@ -285,8 +289,8 @@
     caixa.innerHTML =
       '<label>Nome do prato</label>' +
       '<input class="ed-nome" type="text" maxlength="24" value="">' +
+      '<label>Trocar por outro do cardápio</label>' +
       '<select class="ed-catalogo"></select>' +
-      '<div class="aviso">Ou escolha outro prato do cardápio.</div>' +
       camposDePreco(linha) +
       '<div class="botoes"><button type="button" class="cancelar">Cancelar</button>' +
       '<button type="button" class="salvar">Salvar</button></div>';
@@ -308,6 +312,9 @@
     campoNome.value = linha.querySelector('.nome').childNodes[0].textContent.trim();
     const campoPreco = caixa.querySelector('.ed-preco');
     if(campoPreco) campoPreco.value = linha.dataset.preco || '';
+    // Sem isto o editor de um prato que estava no fim da lista abre fora da tela e
+    // a pessoa nao ve os campos nem o Salvar sem rolar atras.
+    caixa.scrollIntoView({block: 'center', behavior: 'smooth'});
     campoNome.focus();
     campoNome.select();
 
