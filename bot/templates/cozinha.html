@@ -81,6 +81,9 @@
                  border-radius:10px; background:#fff; color:#111827; }
   .editor input:focus{ outline:2px solid #d97706; outline-offset:1px; }
   .editor .aviso{ font-size:.76rem; color:#6b7280; margin-top:.3rem; }
+  .editor .faixa{ display:flex; align-items:center; gap:.6rem; margin-bottom:.4rem; }
+  .editor .faixa .rot{ flex:none; min-width:74px; font-size:.9rem; font-weight:700; color:#374151; }
+  .editor .faixa input{ flex:1; }
   .editor .botoes{ display:flex; gap:.5rem; margin-top:.8rem; }
   .editor .botoes button{ flex:1; border:none; border-radius:10px; padding:.75rem;
                           font-size:.92rem; font-weight:700; cursor:pointer; }
@@ -142,7 +145,7 @@
         <div class="linha{% if item.esgotado %} off{% endif %}{% if item.segue %} segue{% endif %}"
              data-id="{{ item.id }}" data-nome="{{ item.nome|lower }}"
              data-preco="{{ item.preco }}" data-editavel="{{ item.preco_editavel|yesno:"1,0" }}"
-             data-motivo="{{ item.motivo_preco }}">
+             data-faixas="{{ item.faixas_json }}" data-motivo="{{ item.motivo_preco }}">
           <button type="button" class="item" {% if item.segue %}disabled{% endif %}>
             <span class="nome">
               {{ item.nome }}
@@ -223,6 +226,29 @@
   // de vista qual prato estava mexendo.
   let editorAberto = null;
 
+  function faixasDe(linha){
+    try{ return JSON.parse(linha.dataset.faixas || '[]'); }catch(e){ return []; }
+  }
+
+  function camposDePreco(linha){
+    // Sopa tem um preço por tamanho; sanduíche tem um só. A tela segue o cadastro
+    // em vez de forçar um campo genérico que não bate com o que o bot cobra.
+    const faixas = faixasDe(linha);
+    if(faixas.length){
+      return '<label>Preço por tamanho</label>' + faixas.map(f =>
+        '<div class="faixa">' +
+          '<span class="rot">' + f.rotulo + '</span>' +
+          '<input class="ed-faixa" data-faixa="' + f.id + '" type="text" ' +
+                 'inputmode="decimal" value="' + f.preco + '">' +
+        '</div>').join('');
+    }
+    if(linha.dataset.editavel === '1'){
+      return '<label>Preço</label>' +
+             '<input class="ed-preco" type="text" inputmode="decimal" value="">';
+    }
+    return '<div class="aviso">Preço: ' + (linha.dataset.motivo || 'definido em Produtos') + '.</div>';
+  }
+
   function fecharEditor(){
     if(!editorAberto) return;
     const {linha, caixa} = editorAberto;
@@ -240,9 +266,7 @@
       '<label>Nome do prato</label>' +
       '<input class="ed-nome" type="text" maxlength="24" value="">' +
       '<div class="aviso">O WhatsApp corta em 24 letras.</div>' +
-      (editavel
-        ? '<label>Preço</label><input class="ed-preco" type="text" inputmode="decimal" value="">'
-        : '<div class="aviso">Preço: ' + (linha.dataset.motivo || 'definido em Produtos') + '.</div>') +
+      camposDePreco(linha) +
       '<div class="botoes"><button type="button" class="cancelar">Cancelar</button>' +
       '<button type="button" class="salvar">Salvar</button></div>';
     linha.style.display = 'none';
@@ -276,6 +300,8 @@
           produto_id: Number(linha.dataset.id),
           nome: caixa.querySelector('.ed-nome').value,
           preco: campoPreco ? campoPreco.value : '',
+          faixas: Object.fromEntries([...caixa.querySelectorAll('.ed-faixa')]
+                    .map(i => [i.dataset.faixa, i.value])),
         }),
       });
       const d = await r.json();
@@ -284,6 +310,7 @@
       alvo.childNodes[0].textContent = d.nome + ' ';
       linha.dataset.nome = d.nome.toLowerCase();
       linha.dataset.preco = d.preco;
+      if(d.faixas) linha.dataset.faixas = JSON.stringify(d.faixas);
       fecharEditor();
       recado(d.nome + ' atualizado');
       if(navigator.vibrate) navigator.vibrate(15);

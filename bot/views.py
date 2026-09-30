@@ -603,7 +603,7 @@ def _cozinha_itens():
     qs = (
         Produto.objects.filter(ativo=True, categoria__ativa=True)
         .select_related("categoria")
-        .prefetch_related("cardapios__agenda")
+        .prefetch_related("cardapios__agenda", "faixas")
         .order_by("categoria__ordem", "categoria__nome", "nome")
     )
     # Proteína e acompanhamento são o que acaba no meio do almoço; adicional e
@@ -621,10 +621,14 @@ def _cozinha_itens():
         esgotado = p.esgotado and (p.esgotado_em is None or p.esgotado_em >= hoje)
         if not esgotado and not p.disponivel_na_data(hoje):
             continue                      # não é do cardápio de hoje: não polui a tela
-        # Só faz sentido editar o preço onde ele mora no produto. Montagem cobra pela
-        # tabela de peso da loja e faixa tem um preço por tamanho — mostrar um campo
-        # ali faria o toque parecer que mudou algo que não mudou.
+        # Preço fixo entra num campo só; faixa (sopa, por tamanho) entra num campo por
+        # tamanho. Montagem fica de fora porque cobra pela tabela de peso da loja —
+        # ali o campo mudaria um número que o bot nem consulta.
         preco_editavel = p.modo_venda in (Produto.ModoVenda.UNIDADE, Produto.ModoVenda.ADICIONAL)
+        faixas = ([{"id": f.id, "rotulo": f.rotulo,
+                    "preco": f"{f.preco:.2f}".replace(".", ",")}
+                   for f in p.faixas.all()]
+                  if p.modo_venda == Produto.ModoVenda.FAIXA else [])
         segue = p.vinculado_a.nome if p.vinculado_a_id else ""
         nome = p.categoria.nome
         if nome not in grupos:
@@ -637,14 +641,15 @@ def _cozinha_itens():
             "segue": segue,
             "preco": f"{p.preco:.2f}".replace(".", ",") if preco_editavel else "",
             "preco_editavel": preco_editavel,
-            "motivo_preco": _MOTIVO_PRECO.get(p.modo_venda, ""),
+            "faixas_json": json.dumps(faixas),
+            "motivo_preco": "" if faixas else _MOTIVO_PRECO.get(p.modo_venda, ""),
         })
     return [{"categoria": n, "itens": grupos[n]} for n in ordem]
 
 
 _MOTIVO_PRECO = {
     "MONTAGEM": "cobrado pela tabela de peso da loja",
-    "FAIXA": "tem um preço por tamanho — edite em Produtos",
+    "FAIXA": "sem tamanhos cadastrados — veja em Produtos",
 }
 
 
@@ -709,22 +714,56 @@ def cozinha_editar(request):
         produto.nome = nome
         campos.append("nome")
 
-    bruto = str(dados.get("preco", "")).strip().replace("R$", "").strip()
-    if bruto and produto.modo_venda in (Produto.ModoVenda.UNIDADE, Produto.ModoVenda.ADICIONAL):
-        try:
-            valor = Decimal(bruto.replace(".", "").replace(",", "."))
-        except InvalidOperation:
-            return JsonResponse({"ok": False, "erro": "preço inválido"}, status=400)
+    def _valor(bruto):
+        """Aceita '25', '25,90' e '1.250,90' — o caixa digita como fala."""
+        bruto = str(bruto).strip().replace("R$", "").strip()
+        if not bruto:
+            return None
+        return Decimal(bruto.replace(".", "").replace(",", "."))
+
+    try:
+        valor = _valor(dados.get("preco", ""))
+    except InvalidOperation:
+        return JsonResponse({"ok": False, "erro": "preço inválido"}, status=400)
+    if valor is not None and produto.modo_venda in (Produto.ModoVenda.UNIDADE,
+                                                    Produto.ModoVenda.ADICIONAL):
         if valor < 0:
             return JsonResponse({"ok": False, "erro": "preço não pode ser negativo"}, status=400)
         if valor != produto.preco:
             produto.preco = valor
             campos.append("preco")
 
+    # Produto vendido por tamanho (sopa 300/500ml): um preço por faixa.
+    faixas_novas = dados.get("faixas") or {}
+    if faixas_novas and produto.modo_venda == Produto.ModoVenda.FAIXA:
+        from cardapio.models import FaixaPreco
+
+        for fid, bruto in faixas_novas.items():
+            faixa = FaixaPreco.objects.filter(id=fid, produto=produto).first()
+            if not faixa:
+                continue          # id de outro produto: ignora em vez de gravar errado
+            try:
+                v = _valor(bruto)
+            except InvalidOperation:
+                return JsonResponse({"ok": False,
+                                     "erro": f"preço inválido em {faixa.rotulo}"}, status=400)
+            if v is None or v < 0:
+                return JsonResponse({"ok": False,
+                                     "erro": f"preço inválido em {faixa.rotulo}"}, status=400)
+            if v != faixa.preco:
+                faixa.preco = v
+                faixa.save(update_fields=["preco"])
+
     produto.save(update_fields=campos)
-    logger.info("Modo cozinha: editou #%s -> %s R$%s", produto.id, produto.nome, produto.preco)
-    return JsonResponse({"ok": True, "nome": produto.nome,
-                         "preco": f"{produto.preco:.2f}".replace(".", ",")})
+    logger.info("Modo cozinha: editou #%s -> %s", produto.id, produto.nome)
+    return JsonResponse({
+        "ok": True,
+        "nome": produto.nome,
+        "preco": f"{produto.preco:.2f}".replace(".", ","),
+        "faixas": [{"id": f.id, "rotulo": f.rotulo,
+                    "preco": f"{f.preco:.2f}".replace(".", ",")}
+                   for f in produto.faixas.all()],
+    })
 
 
 @csrf_exempt
