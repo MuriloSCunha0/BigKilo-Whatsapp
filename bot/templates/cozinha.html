@@ -62,7 +62,7 @@
   .linha.off .nome{ text-decoration:line-through; opacity:.75; }
   .linha.off .tag{ background:#fee2e2; color:#b91c1c; border-color:#fecaca; }
   .linha.off .segue-txt{ text-decoration:none; }
-  .item[disabled]{ opacity:.55; cursor:default; }
+
   /* A linha vira flex: o prato ocupa tudo e o lapis fica na ponta, longe do polegar
      que vai marcar "acabou" -- toque errado no meio do almoco custa caro. */
   .linha{ display:flex; align-items:stretch; gap:.4rem; margin-bottom:.5rem; }
@@ -154,7 +154,7 @@
              data-preco="{{ item.preco }}" data-editavel="{{ item.preco_editavel|yesno:"1,0" }}"
              data-faixas="{{ item.faixas_json }}" data-motivo="{{ item.motivo_preco }}"
              data-segue-id="{{ item.segue_id }}">
-          <button type="button" class="item" {% if item.segue %}disabled{% endif %}>
+          <button type="button" class="item">
             <span class="nome">
               {{ item.nome }}
               {% if item.segue %}<small class="segue-txt">segue {{ item.segue }}</small>{% endif %}
@@ -179,8 +179,11 @@
 
 <div id="aviso"></div>
 
-{# Catálogo dos seletores do editor: renderizado uma vez e clonado pelo JS, em vez
-   de repetir ~60 <option> em cada linha da tela. #}
+{% comment %}
+Catálogo do seletor de troca: renderizado uma vez e clonado pelo JS, em vez de
+repetir ~60 <option> em cada linha da tela.
+O {# #} do Django só vale numa linha; em várias ele vaza como texto na tela.
+{% endcomment %}
 <template id="tplCatalogo">
   <option value="">— escolher —</option>
   {% for grupo in catalogo %}
@@ -215,21 +218,19 @@
       });
       const d = await r.json();
       if(!d.ok){ recado(d.erro || 'Não deu para salvar. Tente de novo.'); return; }
-      // O mesmo produto pode estar em dois grupos (a salada aparece em
-      // Acompanhamentos e dentro da Quentinha): as duas linhas mudam juntas.
-      document.querySelectorAll('.linha[data-id="' + linha.dataset.id + '"]').forEach(l => {
+      // Muda de uma vez: o produto marcado (que pode estar repetido em dois grupos)
+      // e tudo que sai dele. Senão a quentinha ficaria "no ar" até recarregar.
+      const pinta = l => {
         l.classList.toggle('off', d.esgotado);
         l.querySelector('.tag').textContent = d.esgotado ? 'acabou' : 'no ar';
-      });
-      recado(d.esgotado ? d.nome + ' saiu do cardápio' : d.nome + ' voltou ao cardápio');
-      // Quem segue este item acompanha na tela, senão a cozinha marcaria a proteína
-      // e continuaria vendo a quentinha dela como "no ar" até recarregar.
-      const seguidores = [...document.querySelectorAll('.linha.segue')].filter(
-        l => (l.querySelector('.segue-txt') || {}).textContent === 'segue ' + d.nome);
-      seguidores.forEach(l => {
-        l.classList.toggle('off', d.esgotado);
-        l.querySelector('.tag').textContent = d.esgotado ? 'acabou' : 'no ar';
-      });
+      };
+      document.querySelectorAll('.linha[data-id="' + d.id + '"]').forEach(pinta);
+      [...document.querySelectorAll('.linha.segue')].filter(
+        l => (l.querySelector('.segue-txt') || {}).textContent === 'segue ' + d.nome
+      ).forEach(pinta);
+      const verbo = d.esgotado ? ' saiu do cardápio' : ' voltou ao cardápio';
+      recado(d.pelo_derivado ? d.nome + verbo + ' — e ' + d.pelo_derivado + ' junto'
+                             : d.nome + verbo);
       if(window.__contarAcabou) window.__contarAcabou();
       if(navigator.vibrate) navigator.vibrate(15);
     }catch(e){
@@ -240,8 +241,7 @@
   }
 
   document.querySelectorAll('.linha').forEach(linha => {
-    const bt = linha.querySelector('.item');
-    if(!bt.disabled) bt.addEventListener('click', () => alternar(linha));
+    linha.querySelector('.item').addEventListener('click', () => alternar(linha));
     linha.querySelector('.lapis').addEventListener('click', () => abrirEditor(linha));
   });
 

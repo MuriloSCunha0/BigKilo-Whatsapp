@@ -860,8 +860,11 @@ def cozinha_alternar(request):
     if not produto:
         return JsonResponse({"ok": False, "erro": "produto não encontrado"}, status=404)
 
+    # Tocar num item derivado marca a ORIGEM: é o mesmo ingrediente na cuba, e deixar
+    # a linha morta só fazia a pessoa achar que a tela estava quebrada.
+    derivado = ""
     if produto.vinculado_a_id:
-        return JsonResponse({"ok": False, "erro": f"segue {produto.vinculado_a.nome}"}, status=409)
+        derivado, produto = produto.nome, produto.vinculado_a
 
     hoje = timezone.localdate()
     esgotado_hoje = produto.esgotado and (produto.esgotado_em is None or produto.esgotado_em >= hoje)
@@ -869,4 +872,5 @@ def cozinha_alternar(request):
     produto.esgotado_em = None if esgotado_hoje else hoje
     produto.save(update_fields=["esgotado", "esgotado_em", "atualizado_em"])
     logger.info("Modo cozinha: %s -> esgotado=%s", produto.nome, produto.esgotado)
-    return JsonResponse({"ok": True, "esgotado": produto.esgotado, "nome": produto.nome})
+    return JsonResponse({"ok": True, "esgotado": produto.esgotado, "nome": produto.nome,
+                         "id": produto.id, "pelo_derivado": derivado})
