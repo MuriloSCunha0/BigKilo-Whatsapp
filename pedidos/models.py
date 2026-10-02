@@ -1,5 +1,6 @@
 from decimal import ROUND_HALF_UP, Decimal
 
+import re
 import secrets
 
 from django.db import models
@@ -723,10 +724,7 @@ MENSAGENS_PADRAO = {
     "RESUMO_CARRINHO": "Confira seu pedido abaixo e escolha uma opção:",
     "PERGUNTAR_ADICIONAR": "Quer incluir *bebida*, *sobremesa* ou *outra refeição*?",
     "AGUARDANDO_PAGAMENTO": "Estamos aguardando a confirmação do seu pagamento. 🙂",
-    "PAGAMENTO_CONFIRMADO": (
-        "✅ Pagamento confirmado! Seu pedido já está sendo preparado.\n"
-        "Já já chega aí! 🍽️"
-    ),
+    "PAGAMENTO_CONFIRMADO": "Oi {nome}, tudo bem? Sua comida já está a caminho. 😉",
     "ANUNCIO_PROMO": "🎁 Temos promoções hoje! Confira no cardápio.",
     "BTN_MENU_REFEICAO": "Montar refeição completa",
     "BTN_MENU_REFEICAO_ENC": "Montar refeição completa (Mínimo 1kg)",
@@ -805,12 +803,13 @@ VARIAVEIS_MENSAGEM = {
 }
 # Explicação de cada variável (mostrada na tela de edição).
 VARIAVEIS_DESC = {
+    "{nome}": "primeiro nome do cliente (ex.: Leandro)",
     "{bairro}": "nome do bairro (ex.: Novo Leblon)",
     "{lim}": "quantidade máxima de acompanhamentos (ex.: 4)",
     "{data}": "data da encomenda (ex.: 25/12)",
 }
 # Amostras para preview no editor de fluxo.
-PREVIEW_AMOSTRAS = {"{bairro}": "Novo Leblon", "{lim}": "4", "{data}": "25/12"}
+PREVIEW_AMOSTRAS = {"{nome}": "Leandro", "{bairro}": "Novo Leblon", "{lim}": "4", "{data}": "25/12"}
 
 # Agrupamento visual no editor de fluxo.
 FLUXO_GRUPOS = [
@@ -962,6 +961,12 @@ class PromocaoExclusiva(models.Model):
 
 
 # ===================== Helpers de mensagem e preço por contato =====================
+def _primeiro_nome(cliente) -> str:
+    """Só o primeiro nome: "Oi Leandro" soa melhor que o nome completo do WhatsApp."""
+    bruto = (getattr(cliente, "nome_whatsapp", "") or "").strip()
+    return bruto.split()[0] if bruto else ""
+
+
 def mensagem(chave: str, cliente=None, perfil=None, **fmt) -> str:
     """Resolve o texto: personalizado do contato -> perfil (preview ou ativo) -> padrão.
 
@@ -980,11 +985,15 @@ def mensagem(chave: str, cliente=None, perfil=None, **fmt) -> str:
                 texto = mf.texto
     if texto is None:
         texto = MENSAGENS_PADRAO.get(chave, "")
-    if fmt:
-        try:
-            return texto.format(**fmt)
-        except (KeyError, IndexError, ValueError):
-            return texto
+    # {nome} vale em qualquer mensagem: é o dado que o bot sempre tem, porque o
+    # WhatsApp manda o nome do perfil junto com a mensagem.
+    fmt.setdefault("nome", _primeiro_nome(cliente))
+    try:
+        texto = texto.format(**fmt)
+    except (KeyError, IndexError, ValueError):
+        return texto
+    # Cliente sem nome deixaria "Oi , tudo bem?" — cola a pontuação de volta.
+    return re.sub(r"\s+([,.!?…])", r"\1", texto).strip()
     return texto
 
 

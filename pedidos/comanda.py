@@ -71,9 +71,12 @@ def gerar_comanda_texto(pedido: Pedido) -> str:
     if pedido.taxa_entrega and pedido.taxa_entrega > 0:
         linhas.append("Taxa entrega:")
         linhas.append(_moeda(pedido.taxa_entrega).rjust(LARGURA))
-    rotulo = "PAGO PELO CLIENTE:" if pago else "A RECEBER:"
     if cartao:
         rotulo = "COBRAR NO CARTAO:"
+    elif pago:
+        rotulo = "PAGO PELO CLIENTE:"
+    else:
+        rotulo = "TOTAL DO PIX:"        # nao e "a receber": quem recebe e o Pix, nao o entregador
     linhas.append(rotulo.ljust(20) + _moeda(pedido.valor_a_cobrar).rjust(LARGURA - 20))
 
     # Forma de pagamento explicita: quem monta e quem entrega precisa ler de relance
@@ -90,12 +93,15 @@ def gerar_comanda_texto(pedido: Pedido) -> str:
         linhas.append("OBS: " + pedido.observacoes)
 
     linhas.append(LINHA)
+    # "COBRAR NA ENTREGA" so no cartao. No Pix o entregador nao cobra nada: ou ja
+    # foi pago, ou o pagamento ainda esta sendo confirmado -- mandar cobrar ali
+    # fazia o entregador pedir dinheiro de quem ja tinha pagado.
     if cartao:
-        aviso = "LEVAR MAQUININHA - CARTAO"
+        aviso = "LEVAR MAQUININHA - COBRAR NA ENTREGA"
     elif pago:
         aviso = "PAGO VIA PIX - PREPARAR"
     else:
-        aviso = "COBRAR NA ENTREGA"
+        aviso = "PIX - AGUARDANDO CONFIRMACAO"
     linhas.append(_centro(aviso))
     linhas.append(LINHA)
     linhas.append("")  # avanço de papel
