@@ -699,6 +699,7 @@ def cozinha(request):
     cfg = ConfiguracaoLoja.get()
     if not _cozinha_liberado(request, cfg):
         raise Http404()
+    cfg.limpar_pausa_vencida()
     from pedidos.models import Pedido
 
     grupos = _cozinha_itens()
@@ -707,8 +708,8 @@ def cozinha(request):
         "chave": request.GET.get("k", ""),
         "nome_loja": cfg.nome_loja,
         "hoje": timezone.localdate(),
-        "pausado": cfg.bot_pausado,
-        "pausado_lojista": cfg.pausado_lojista,
+        "pausado": cfg.fechado_cliente,
+        "pausado_lojista": cfg.fechado_lojista,
         "acabaram": sum(1 for g in grupos for i in g["itens"] if i["esgotado"]),
         "em_preparo": Pedido.objects.filter(status=Pedido.Status.PREPARANDO).count(),
         "do_painel": request.user.is_authenticated and request.user.is_staff,
@@ -837,11 +838,17 @@ def cozinha_pausar(request):
 
     # Um canal de cada vez: falta de entregador para a rua não impede a entrega a pé
     # nos shoppings, e vice-versa.
-    campo = "pausado_lojista" if dados.get("canal") == "lojista" else "bot_pausado"
-    setattr(cfg, campo, not getattr(cfg, campo))
+    cfg.limpar_pausa_vencida()
+    lojista = dados.get("canal") == "lojista"
+    campo = "pausado_lojista" if lojista else "bot_pausado"
+    # Inverte o que a tela mostra (o estado efetivo), nao o campo cru — senão um
+    # fechamento vencido faria o primeiro toque "fechar" parecer que não fez nada.
+    agora = cfg.fechado_lojista if lojista else cfg.fechado_cliente
+    setattr(cfg, campo, not agora)
     cfg.save(update_fields=[campo])
-    logger.info("Modo cozinha: %s -> %s", campo, getattr(cfg, campo))
-    return JsonResponse({"ok": True, "campo": campo, "pausado": getattr(cfg, campo)})
+    pausado = cfg.fechado_lojista if lojista else cfg.fechado_cliente
+    logger.info("Modo cozinha: %s -> %s", campo, pausado)
+    return JsonResponse({"ok": True, "campo": campo, "pausado": pausado})
 
 
 @csrf_exempt

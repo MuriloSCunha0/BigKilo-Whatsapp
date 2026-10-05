@@ -86,6 +86,10 @@ class ConfiguracaoLoja(models.Model):
         help_text="ℹ️ Lojistas dos shoppings recebem só o aviso abaixo. "
                   "Os clientes continuam sendo atendidos.",
     )
+    # Fechar vale só pelo dia. Quem fecha às 15h não volta à meia-noite para reabrir,
+    # e o delivery amanhecia fechado sem ninguém perceber — o prejuízo é invisível.
+    pausado_cliente_em = models.DateField("Clientes fechados em", null=True, blank=True, editable=False)
+    pausado_lojista_em = models.DateField("Lojistas fechados em", null=True, blank=True, editable=False)
     mensagem_pausa = models.TextField(
         "Aviso enquanto pausado",
         default=(
@@ -149,8 +153,55 @@ class ConfiguracaoLoja(models.Model):
     def __str__(self):
         return self.nome_loja
 
+    # ---- Fechamento com validade: fecha na mão, abre sozinho no dia seguinte ----
+    PAUSAS = {"bot_pausado": "pausado_cliente_em", "pausado_lojista": "pausado_lojista_em"}
+
+    def _pausa_de_hoje(self, campo_flag: str) -> bool:
+        """True se o fechamento ainda vale. Fechamento de ontem já não vale."""
+        if not getattr(self, campo_flag):
+            return False
+        quando = getattr(self, self.PAUSAS[campo_flag])
+        if quando is None:
+            return True            # fechado antes deste campo existir: vale até desligarem
+        return quando >= timezone.localdate()
+
+    @property
+    def fechado_cliente(self) -> bool:
+        return self._pausa_de_hoje("bot_pausado")
+
+    @property
+    def fechado_lojista(self) -> bool:
+        return self._pausa_de_hoje("pausado_lojista")
+
+    def limpar_pausa_vencida(self) -> bool:
+        """Apaga a marca do fechamento de ontem, para o painel não mostrar fechado
+        um delivery que já está atendendo. Devolve True se mexeu em algo."""
+        hoje = timezone.localdate()
+        campos = []
+        for flag, data in self.PAUSAS.items():
+            quando = getattr(self, data)
+            if getattr(self, flag) and quando is not None and quando < hoje:
+                setattr(self, flag, False)
+                setattr(self, data, None)
+                campos += [flag, data]
+        if campos:
+            self.save(update_fields=campos)
+        return bool(campos)
+
     def save(self, *args, **kwargs):
         self.pk = 1  # garante registro único
+        # Carimba o dia do fechamento venha de onde vier (painel, Modo Cozinha, script).
+        extras = []
+        for flag, data in self.PAUSAS.items():
+            if getattr(self, flag) and getattr(self, data) is None:
+                setattr(self, data, timezone.localdate())
+                extras.append(data)
+            elif not getattr(self, flag) and getattr(self, data) is not None:
+                setattr(self, data, None)
+                extras.append(data)
+        campos = kwargs.get("update_fields")
+        if campos is not None and extras:
+            kwargs["update_fields"] = list(dict.fromkeys(list(campos) + extras))
         if not self.token_cozinha:
             # Nasce sozinho: se alguém apagar o campo, o link antigo morre e sai um novo.
             self.token_cozinha = secrets.token_urlsafe(24)

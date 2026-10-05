@@ -1053,8 +1053,10 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     # falando, então deixa passar até a tela "cliente ou lojista" e barra o lado
     # fechado lá — barrar antes recusaria quem o restaurante ainda quer atender.
     cfg_pausa = ConfiguracaoLoja.get()
-    pausa_cliente = getattr(cfg_pausa, "bot_pausado", False)
-    pausa_lojista = getattr(cfg_pausa, "pausado_lojista", False)
+    # Propriedade e nao o campo cru: fechamento de ontem ja nao vale, o delivery
+    # reabre sozinho no dia seguinte.
+    pausa_cliente = cfg_pausa.fechado_cliente
+    pausa_lojista = cfg_pausa.fechado_lojista
     canal_sessao = sessao.carrinho_json.get("canal") or ""
     barrado = (
         (pausa_cliente and pausa_lojista)
