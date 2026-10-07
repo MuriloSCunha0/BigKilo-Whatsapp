@@ -17,15 +17,24 @@
   #atWrap *{ box-sizing:border-box; }
   #atGrid{ display:grid; grid-template-columns:320px 1fr; gap:0; border:1px solid var(--bd);
     border-radius:16px; overflow:hidden; box-shadow:var(--shadow); height:calc(100vh - 190px); min-height:460px; background:var(--bg); }
-  @media(max-width:900px){ #atGrid{ grid-template-columns:1fr; height:auto; } #atRight{ min-height:420px; } }
+  /* No celular as duas colunas viram duas faixas empilhadas. A lista ganha altura
+     propria e rola por dentro: sem isso ela cresce sem fim e o chat fica a quinze
+     conversas de distancia, so alcancavel rolando a pagina inteira. */
+  @media(max-width:900px){
+    #atGrid{ grid-template-columns:1fr; height:auto; min-height:0; }
+    #atList{ border-right:none; border-bottom:1px solid var(--bd); max-height:45vh; }
+    #atRight{ min-height:60vh; }
+  }
 
   /* Lista de conversas */
-  #atList{ border-right:1px solid var(--bd); display:flex; flex-direction:column; min-height:0; background:var(--bg); }
+  #atList{ border-right:1px solid var(--bd); display:flex; flex-direction:column;
+    min-height:0; min-width:0; background:var(--bg); }
   #atSearch{ padding:.7rem; border-bottom:1px solid var(--bd); }
   #atSearch input{ width:100%; padding:.55rem .8rem; border:1px solid var(--bd); border-radius:999px;
     background:var(--panel); color:var(--tx); font-size:.9rem; }
   #atConvs{ overflow-y:auto; flex:1; }
-  .atConv{ display:flex; gap:.6rem; align-items:center; padding:.7rem .8rem; cursor:pointer; border-bottom:1px solid var(--bd); }
+  .atConv{ display:flex; gap:.6rem; align-items:center; padding:.7rem .8rem; cursor:pointer;
+    border-bottom:1px solid var(--bd); min-width:0; }
   .atConv:hover{ background:var(--panel); }
   .atConv.sel{ background:var(--panel); box-shadow:inset 3px 0 0 var(--brand); }
   .atAv{ width:42px; height:42px; border-radius:50%; background:var(--wa); color:#fff; flex:none;
@@ -90,7 +99,7 @@
     <section id="atRight">
       <div id="atEmpty">
         <div style="font-size:2.5rem">💬</div>
-        <div>Selecione uma conversa à esquerda<br>para começar o atendimento.</div>
+        <div>Toque numa conversa<br>para começar o atendimento.</div>
       </div>
       <div id="atChat">
         <div id="atHead">
