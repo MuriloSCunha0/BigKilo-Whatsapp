@@ -112,6 +112,13 @@ class ConfiguracaoLoja(models.Model):
         help_text="ℹ️ As saladas que o lojista escolhe. Use os acompanhamentos que já "
                   "existem no cardápio: assim, salada marcada como esgotada some daqui também.",
     )
+    oferecer_ifood = models.BooleanField(
+        "Oferecer o iFood quando fechado", default=True,
+        help_text="ℹ️ Desmarque quando o restaurante estiver fechado de verdade (feriado, "
+                  "folga): aí não há quem cozinhe, e mandar o cliente ao iFood é mandá-lo "
+                  "a uma porta fechada. Deixe marcado quando só o delivery parou — falta "
+                  "de entregador, por exemplo — e a cozinha segue trabalhando.",
+    )
     link_ifood = models.URLField(
         "Link do iFood", max_length=300, blank=True,
         help_text="ℹ️ Cole o link da loja no iFood. Com o delivery fechado, quem mandar "
@@ -218,7 +225,7 @@ class ConfiguracaoLoja(models.Model):
         """
         texto = (self.mensagem_pausa or "").strip()
         link = (self.link_ifood or "").strip()
-        if not link:
+        if not link or not self.oferecer_ifood:
             return texto
         convite = (
             "🛵 *Mas você pode pedir agora pelo iFood:*\n"

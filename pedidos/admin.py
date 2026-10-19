@@ -111,7 +111,8 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
                              "como esgotada no Modo Cozinha some daqui sozinha."),
         }),
         (_("Delivery fechado"), {
-            "fields": (("bot_pausado", "pausado_lojista"), "mensagem_pausa", "link_ifood"),
+            "fields": (("bot_pausado", "pausado_lojista"), "mensagem_pausa",
+                       "link_ifood", "oferecer_ifood"),
             "description": _("Os dois canais fecham separado: pode faltar entregador para a rua e "
                              "o shopping continuar sendo atendido a pé. Quem estiver no canal "
                              "fechado recebe só o aviso abaixo, com o link do iFood se houver. "
