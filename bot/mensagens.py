@@ -285,6 +285,33 @@ def texto_numerado(msg) -> str:
     return texto_plano(msg)
 
 
+def texto_de_reserva(msg: dict) -> tuple[str, dict]:
+    """Plano B quando o WhatsApp recusa uma lista, botões ou Flow.
+
+    Numera 1..N (os ids reais, como "pt:2" ou "sal:7", não servem para digitar) e
+    devolve o mapa número → id, para o "1" digitado valer a primeira opção.
+    """
+    tipo = (msg or {}).get("tipo")
+    if tipo == "multi_select":
+        msg = multi_para_lista(msg)
+        tipo = "lista"
+    if tipo == "lista":
+        itens = [(str(l["id"]), l.get("titulo", "")) for l in msg.get("linhas") or []]
+    elif tipo == "botoes":
+        itens = [(str(o["id"]), o.get("titulo", "")) for o in msg.get("opcoes") or []]
+    elif tipo == "flow":
+        dados = ((msg.get("payload") or {}).get("data") or {})
+        itens = [(str(o["id"]), o.get("title", "")) for o in dados.get("options") or []]
+    else:
+        return texto_plano(msg), {}
+    corpo = (msg.get("corpo") or "").strip()
+    linhas = [f"*{n}* - {titulo}" for n, (_, titulo) in enumerate(itens, start=1)]
+    numeros = {str(n): id_ for n, (id_, _) in enumerate(itens, start=1)}
+    if not linhas:
+        return corpo, {}
+    return f"{corpo}\n\n" + "\n".join(linhas) + "\n\n_Responda com o número da opção._", numeros
+
+
 def normalizar_mensagens(mensagens: list) -> list[dict]:
     out: list[dict] = []
     for m in mensagens or []:

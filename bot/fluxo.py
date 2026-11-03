@@ -194,6 +194,9 @@ _ESTADOS_COM_PRODUTO = {
 }
 
 
+_SEM_ACOMP = {"sem", "nenhum", "nenhuma", "nada", "sem nada", "nao quero", "nao obrigado",
+              "nao obrigada", "so a proteina", "so proteina", "so carne", "dispenso"}
+
 _PALAVRAS_VAZIAS = {"quero", "queria", "gostaria", "pode", "ser", "com", "sem", "uma",
                     "por", "favor", "prato", "hoje", "esse", "essa", "este", "esta", "mais"}
 
@@ -479,7 +482,7 @@ def _tela_acompanhamentos(sessao, perfil=None) -> list:
     corpo = prefixo
     msg, mapa, token = montar_tela_acompanhamentos(
         corpo, opcoes, mapa, lim, minimo=1, escolhidos=ja_nomes,
-        pagina=int(m.get("acomp_pagina") or 0),
+        pagina=int(m.get("acomp_pagina") or 0), forcar_lista=bool(sessao.carrinho_json.get("_sem_flow")),
     )
     _set_menu(sessao, mapa)
     if token:
@@ -1010,15 +1013,22 @@ def _adicionar_acompanhamentos(sessao, selecoes: list[str], cfg, perfil=None) ->
 
     for sel in selecoes:
         low = sel.lower()
-        if sel == "pronto" or low in _PRONTO or sel == "0":
+        nao_quer = _normalizar(sel) in _SEM_ACOMP or _normalizar(sel).startswith("sem acomp")
+        if sel == "pronto" or low in _PRONTO or sel == "0" or (nao_quer and escolhidos):
             if len(escolhidos) < 1:
                 return [T("Escolha pelo menos 1 acompanhamento antes de continuar.")] + _tela_acompanhamentos(
                     sessao, perfil
                 )
             return _tela_confirmacao(sessao)
+        if nao_quer:
+            # "Sem acompanhamento" recebia "Opção inválida" e a cliente desistiu.
+            # A refeição montada exige 1; só a proteína existe em Grandes porções.
+            return [T("A refeição montada vem com pelo menos *1 acompanhamento* 🙂\n\n"
+                      "Se quiser *só a proteína*, toque em *↩️ Voltar ao menu* e escolha "
+                      "*Grandes porções → Proteína*.")] + _tela_acompanhamentos(sessao, perfil)
         pid = _resolver(sessao, sel)
         if not pid:
-            erros.append(f"Opção inválida: {sel}.")
+            erros.append(f"Não achei \"{sel[:40]}\" na lista 🙂 Toque numa das opções abaixo.")
             continue
         if pid in escolhidos:
             continue
@@ -1081,7 +1091,89 @@ def _sessao_expirada(sessao) -> bool:
     return (agora - ultima) > timedelta(hours=HORAS_PARA_EXPIRAR_CARRINHO)
 
 
+# Respostas de "não entendi". A rede de segurança conta quantas vieram seguidas.
+_SINAIS_NAO_ENTENDI = ("Não entendi", "Não achei", "Já te mostro o cardápio",
+                       "Não consegui entender esse CEP", "Preciso do nome ou número")
+_INICIO_PERGUNTA = ("quanto", "qual", "quais", "voces tem", "vcs tem", "tem ", "vocês",
+                    "voces", "aceita", "entrega", "funciona", "que horas", "ate que horas")
+
+
+def _texto_msg(m) -> str:
+    if isinstance(m, str):
+        return m
+    if isinstance(m, dict):
+        return str(m.get("corpo") or m.get("texto") or "")
+    return ""
+
+
+def _chamar_loja(telefone: str):
+    """Tira o bot da frente: a conversa entra no Atendimento como esperando resposta."""
+    SessaoBot.objects.filter(telefone=telefone).update(
+        estado_atual=SessaoBot.Estado.ATENDIMENTO_HUMANO, atualizado_em=timezone.now())
+
+
+def registrar_falha_envio(telefone: str, aviso: str):
+    """Deixa a falha visível na conversa do Atendimento (antes só ia para o log do servidor)."""
+    from pedidos.models import LogMensagem
+    LogMensagem.objects.create(telefone=telefone, direcao=LogMensagem.Direcao.SAIDA,
+                               texto=f"⚠️ {aviso}"[:2000])
+
+
+def guardar_numeros(telefone: str, numeros: dict):
+    """Depois de reenviar uma lista como texto, "1" passa a valer a 1ª opção."""
+    s = SessaoBot.objects.filter(telefone=telefone).first()
+    if s:
+        s.carrinho_json = s.carrinho_json or {}
+        s.carrinho_json["_numeros"] = numeros
+        s.save(update_fields=["carrinho_json"])
+
+
+def _rede_de_seguranca(telefone: str, texto: str, out: dict):
+    """Ninguém fica rodando em círculo com o bot.
+
+    Nas conversas reais, quem recebeu "não entendi" duas vezes seguidas foi embora,
+    e perguntas ("Vocês têm lasanha?", "Qual valor da quentinha?") ficavam sem
+    resposta. Na 2ª vez seguida, ou já na 1ª quando é pergunta, o bot oferece alguém
+    da loja — sem tirar as opções da tela.
+    """
+    msgs = out.get("mensagens") or []
+    sessao = SessaoBot.objects.filter(telefone=telefone).first()
+    if not sessao or sessao.estado_atual == SessaoBot.Estado.ATENDIMENTO_HUMANO:
+        return
+    c = sessao.carrinho_json or {}
+    nao_entendeu = any(_texto_msg(m).startswith(_SINAIS_NAO_ENTENDI) for m in msgs[:2])
+    antes = int(c.get("_nao_entendi") or 0)
+    seguidas = antes + 1 if nao_entendeu else 0
+    if seguidas == antes:
+        return
+    c["_nao_entendi"] = seguidas
+    alvo = _normalizar(texto)
+    pergunta = "?" in (texto or "") or alvo.startswith(_INICIO_PERGUNTA)
+    ja_oferece = any(ID_ATENDENTE in str(m) for m in msgs)
+    if nao_entendeu and not ja_oferece and (seguidas >= 2 or pergunta):
+        msgs.append(botoes(
+            "Se preferir, alguém da loja responde você por aqui. 🙂",
+            [{"id": ID_ATENDENTE, "titulo": "💬 Falar com a loja"}]))
+    sessao.carrinho_json = c
+    sessao.save(update_fields=["carrinho_json"])
+
+
 def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
+    s = SessaoBot.objects.filter(telefone=telefone).first()
+    if s and (s.carrinho_json or {}).get("_numeros"):
+        numeros = s.carrinho_json.pop("_numeros")
+        s.save(update_fields=["carrinho_json"])
+        texto = numeros.get((texto or "").strip(), texto)
+    out = _core_fluxo(telefone, texto, nome, perfil_id)
+    try:
+        _rede_de_seguranca(telefone, texto, out)
+    except Exception:  # a rede nunca pode derrubar a resposta principal
+        import logging
+        logging.getLogger(__name__).exception("Falha na rede de segurança de %s", telefone)
+    return out
+
+
+def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     texto = (texto or "").strip()
     low = texto.lower()
     perfil = PerfilFluxo.objects.filter(id=perfil_id).first() if perfil_id else PerfilFluxo.ativo_atual()
@@ -1134,6 +1226,22 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             out["mensagens"] = ["Atendimento humano encerrado. Pedido reiniciado."] + _saudacao(sessao, perfil)
             sessao.save()
             return out
+        return out
+
+    itens_carrinho = sessao.carrinho_json.get("itens") or []
+    if low in {"cancelar", "reiniciar", "recomeçar", "recomecar"} and itens_carrinho:
+        # Digitar "Cancelar" no meio da escolha quase sempre é desistir DESTA tela.
+        # Apagar direto custou um pedido de R$ 136,80: a cliente só queria trocar a
+        # proteína e viu o carrinho inteiro sumir. O toque em "Recomeçar" continua direto.
+        total = sum(Decimal(str(i["subtotal"])) for i in itens_carrinho)
+        _set_menu(sessao, {})
+        out["mensagens"] = [botoes(
+            f"Quer apagar o pedido todo? 🛒 {len(itens_carrinho)} item(ns) — {_moeda(total)}\n\n"
+            "Se só quer desfazer a última escolha, toque em *Voltar ao menu*: o que já "
+            "está no carrinho continua lá.",
+            [{"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu"},
+             {"id": ID_RECOMECAR, "titulo": "🗑️ Apagar tudo"}])]
+        sessao.save()
         return out
 
     if low in {"cancelar", "reiniciar", "recomeçar", "recomecar"} or texto.strip() == ID_RECOMECAR:
@@ -1266,7 +1374,12 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     if estado == SessaoBot.Estado.PEDINDO_LOJA:
         loja = (texto or "").strip()
-        if "?" in loja:
+        # "As opções de quentinha" virou nome de loja na comanda (28/09). Pedido de
+        # cardápio sem número de loja não é endereço: pergunta de novo.
+        pediu_cardapio = (not any(c.isdigit() for c in loja) and any(
+            p in _normalizar(loja) for p in
+            ("opcoes", "opcao", "cardapio", "quentinha", "preco", "valor", "menu", "quero ver")))
+        if "?" in loja or pediu_cardapio:
             out["mensagens"] = [botoes(
                 "Já te mostro o cardápio! 😊 Antes, me diga o *nome ou número da sua loja*, "
                 "para o entregador levar certinho.\n_Ex.: Loja 105 — Chilli Beans_",
@@ -1385,14 +1498,20 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             sessao.save()
             return out
         else:
-            out["mensagens"] = [_ERR_LISTA] + _saudacao(sessao, perfil)
+            # Repete ESTA pergunta. Antes voltava para "cliente ou lojista", e quem
+            # respondia "Em casa" era jogado para o começo sem entender por quê.
+            out["mensagens"] = [_ERR_LISTA] + _tela_tipo_entrega(sessao, perfil)
             sessao.save()
             return out
 
     if estado == SessaoBot.Estado.PEDINDO_CEP:
         digitos = _ler_cep(texto)
         if not digitos:
-            out["mensagens"] = [mensagem("CEP_INVALIDO", _cliente(sessao), perfil=perfil)]
+            # "Não sei de cabeça, é no Posto 7": sem CEP o bot não decide, mas alguém
+            # da loja decide. O cliente ainda pode digitar o CEP normalmente.
+            out["mensagens"] = [botoes(
+                mensagem("CEP_INVALIDO", _cliente(sessao), perfil=perfil),
+                [{"id": ID_ATENDENTE, "titulo": "💬 Falar com a loja"}])]
             sessao.save()
             return out
         cep = _normalizar_cep(digitos)
@@ -1580,6 +1699,12 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             sessao.save()
             return out
         selecoes_multi = parse_resposta_acompanhamentos(texto)
+        if not selecoes_multi and (sessao.carrinho_json.get("_flow") or {}).get("acom_token"):
+            # Digitou em vez de usar o formulário: o Flow não abriu ou ela não viu o
+            # botão. Reenviar o mesmo Flow a deixou presa (26/10); daqui em diante a
+            # montagem segue na lista de toque, que mostra o que já foi escolhido.
+            sessao.carrinho_json["_sem_flow"] = True  # vale até o fim do pedido
+            sessao.carrinho_json["_flow"].pop("acom_token", None)
         if selecoes_multi:
             out["mensagens"] = _aplicar_acompanhamentos_multi(sessao, selecoes_multi, cfg, perfil)
         elif "," in texto or ";" in texto:
@@ -2084,7 +2209,12 @@ async def processar_mensagem(telefone: str, texto: str, nome: str = "", perfil_i
             # Qualquer falha aqui (Asaas, rede, ORM) nao pode engolir a confirmacao do
             # pedido: o cliente precisa ao menos saber que o pedido entrou.
             nivel = "Asaas falhou" if isinstance(exc, AsaasError) else "Falha ao montar o Pix"
-            mensagens.append("Não consegui gerar o Pix agora. Um atendente vai te ajudar. 🙏")
+            # A mensagem prometia um atendente que nunca era chamado. Agora a conversa
+            # vai para o Atendimento e aparece em "esperando resposta" no Modo Cozinha.
+            await sync_to_async(_chamar_loja)(telefone)
+            mensagens.append(
+                f"Seu pedido #{pedido_id} está guardado, mas não consegui gerar o Pix agora. 😕\n\n"
+                "Já chamei alguém da loja para te mandar o Pix por aqui.")
             import logging
             logging.getLogger(__name__).exception("%s no pedido #%s: %s", nivel, pedido_id, exc)
     if registrar:

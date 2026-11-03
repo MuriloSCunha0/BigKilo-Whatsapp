@@ -36,9 +36,10 @@ def montar_tela_acompanhamentos(
     minimo: int = 1,
     escolhidos: list[str] | None = None,
     pagina: int = 0,
+    forcar_lista: bool = False,
 ):
     """Retorna mensagem flow (WhatsApp) ou multi_select (simulador/dev)."""
-    if _usar_flow_whatsapp(lim):
+    if not forcar_lista and _usar_flow_whatsapp(lim):
         token = secrets.token_hex(16)
         # Só id e título: "description" vazio no data-source quebra a renderização
         # do Flow, e o nome do prato já basta.

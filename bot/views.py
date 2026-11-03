@@ -145,15 +145,58 @@ async def webhook_whatsapp(request):
     if not (texto or "").strip():
         return JsonResponse({"ok": True})
 
+    await _responder(telefone, texto, nome)
+    return JsonResponse({"ok": True})
+
+
+_RESPOSTA_DE_ERRO = {
+    "tipo": "botoes",
+    "corpo": "Ops, tive um probleminha aqui. 😕 Pode mandar de novo? "
+             "Se preferir, alguém da loja te atende por aqui.",
+    "opcoes": [{"id": "pedir_atendente", "titulo": "💬 Falar com a loja"},
+               {"id": "recomecar_pedido", "titulo": "🔄 Recomeçar"}],
+}
+
+
+async def _responder(telefone: str, texto: str, nome: str):
+    """Processa e envia sem nunca deixar o cliente sem resposta.
+
+    Antes, um erro no bot ou uma lista recusada pelo WhatsApp acabava só no log do
+    servidor: o cliente ficava olhando para o nada e ia embora. Nunca propaga o erro
+    para a Meta (evita reenvios em loop).
+    """
+    from .fluxo import guardar_numeros, registrar_falha_envio
+    from .mensagens import texto_de_reserva
+
     try:
         respostas = await processar_mensagem(telefone, texto, nome)
-        for msg in respostas:
-            await enviar_mensagem(telefone, msg)
     except Exception as exc:
         logger.exception("Erro ao processar mensagem de %s: %s", telefone, exc)
-        # Não propaga erro para a Meta (evita reenvios em loop).
+        respostas = [_RESPOSTA_DE_ERRO]
+        try:
+            await sync_to_async(registrar_falha_envio)(
+                telefone, f"O bot deu erro ao responder \"{texto[:80]}\": {str(exc)[:200]}")
+        except Exception:
+            logger.exception("Falha ao registrar erro de %s", telefone)
 
-    return JsonResponse({"ok": True})
+    for msg in respostas:
+        try:
+            await enviar_mensagem(telefone, msg)
+            continue
+        except Exception as exc:
+            logger.exception("WhatsApp recusou mensagem para %s: %s", telefone, exc)
+            erro = str(exc)[:300]
+        try:
+            reserva, numeros = texto_de_reserva(msg)
+            if reserva:
+                await enviar_texto(telefone, reserva)
+                if numeros:
+                    await sync_to_async(guardar_numeros)(telefone, numeros)
+            await sync_to_async(registrar_falha_envio)(
+                telefone, f"O WhatsApp recusou uma mensagem ({msg.get('tipo')}); "
+                          f"reenviada como texto numerado. Erro: {erro}")
+        except Exception:
+            logger.exception("Plano B do envio também falhou para %s", telefone)
 
 
 # ===================== Webhook Evolution API (WhatsApp não-oficial) =====================
@@ -211,13 +254,7 @@ async def webhook_evolution(request):
     if not (texto or "").strip():
         return JsonResponse({"ok": True})
 
-    try:
-        respostas = await processar_mensagem(telefone, texto, nome)
-        for msg in respostas:
-            await enviar_mensagem(telefone, msg)
-    except Exception as exc:
-        logger.exception("Erro ao processar mensagem (Evolution) de %s: %s", telefone, exc)
-
+    await _responder(telefone, texto, nome)
     return JsonResponse({"ok": True})
 
 
