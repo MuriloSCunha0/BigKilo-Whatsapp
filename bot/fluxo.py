@@ -18,6 +18,8 @@ from bot.mensagens import (ID_MAIS, ID_VOLTAR, LINHA_VOLTAR, T, botoes, lista, l
                            normalizar_mensagens, texto_plano)
 
 ID_RECOMECAR = "recomecar_pedido"
+ID_ATENDENTE = "pedir_atendente"
+ID_OUTRO_CEP = "outro_cep"
 
 from cardapio.models import Categoria, Produto
 from pedidos.models import (
@@ -70,8 +72,10 @@ ESTADOS_TEXTO_LIVRE = {
 }
 
 _MSG_INTERATIVO = T("Toque em uma das opções acima para continuar.")
-_ERR_LISTA = "Opção inválida. Toque em uma opção da lista."
-_ERR_BOTOES = "Opção inválida. Use um dos botões abaixo."
+# "Opção inválida" era a resposta para quem escrevia uma pergunta, inclusive na
+# primeira tela. Soava como bronca; o que a pessoa precisa é saber o que fazer.
+_ERR_LISTA = "Não entendi 🙂 Toque numa das opções abaixo."
+_ERR_BOTOES = "Não entendi 🙂 Toque num dos botões abaixo."
 
 _PRONTO = {"pronto", "ok", "continuar", "fim", "terminar"}
 _SIM = {"1", "sim", "s", "ok", "confirmar", "certo"}
@@ -172,8 +176,55 @@ def _set_menu(sessao, mapa: dict):
     sessao.carrinho_json["_menu"] = {str(k): v for k, v in mapa.items()}
 
 
+def _normalizar(txt: str) -> str:
+    """Minúsculo, sem acento, sem pontuação: "LÍNGUA AO MOLHO MADEIRA" == "Lingua ao molho Madeira"."""
+    import re
+    import unicodedata
+    t = unicodedata.normalize("NFKD", txt or "")
+    t = "".join(c for c in t if not unicodedata.combining(c)).lower()
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]", " ", t)).strip()
+
+
+# Telas cujo menu aponta para produtos. Só nelas dá para casar um nome digitado: nas
+# outras (tamanho, shopping) os ids são de outra tabela e o casamento acertaria errado.
+_ESTADOS_COM_PRODUTO = {
+    SessaoBot.Estado.ESCOLHENDO_ITENS, SessaoBot.Estado.ESCOLHENDO_FIXO,
+    SessaoBot.Estado.LOJISTA_PROTEINA, SessaoBot.Estado.OFERTA_BEBIDA,
+    SessaoBot.Estado.LOJISTA_SALADA, SessaoBot.Estado.MONTANDO_PRATO,
+}
+
+
+_PALAVRAS_VAZIAS = {"quero", "queria", "gostaria", "pode", "ser", "com", "sem", "uma",
+                    "por", "favor", "prato", "hoje", "esse", "essa", "este", "esta", "mais"}
+
+
 def _resolver(sessao, texto: str):
-    return sessao.carrinho_json.get("_menu", {}).get(texto.strip())
+    menu = sessao.carrinho_json.get("_menu", {})
+    achado = menu.get((texto or "").strip())
+    if achado is not None or sessao.estado_atual not in _ESTADOS_COM_PRODUTO:
+        return achado
+    # O cliente digitou o nome do prato em vez de tocar ("LÍNGUA AO MOLHO MADEIRA").
+    # Aceita só quando aponta para UM item: "frango" com três pratos de frango segue
+    # pedindo o toque, em vez de adivinhar e mandar o prato errado para a cozinha.
+    alvo = _normalizar(texto)
+    if len(alvo) < 4:
+        return None
+    ids = [v for v in menu.values() if isinstance(v, int)]
+    if not ids:
+        return None
+    nomes = {p.id: _normalizar(p.nome) for p in Produto.objects.filter(id__in=ids)}
+    ordem = [v for v in ids if v in nomes]  # mantém a ordem em que a tela mostrou
+    exatos = [pid for pid in ordem if nomes[pid] == alvo]
+    if exatos:
+        return exatos[0]
+    palavras = [w for w in alvo.split() if len(w) >= 3 and w not in _PALAVRAS_VAZIAS]
+    if not palavras:
+        return None
+    # "quero carne" -> todas as palavras que sobram estão no nome de um prato só.
+    parciais = [pid for pid in ordem
+                if alvo in nomes[pid] or all(w in nomes[pid].split() for w in palavras)]
+    # Dois cadastros com o mesmo nome contam como um prato só.
+    return parciais[0] if len({nomes[p] for p in parciais}) == 1 else None
 
 
 def _disponiveis(tipo: str, encomenda_data: str = None):
@@ -1105,6 +1156,29 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     estado = sessao.estado_atual
     cep_ok = _cep_validado(sessao.carrinho_json)
 
+    # Cliente pede alguém da loja: o bot sai da frente e a conversa aparece no
+    # Atendimento marcada como EM ATENDIMENTO. Se ninguém responder, a sessão volta
+    # sozinha para o bot no dia seguinte (a expiração roda antes do silêncio).
+    if texto.strip() == ID_ATENDENTE:
+        cfg_a = ConfiguracaoLoja.get()
+        sessao.estado_atual = SessaoBot.Estado.ATENDIMENTO_HUMANO
+        quando = ("em instantes" if cfg_a.esta_aberta
+                  else f"assim que a loja abrir, às {cfg_a.hora_abertura:%H:%M}")
+        cep = sessao.carrinho_json.get("cep_recusado")
+        out["mensagens"] = [T(
+            f"Pronto! 😊 Chamei alguém da loja para falar com você por aqui — {quando}."
+            + ("\n\nSe puder, já me diga o nome do condomínio ou um ponto de referência."
+               if cep else ""))]
+        sessao.save()
+        return out
+
+    if texto.strip() == ID_OUTRO_CEP:
+        sessao.estado_atual = SessaoBot.Estado.PEDINDO_CEP
+        _set_menu(sessao, {})
+        out["mensagens"] = [mensagem("PEDIR_CEP", _cliente(sessao), perfil=perfil)]
+        sessao.save()
+        return out
+
     # "Voltar ao menu" de qualquer tela: desfaz só a escolha em andamento e mantém o
     # que já está no carrinho. Vem antes do despacho por estado para valer em todas
     # as telas, inclusive as que ainda vão ser criadas.
@@ -1168,7 +1242,11 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             sessao.carrinho_json["canal"] = Pedido.Canal.CLIENTE
             out["mensagens"] = _tela_tipo_entrega(sessao, perfil)
         else:
-            out["mensagens"] = [_ERR_LISTA] + _saudacao(sessao, perfil)
+            # Na abertura a mensagem mais comum é uma pergunta ("qual o cardápio de
+            # hoje?"). Responder "opção inválida" era a primeira impressão de quem chegava.
+            out["mensagens"] = _com_aviso(
+                ["Já te mostro o cardápio! 😊 É só tocar numa das opções abaixo para começar."],
+                _saudacao(sessao, perfil))
         sessao.save()
         return out
 
@@ -1290,14 +1368,14 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         return out
 
     if estado == SessaoBot.Estado.TIPO_ENTREGA_INICIAL:
-        if low == "1" or "entrega" in low:
+        if low == "1" or any(p in low for p in ("entrega", "casa", "delivery", "entregar")):
             sessao.carrinho_json["tipo_entrega"] = "ENTREGA"
             sessao.estado_atual = SessaoBot.Estado.PEDINDO_CEP
             _set_menu(sessao, {})
             out["mensagens"] = [mensagem('PEDIR_CEP', _cliente(sessao), perfil=perfil)]
             sessao.save()
             return out
-        elif low == "2" or "retirar" in low or "retirada" in low or "loja" in low:
+        elif low == "2" or any(p in low for p in ("retirar", "retirada", "buscar", "pegar", "loja")):
             sessao.carrinho_json["tipo_entrega"] = "RETIRADA"
             # Pulamos o CEP e vamos pro menu
             avisos = ["📍 Retirada na loja confirmada!"]
@@ -1320,7 +1398,15 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         cep = _normalizar_cep(digitos)
         area = AreaEntrega.por_cep(cep)
         if not area:
-            out["mensagens"] = [mensagem("FORA_AREA", _cliente(sessao), perfil=perfil)]
+            # Recusado, o cliente explicava onde morava ("é aqui no condomínio") e
+            # ninguém lia. Agora ele chama alguém da loja, que decide na hora.
+            sessao.carrinho_json["cep_recusado"] = cep
+            _set_menu(sessao, {})
+            out["mensagens"] = [botoes(
+                mensagem("FORA_AREA", _cliente(sessao), perfil=perfil),
+                [{"id": ID_ATENDENTE, "titulo": "💬 Falar com a loja"},
+                 {"id": ID_OUTRO_CEP, "titulo": "🔄 Outro CEP"}],
+            )]
             sessao.save()
             return out
         sessao.carrinho_json["endereco"] = {
@@ -1382,7 +1468,7 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         elif low in MENU_CATEGORIAS:
             out["mensagens"] = _tela_categoria(sessao, *MENU_CATEGORIAS[low])
         else:
-            out["mensagens"] = ["Opção inválida."] + _tela_menu(sessao)
+            out["mensagens"] = _com_aviso([_ERR_LISTA], _tela_menu(sessao))
         sessao.save()
         return out
 

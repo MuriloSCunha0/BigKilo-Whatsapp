@@ -700,7 +700,7 @@ def cozinha(request):
     if not _cozinha_liberado(request, cfg):
         raise Http404()
     cfg.limpar_pausa_vencida()
-    from pedidos.models import Pedido
+    from pedidos.models import Pedido, SessaoBot
 
     grupos = _cozinha_itens()
     return render(request, "cozinha.html", {
@@ -712,6 +712,11 @@ def cozinha(request):
         "pausado_lojista": cfg.fechado_lojista,
         "acabaram": sum(1 for g in grupos for i in g["itens"] if i["esgotado"]),
         "em_preparo": Pedido.objects.filter(status=Pedido.Status.PREPARANDO).count(),
+        # Quem tocou "Falar com a loja" fica calado pelo bot; sem este aviso na tela
+        # do turno, ninguém percebia e o cliente desistia esperando.
+        "esperando": SessaoBot.objects.filter(
+            estado_atual=SessaoBot.Estado.ATENDIMENTO_HUMANO,
+            atualizado_em__date=timezone.localdate()).count(),
         "do_painel": request.user.is_authenticated and request.user.is_staff,
         "tem_ifood": bool(cfg.link_ifood),
         "catalogo": _catalogo_para_escolher(),

@@ -134,6 +134,12 @@
       <span class="t">👨‍🍳 {{ em_preparo }} em preparo</span>
       <small class="s">ver os pedidos</small>
     </a>
+    {% if esperando %}
+      <a class="acao perigo" href="/atendimento/">
+        <span class="t">💬 {{ esperando }} esperando resposta</span>
+        <small class="s">abrir as conversas</small>
+      </a>
+    {% endif %}
   </div>
 
   {% if not loja_aberta %}
