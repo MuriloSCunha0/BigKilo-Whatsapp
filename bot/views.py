@@ -146,7 +146,14 @@ async def webhook_whatsapp(request):
         return JsonResponse({"ok": True})
 
     await _responder(telefone, texto, nome)
+    await _lembrar_parados()
     return JsonResponse({"ok": True})
+
+
+async def _lembrar_parados():
+    """Toda mensagem que chega também serve de relógio para os lembretes (ver bot/lembretes.py)."""
+    from .lembretes import verificar_lembretes
+    await sync_to_async(verificar_lembretes)()
 
 
 _RESPOSTA_DE_ERRO = {
@@ -255,6 +262,7 @@ async def webhook_evolution(request):
         return JsonResponse({"ok": True})
 
     await _responder(telefone, texto, nome)
+    await _lembrar_parados()
     return JsonResponse({"ok": True})
 
 
@@ -740,6 +748,8 @@ def cozinha(request):
     from pedidos.models import Pedido, SessaoBot
 
     grupos = _cozinha_itens()
+    from .lembretes import verificar_lembretes
+    verificar_lembretes()
     return render(request, "cozinha.html", {
         "grupos": grupos,
         "chave": request.GET.get("k", ""),

@@ -298,6 +298,10 @@ def impressao_pendentes(request):
     """Lista pedidos pagos (PREPARANDO) ainda não impressos, com a comanda pronta."""
     if not _print_token_ok(request):
         return JsonResponse({"erro": "token inválido ou ausente"}, status=401)
+    # O programa da impressora chama aqui a cada poucos segundos com a loja aberta:
+    # é o relógio que o servidor não tem para lembrar quem parou antes de pagar.
+    from bot.lembretes import verificar_lembretes
+    verificar_lembretes()
     pedidos = (
         Pedido.objects.filter(status=Pedido.Status.PREPARANDO, comanda_impressa=False)
         .order_by("criado_em")[:20]

@@ -14,6 +14,7 @@ from django.utils import timezone
 from asgiref.sync import sync_to_async
 
 from bot.flows import montar_tela_acompanhamentos, parse_resposta_acompanhamentos
+from bot.lembretes import ID_LEMBRETE_DESISTIR, ID_LEMBRETE_FINALIZAR
 from bot.mensagens import (ID_MAIS, ID_VOLTAR, LINHA_VOLTAR, T, botoes, lista, lista_paginada,
                            normalizar_mensagens, texto_plano)
 
@@ -1277,6 +1278,26 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             f"Pronto! 😊 Chamei alguém da loja para falar com você por aqui — {quando}."
             + ("\n\nSe puder, já me diga o nome do condomínio ou um ponto de referência."
                if cep else ""))]
+        sessao.save()
+        return out
+
+    # Botões do lembrete de pedido parado (bot/lembretes.py).
+    if texto.strip() == ID_LEMBRETE_FINALIZAR:
+        for chave in ("montagem", "fixo", "quentinha", "_paginas"):
+            sessao.carrinho_json.pop(chave, None)
+        out["mensagens"] = _tela_resumo_carrinho(sessao, perfil)
+        sessao.save()
+        return out
+
+    if texto.strip() == ID_LEMBRETE_DESISTIR:
+        guardar = {k: sessao.carrinho_json.get(k)
+                   for k in ("canal", "lojista", "endereco", "tipo_entrega")}
+        sessao.carrinho_json = _carrinho_vazio()
+        sessao.carrinho_json.update({k: v for k, v in guardar.items() if v})
+        sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+        _set_menu(sessao, {})
+        out["mensagens"] = [T("Tudo bem! Esvaziei o carrinho. 🙂 "
+                              "Quando quiser pedir, é só mandar um *oi*.")]
         sessao.save()
         return out
 
