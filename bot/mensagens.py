@@ -90,7 +90,12 @@ def _cabecalho_multi(msg: dict) -> tuple[str, int]:
 
 MAX_LINHAS_LISTA = 10   # teto de linhas de uma lista interativa na Cloud API
 ID_MAIS = "mais"        # linha de paginação
-ID_PRONTO = "pronto"    # linha de encerrar a escolha
+ID_PRONTO = "pronto"
+# Saida de qualquer tela de escolha. Cliente que tocou errado ficava preso: a
+# unica saida era digitar, e o fluxo inteiro e feito para nao precisar digitar.
+ID_VOLTAR = "voltar_menu"
+LINHA_VOLTAR = {"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu",
+                "descricao": "Desfaz esta escolha"}    # linha de encerrar a escolha
 
 
 def lista_paginada(corpo: str, botao: str, linhas: list[dict], pagina: int = 0,
@@ -130,7 +135,7 @@ def multi_para_lista(msg: dict) -> dict:
     opcoes = list(msg.get("opcoes") or [])
     escolhidos = msg.get("escolhidos") or []
 
-    reservados = 1 if escolhidos else 0                 # linha "pronto"
+    reservados = 1 + (1 if escolhidos else 0)           # "voltar" + "pronto"
     if len(opcoes) > MAX_LINHAS_LISTA - reservados:
         reservados += 1                                 # linha "ver mais"
     slots = max(1, MAX_LINHAS_LISTA - reservados)
@@ -151,6 +156,7 @@ def multi_para_lista(msg: dict) -> dict:
             "titulo": "✅ Pronto, pode seguir",
             "descricao": "Encerrar a escolha",
         })
+    linhas.append(dict(LINHA_VOLTAR))
 
     partes = [
         cabecalho,

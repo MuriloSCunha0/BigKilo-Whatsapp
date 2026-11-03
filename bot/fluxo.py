@@ -14,7 +14,8 @@ from django.utils import timezone
 from asgiref.sync import sync_to_async
 
 from bot.flows import montar_tela_acompanhamentos, parse_resposta_acompanhamentos
-from bot.mensagens import ID_MAIS, T, botoes, lista, lista_paginada, normalizar_mensagens, texto_plano
+from bot.mensagens import (ID_MAIS, ID_VOLTAR, LINHA_VOLTAR, T, botoes, lista, lista_paginada,
+                           normalizar_mensagens, texto_plano)
 
 ID_RECOMECAR = "recomecar_pedido"
 
@@ -358,7 +359,7 @@ def _tela_peso(sessao, modo, produto=None, perfil=None) -> list:
                 }
             )
     _set_menu(sessao, {k: g for k, g in tabela.items()})
-    return [lista(titulo, "Escolher peso", linhas)]
+    return [lista(titulo, "Escolher peso", linhas + [dict(LINHA_VOLTAR)])]
 
 
 def _tela_tipo_grande_porcao(sessao, perfil=None) -> list:
@@ -369,7 +370,8 @@ def _tela_tipo_grande_porcao(sessao, perfil=None) -> list:
         {"id": "1", "titulo": mensagem("BTN_TIPO_PROTEINA", cliente, perfil)},
         {"id": "2", "titulo": mensagem("BTN_TIPO_GUARNICAO", cliente, perfil)},
     ]
-    return [lista("Você deseja uma grande porção de Proteína ou Guarnição/Acompanhamento?", "Ver opções", linhas)]
+    return [lista("Você deseja uma grande porção de Proteína ou Guarnição/Acompanhamento?", "Ver opções",
+                  linhas + [dict(LINHA_VOLTAR)])]
 
 
 def _tela_proteinas(sessao, perfil=None) -> list:
@@ -382,7 +384,8 @@ def _tela_proteinas(sessao, perfil=None) -> list:
     _set_menu(sessao, mapa)
     _marcar_tela(sessao, "proteinas")
     prefixo = mensagem("ESCOLHER_PROTEINA", _cliente(sessao), perfil=perfil)
-    return [lista_paginada(prefixo, "Ver proteínas", rows, _pagina(sessao, "proteinas"))]
+    return [lista_paginada(prefixo, "Ver proteínas", rows, _pagina(sessao, "proteinas"),
+                           fixas=[dict(LINHA_VOLTAR)])]
 
 
 def _tela_guarnicoes(sessao, perfil=None) -> list:
@@ -690,7 +693,8 @@ def _tela_categoria(sessao, tipo, titulo) -> list:
                                 max_rows=MAX_ACOMP_LISTADOS)
     _set_menu(sessao, mapa)
     _marcar_tela(sessao, "categoria")
-    return [lista_paginada(f"{titulo}:", "Ver itens", rows, _pagina(sessao, "categoria"))]
+    return [lista_paginada(f"{titulo}:", "Ver itens", rows, _pagina(sessao, "categoria"),
+                           fixas=[dict(LINHA_VOLTAR)])]
 
 
 def _tela_faixas(sessao, produto) -> list:
@@ -704,7 +708,7 @@ def _tela_faixas(sessao, produto) -> list:
         for i, f in enumerate(faixas, start=1)
     ]
     corpo = f"{produto.nome} — escolha o tamanho:"
-    return [lista(corpo, "Tamanhos", linhas)]
+    return [lista(corpo, "Tamanhos", linhas + [dict(LINHA_VOLTAR)])]
 
 def _finalizar_completa(sessao) -> list[str]:
     cfg = ConfiguracaoLoja.get()
@@ -1082,14 +1086,46 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         return out
 
     if low in {"cancelar", "reiniciar", "recomeçar", "recomecar"} or texto.strip() == ID_RECOMECAR:
+        # Recomeçar é esvaziar o carrinho, não esquecer quem é a pessoa e onde ela está.
+        # Antes uma lojista que só queria tirar uma quentinha teve de escolher o shopping
+        # e redigitar a loja; o cliente comum tinha de redigitar o CEP.
+        guardar = {k: sessao.carrinho_json.get(k)
+                   for k in ("canal", "lojista", "endereco", "tipo_entrega")}
         sessao.carrinho_json = _carrinho_vazio()
-        out["mensagens"] = ["Pedido reiniciado. Carrinho vazio. 🧹"] + _saudacao(sessao, perfil)
+        sessao.carrinho_json.update({k: v for k, v in guardar.items() if v})
+        lojista_ok = _e_lojista(sessao) and (sessao.carrinho_json.get("lojista") or {}).get("loja")
+        tela = (_menu_do_canal(sessao, perfil)
+                if lojista_ok or _cep_validado(sessao.carrinho_json)
+                else _saudacao(sessao, perfil))
+        out["mensagens"] = _com_aviso(["🔄 Pedido reiniciado. Carrinho vazio."], tela)
         sessao.save()
         return out
 
     cfg = ConfiguracaoLoja.get()
     estado = sessao.estado_atual
     cep_ok = _cep_validado(sessao.carrinho_json)
+
+    # "Voltar ao menu" de qualquer tela: desfaz só a escolha em andamento e mantém o
+    # que já está no carrinho. Vem antes do despacho por estado para valer em todas
+    # as telas, inclusive as que ainda vão ser criadas.
+    if texto.strip() == ID_VOLTAR:
+        for chave in ("montagem", "fixo", "quentinha", "_menu", "_paginas"):
+            sessao.carrinho_json.pop(chave, None)
+        sessao.carrinho_json.setdefault("itens", [])
+        avisos = ["↩️ Escolha desfeita."]
+        if sessao.carrinho_json["itens"]:
+            avisos[0] += " O que já estava no carrinho continua lá."
+        # Sem CEP e sem loja ainda, o "menu" é a tela de abertura.
+        lojista_ok = _e_lojista(sessao) and (sessao.carrinho_json.get("lojista") or {}).get("loja")
+        if lojista_ok or _cep_validado(sessao.carrinho_json):
+            tela = _menu_do_canal(sessao, perfil)
+        else:
+            sessao.carrinho_json.pop("canal", None)
+            sessao.carrinho_json.pop("lojista", None)
+            tela = _saudacao(sessao, perfil)
+        out["mensagens"] = _com_aviso(avisos, tela)
+        sessao.save()
+        return out
 
     # O lojista não tem CEP a validar: o destino dele é a loja que já informou.
     # Sem isto, todo "oi" dele voltaria para a tela de boas-vindas em looping.
@@ -1152,6 +1188,13 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     if estado == SessaoBot.Estado.PEDINDO_LOJA:
         loja = (texto or "").strip()
+        if "?" in loja:
+            out["mensagens"] = [botoes(
+                "Já te mostro o cardápio! 😊 Antes, me diga o *nome ou número da sua loja*, "
+                "para o entregador levar certinho.\n_Ex.: Loja 105 — Chilli Beans_",
+                [{"id": ID_VOLTAR, "titulo": "↩️ Trocar shopping"}])]
+            sessao.save()
+            return out
         if len(loja) < 2:
             out["mensagens"] = [T("Preciso do nome ou número da sua loja para a entrega chegar. "
                                   "_Ex.: Loja 105 — Chilli Beans_")]
@@ -1183,6 +1226,8 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             out["mensagens"] = _tela_lista_extra(sessao, Categoria.Tipo.SOBREMESA, "Sobremesas")
         elif low == "fechar":
             out["mensagens"] = _tela_resumo_carrinho(sessao, perfil)
+        elif low == "corrigir":
+            out["mensagens"] = _tela_corrigir(sessao, perfil)
         elif low == ID_RECOMECAR:
             lojista = sessao.carrinho_json.get("lojista")
             sessao.carrinho_json = _carrinho_vazio()
@@ -1750,17 +1795,21 @@ def _tela_pontos_lojista(sessao, perfil=None) -> list:
     sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_PONTO
     _set_menu(sessao, {f"pt:{p.id}": p.id for p in pontos})
     linhas = [{"id": f"pt:{p.id}", "titulo": p.nome, "descricao": p.endereco} for p in pontos[:10]]
-    return [lista("Em qual shopping fica a sua loja?", "Ver shoppings", linhas)]
+    return [lista("Em qual shopping fica a sua loja?", "Ver shoppings",
+                  linhas[:9] + [dict(LINHA_VOLTAR)])]
 
 
 def _tela_pedir_loja(sessao, ponto) -> list:
     """Único ponto digitado do fluxo: sem o nome da loja o entregador não acha o destino."""
     sessao.estado_atual = SessaoBot.Estado.PEDINDO_LOJA
     _set_menu(sessao, {})
-    return [T(
+    # Botão de saída junto do pedido de texto: a pessoa digita a loja ou, se escolheu o
+    # shopping errado, toca e volta — sem precisar descobrir que "voltar" é uma palavra.
+    return [botoes(
         f"📍 {ponto.nome} confirmado!\n\n"
         "Agora me diga o *nome ou número da sua loja*, para o entregador levar certinho.\n"
-        "_Ex.: Loja 105 — Chilli Beans_"
+        "_Ex.: Loja 105 — Chilli Beans_",
+        [{"id": ID_VOLTAR, "titulo": "↩️ Trocar shopping"}],
     )]
 
 
@@ -1775,7 +1824,8 @@ def _tela_menu_lojista(sessao, perfil=None) -> list:
         return [T(_aviso_fechado(cfg))]
     itens = sessao.carrinho_json.get("itens") or []
     _set_menu(sessao, {"quentinha": "quentinha", "sanduiche": "sanduiche", "sopa": "sopa",
-                       "bebida": "bebida", "sobremesa": "sobremesa", "fechar": "fechar"})
+                       "bebida": "bebida", "sobremesa": "sobremesa", "fechar": "fechar",
+                       "corrigir": "corrigir"})
     linhas = [
         {"id": "quentinha", "titulo": "🍱 Quentinha Padrão",
          "descricao": "Proteína + arroz, feijão, farofa e salada"},
@@ -1790,6 +1840,8 @@ def _tela_menu_lojista(sessao, perfil=None) -> list:
         cab = f"🛒 Carrinho: {len(itens)} item(ns) — {_moeda(total)}\n\n"
         linhas.append({"id": "fechar", "titulo": "✅ Fechar pedido",
                        "descricao": "Conferir e pagar"})
+        linhas.append({"id": "corrigir", "titulo": "✏️ Corrigir pedido",
+                       "descricao": "Tirar um item do carrinho"})
         linhas.append({"id": ID_RECOMECAR, "titulo": "🔄 Recomeçar pedido",
                        "descricao": "Esvazia o carrinho"})
     return [lista(cab + "O que você deseja?", "Ver opções", linhas)]
@@ -1840,7 +1892,7 @@ def _tela_quentinha_salada(sessao, produto) -> list:
     sessao.estado_atual = SessaoBot.Estado.LOJISTA_SALADA
     _set_menu(sessao, {f"sal:{p.id}": p.id for p in saladas})
     linhas = [{"id": f"sal:{p.id}", "titulo": p.nome, "descricao": p.descricao or ""}
-              for p in saladas[:10]]
+              for p in saladas[:9]] + [dict(LINHA_VOLTAR)]
     return [lista(f"*{produto.nome}* escolhida!\n\nQual salada vai junto?", "Ver saladas", linhas)]
 
 
@@ -1887,7 +1939,8 @@ def _tela_sanduiche_salada(sessao, produto) -> list:
     return [botoes(
         f"*{produto.nome}* — {_moeda(preco)}\n\nQuer com salada? (alface e tomate, sem custo)",
         [{"id": SALADA_SIM, "titulo": "Com salada"},
-         {"id": SALADA_NAO, "titulo": "Sem salada"}],
+         {"id": SALADA_NAO, "titulo": "Sem salada"},
+         {"id": ID_VOLTAR, "titulo": "↩️ Voltar"}],
     )]
 
 
