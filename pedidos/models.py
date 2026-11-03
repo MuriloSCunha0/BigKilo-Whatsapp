@@ -696,7 +696,7 @@ class ChaveMensagem(models.TextChoices):
     FORA_AREA = "FORA_AREA", "Fora da área de entrega"
     PEDIR_RUA = "PEDIR_RUA", "Pedir rua/endereço"
     PEDIR_CEP = "PEDIR_CEP", "Pedir CEP"
-    CEP_INVALIDO = "CEP_INVALIDO", "CEP fora da área"
+    CEP_INVALIDO = "CEP_INVALIDO", "CEP ilegível"
     AGUARDANDO_PAGAMENTO = "AGUARDANDO_PAGAMENTO", "Aguardando pagamento"
     PAGAMENTO_CONFIRMADO = "PAGAMENTO_CONFIRMADO", "Pagamento confirmado"
     ANUNCIO_PROMO = "ANUNCIO_PROMO", "Anúncio de promoção"
@@ -749,7 +749,9 @@ MENSAGENS_PADRAO = {
     "FORA_AREA": "Poxa, infelizmente ainda não entregamos nesse CEP. 😕 Obrigado pelo contato!",
     "PEDIR_RUA": "Ótimo, atendemos {bairro}! Agora envie a *rua, número e complemento*.",
     "PEDIR_CEP": "Para começarmos, informe seu *CEP* (só os números, ex.: 22790000):",
-    "CEP_INVALIDO": "Esse CEP não está na nossa área de entrega. Confira e tente de novo.",
+    # So dispara quando o bot NAO CONSEGUIU LER o numero. Dizer "fora da area" aqui
+    # mandava embora quem estava dentro e so digitou com espaco.
+    "CEP_INVALIDO": "Não consegui entender esse CEP. 🤔 Digite os 8 números, por exemplo: 22793276",
     "PEDIR_ENDERECO_COMPLETO": (
         "Quase lá! 🏠\n"
         "Informe seu *endereço completo* para entrega: rua, número, complemento e referência."
@@ -816,7 +818,7 @@ FLUXO_ETAPAS = [
     ("AREA_ATENDIMENTO", "Texto curto da área de entrega, mostrado na saudação."),
     ("PEDIR_CEP", "Logo após a saudação — validação de área."),
     ("FORA_AREA", "Quando o CEP está fora da área de entrega."),
-    ("CEP_INVALIDO", "Quando o CEP é inválido ou fora da faixa."),
+    ("CEP_INVALIDO", "Quando o bot não consegue ler o CEP digitado."),
     ("ANUNCIO_PROMO", "Ao entrar no menu, se houver promoção ativa."),
     ("MONTAR_REFEICAO", "Ao iniciar montagem de refeição completa."),
     ("ESCOLHER_PROTEINA", "Ao escolher proteína."),

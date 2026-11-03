@@ -1312,13 +1312,11 @@ def _core(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             return out
 
     if estado == SessaoBot.Estado.PEDINDO_CEP:
-        import re
-        match = re.search(r"\d{5}-?\d{3}", texto)
-        if not match:
+        digitos = _ler_cep(texto)
+        if not digitos:
             out["mensagens"] = [mensagem("CEP_INVALIDO", _cliente(sessao), perfil=perfil)]
             sessao.save()
             return out
-        digitos = match.group().replace("-", "")
         cep = _normalizar_cep(digitos)
         area = AreaEntrega.por_cep(cep)
         if not area:
@@ -1759,6 +1757,18 @@ def _aviso_fechado(cfg) -> str:
     """
     return (f"ℹ️ Estamos fechados no momento, horário de funcionamento das "
             f"{cfg.hora_abertura:%H:%M} às {cfg.hora_fechamento:%H:%M}.")
+
+
+def _ler_cep(texto: str) -> str:
+    """Os 8 digitos do CEP, aceitando como as pessoas escrevem de verdade.
+
+    O padrao antigo so aceitava 22793-060 ou 22793060. "22793 060", "22793.060" e
+    "22.793-060" caiam como CEP invalido -- e o aviso dizia que o endereco estava
+    fora da area, quando o bot nem tinha conseguido ler o numero.
+    """
+    import re
+    m = re.search(r"(?<!\d)(\d{2})\.?(\d{3})[\s.\-]?(\d{3})(?!\d)", texto or "")
+    return "".join(m.groups()) if m else ""
 
 
 def _menu_do_canal(sessao, perfil=None) -> list:
