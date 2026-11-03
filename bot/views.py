@@ -737,6 +737,64 @@ def _catalogo_para_escolher():
     return [{"categoria": n, "itens": grupos[n]} for n in ordem]
 
 
+def _fone_bonito(telefone: str) -> str:
+    """5521987654321 -> (21) 98765-4321, do jeito que se lê no celular."""
+    d = "".join(c for c in telefone or "" if c.isdigit())
+    if d.startswith("55") and len(d) in (12, 13):
+        d = d[2:]
+    if len(d) not in (10, 11):
+        return telefone
+    return f"({d[:2]}) {d[2:-4]}-{d[-4:]}"
+
+
+def _link_whatsapp(telefone: str, nome: str = "", loja: str = "") -> str:
+    """Abre o WhatsApp de quem tocou já na conversa com o cliente, com um "oi" pronto."""
+    from urllib.parse import quote
+
+    d = "".join(c for c in telefone or "" if c.isdigit())
+    primeiro = (nome or "").split()[0] if (nome or "").strip() else ""
+    texto = f"Oi{' ' + primeiro if primeiro else ''}! Aqui é do {loja or 'restaurante'} 🙂"
+    return f"https://wa.me/{d}?text={quote(texto)}"
+
+
+import re as _re
+
+# Ids de botão/lista ("pt:2", "pedir_atendente", "multi:1,3", "7") não são texto do cliente.
+_E_TOQUE = _re.compile(r"^(\d{1,2}|[a-z_]+(:[\w,]+)?|multi:[\d,]+)$")
+
+
+def _quem_espera(cfg) -> list[dict]:
+    """Quem tocou "Falar com a loja" hoje, com o número pronto para tocar."""
+    from pedidos.models import Cliente, LogMensagem, SessaoBot
+
+    sessoes = list(SessaoBot.objects.filter(
+        estado_atual=SessaoBot.Estado.ATENDIMENTO_HUMANO,
+        atualizado_em__date=timezone.localdate()).order_by("atualizado_em"))
+    nomes = dict(Cliente.objects.filter(telefone__in=[s.telefone for s in sessoes])
+                 .values_list("telefone", "nome_whatsapp"))
+    fila = []
+    for s in sessoes:
+        nome = nomes.get(s.telefone) or ""
+        cep = (s.carrinho_json or {}).get("cep_recusado")
+        if cep:
+            motivo = f"CEP fora da área: {cep}"
+        else:
+            # A última coisa que o cliente ESCREVEU, não o toque no botão ("pedir_atendente").
+            recentes = (LogMensagem.objects.filter(telefone=s.telefone, direcao=LogMensagem.Direcao.ENTRADA)
+                        .order_by("-criado_em").values_list("texto", flat=True)[:8])
+            escrita = next((t for t in recentes if t and not _E_TOQUE.match(t.strip())), "")
+            motivo = f"“{escrita[:70]}”" if escrita else ""
+        fila.append({
+            "telefone": s.telefone,
+            "nome": nome or "Cliente",
+            "fone": _fone_bonito(s.telefone),
+            "link": _link_whatsapp(s.telefone, nome, cfg.nome_loja),
+            "desde": timezone.localtime(s.atualizado_em).strftime("%H:%M"),
+            "motivo": motivo,
+        })
+    return fila
+
+
 def cozinha(request):
     """Tela de turno: lista o que está no ar hoje, um toque marca que acabou."""
     from pedidos.models import ConfiguracaoLoja
@@ -761,9 +819,7 @@ def cozinha(request):
         "em_preparo": Pedido.objects.filter(status=Pedido.Status.PREPARANDO).count(),
         # Quem tocou "Falar com a loja" fica calado pelo bot; sem este aviso na tela
         # do turno, ninguém percebia e o cliente desistia esperando.
-        "esperando": SessaoBot.objects.filter(
-            estado_atual=SessaoBot.Estado.ATENDIMENTO_HUMANO,
-            atualizado_em__date=timezone.localdate()).count(),
+        "esperando": _quem_espera(cfg),
         "do_painel": request.user.is_authenticated and request.user.is_staff,
         "tem_ifood": bool(cfg.link_ifood),
         "catalogo": _catalogo_para_escolher(),

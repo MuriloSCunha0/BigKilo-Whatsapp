@@ -105,6 +105,7 @@
         <div id="atHead">
           <div class="atAv" id="atHAv">–</div>
           <div class="who"><b id="atHNome">—</b><span id="atHStatus"></span></div>
+          <a class="atHeadBtn" id="atZap" href="#" target="_blank" rel="noopener" title="Abrir este cliente no seu WhatsApp">🟢 WhatsApp</a>
           <a class="atHeadBtn" id="atLigar" href="#" title="Ligar para o cliente">📞 Ligar</a>
         </div>
         <div id="atBody"></div>
@@ -182,8 +183,15 @@
       emAtend = d.em_atendimento;
       $('atHNome').textContent = d.nome;
       $('atHAv').textContent = inic(d.nome);
-      $('atHStatus').textContent = emAtend ? 'em atendimento humano' : 'atendimento automático (bot)';
       $('atLigar').href = 'tel:+' + atual.replace(/\D/g,'');
+      // Número à vista e tocável: abre o WhatsApp de quem atende já na conversa.
+      const dig = atual.replace(/\D/g,'');
+      const loc = dig.startsWith('55') && dig.length >= 12 ? dig.slice(2) : dig;
+      const fone = loc.length >= 10 ? `(${loc.slice(0,2)}) ${loc.slice(2,-4)}-${loc.slice(-4)}` : '+' + dig;
+      const primeiro = (d.nome||'').trim().split(/\s+/)[0] || '';
+      $('atZap').href = 'https://wa.me/' + dig + '?text=' +
+        encodeURIComponent(`Oi${primeiro && primeiro !== 'Cliente' ? ' ' + primeiro : ''}! Aqui é do Big Kilo 🙂`);
+      $('atHStatus').textContent = fone + ' · ' + (emAtend ? 'em atendimento humano' : 'atendimento automático (bot)');
       $('atAbrir').style.display = emAtend ? 'none' : 'inline-flex';
       $('atEncerrar').style.display = emAtend ? 'inline-flex' : 'none';
       $('atHint').textContent = emAtend
