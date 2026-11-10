@@ -20,6 +20,8 @@ urlpatterns = [
     path("atendimento/abrir/", views.atendimento_abrir, name="atendimento_abrir"),
     path("atendimento/encerrar/", views.atendimento_encerrar, name="atendimento_encerrar"),
     path("atendimento/enviar/", views.atendimento_enviar, name="atendimento_enviar"),
+    path("atendimento/fotos/", views.atendimento_fotos, name="atendimento_fotos"),
+    path("atendimento/enviar-foto/", views.atendimento_enviar_foto, name="atendimento_enviar_foto"),
     # Aba "Impressão" — download do programa de impressão do restaurante
     path("privacidade/", views.politica_privacidade, name="politica_privacidade"),
     # Modo Cozinha — tela de turno: um toque marca que o prato acabou

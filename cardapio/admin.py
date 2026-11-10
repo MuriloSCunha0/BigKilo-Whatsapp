@@ -1,3 +1,5 @@
+from django import forms
+from django.utils.html import format_html
 from django.contrib import admin, messages
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -13,6 +15,7 @@ from .models import (
     Categoria,
     DisponibilidadeCardapio,
     FaixaPreco,
+    FotoCardapio,
     Produto,
     Promocao,
 )
@@ -297,3 +300,50 @@ class PromocaoAdmin(SortableAdminMixin, LocalizedAdminMixin, ModelAdmin):
     def change_view(self, request, object_id, form_url="", extra_context=None):
         url = reverse("admin:cardapio_promocao_changelist") + f"?assistente={object_id}"
         return redirect(url)
+
+
+
+class FotoCardapioForm(forms.ModelForm):
+    arquivo = forms.ImageField(
+        label="Foto", required=False,
+        help_text="ℹ️ JPG ou PNG. Fotos grandes são reduzidas sozinhas para o WhatsApp aceitar.")
+
+    class Meta:
+        model = FotoCardapio
+        fields = ("titulo", "legenda", "ativo", "ordem")
+
+    def clean(self):
+        dados = super().clean()
+        if not self.instance.pk and not dados.get("arquivo"):
+            self.add_error("arquivo", "Escolha a foto.")
+        return dados
+
+
+@admin.register(FotoCardapio)
+class FotoCardapioAdmin(ModelAdmin):
+    """Fotos que o Atendimento e o bot mandam no WhatsApp."""
+
+    form = FotoCardapioForm
+    list_display = ("miniatura", "titulo", "legenda", "ativo", "ordem")
+    list_display_links = ("miniatura", "titulo")
+    list_editable = ("ativo", "ordem")
+    readonly_fields = ("miniatura_grande",)
+    fields = ("miniatura_grande", "arquivo", "titulo", "legenda", "ativo", "ordem")
+
+    def save_model(self, request, obj, form, change):
+        arquivo = form.cleaned_data.get("arquivo")
+        if arquivo:
+            obj.conteudo, obj.tipo = FotoCardapio.preparar(arquivo)
+            obj.meta_media_id, obj.meta_media_em = "", None  # foto nova: sobe de novo
+        super().save_model(request, obj, form, change)
+
+    @admin.display(description="Foto")
+    def miniatura(self, obj):
+        return format_html('<img src="/cardapio/foto/{}/" alt="" style="height:56px;border-radius:8px">', obj.pk)
+
+    @admin.display(description="Foto atual")
+    def miniatura_grande(self, obj):
+        if not obj.pk:
+            return "—"
+        return format_html('<img src="/cardapio/foto/{}/" alt="" style="max-width:420px;width:100%;'
+                           'border-radius:12px">', obj.pk)

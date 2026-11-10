@@ -79,6 +79,13 @@
     const wrap=document.createElement('div'); wrap.className='sm bot';
     const body=document.createElement('div');
     body.innerHTML=(m.corpo||'').replace(/\*([^*]+)\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
+    if(m.tipo==='imagem'){
+      // Foto do cardápio (ex.: arte da Ceia de Natal), como o cliente vê no WhatsApp.
+      const img=document.createElement('img'); img.src='/cardapio/foto/'+m.foto_id+'/'; img.alt=m.titulo||'foto';
+      img.style.cssText='display:block;max-width:100%;border-radius:8px;margin-bottom:.3rem';
+      wrap.appendChild(img);
+      body.textContent=m.legenda||'';
+    }
     wrap.appendChild(body);
     if(m.tipo==='lista'){
       const lbl=document.createElement('div'); lbl.className='sim-list-btn'; lbl.textContent='📋 '+(m.botao||'Opções'); wrap.appendChild(lbl);

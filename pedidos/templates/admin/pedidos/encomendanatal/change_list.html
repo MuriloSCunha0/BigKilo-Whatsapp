@@ -1,0 +1,162 @@
+{% extends "admin/change_list.html" %}
+
+{% block content %}
+{% comment %}
+Encomendas de Natal: resumo no topo e, ao tocar no nome do cliente, um modal com a
+ficha completa (contato, entrega, pedido, pagamento). Os dados vêm prontos em
+data-ficha, montados em EncomendaNatalAdmin._dados — nada é buscado de novo.
+O {# #} do Django só vale numa linha; em várias ele vaza como texto na tela.
+{% endcomment %}
+<style>
+  .natalResumo{ display:flex; flex-wrap:wrap; gap:.6rem; margin:0 0 1rem; }
+  .natalResumo div{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:.6rem .9rem; min-width:9rem; }
+  html.dark .natalResumo div{ background:#1f2937; border-color:#374151; }
+  .natalResumo b{ display:block; font-size:1.25rem; color:#111827; }
+  html.dark .natalResumo b{ color:#f9fafb; }
+  .natalResumo span{ font-size:.75rem; color:#6b7280; }
+  .natalResumo .alerta{ background:#fff7ed; border-color:#fed7aa; }
+  .natalResumo .alerta b{ color:#9a3412; }
+
+  #natalOv{ position:fixed; inset:0; background:rgba(17,24,39,.6); z-index:10000; display:none;
+            align-items:center; justify-content:center; padding:1.25rem 1rem; }
+  #natalOv.open{ display:flex; }
+  #natalCard{ width:100%; max-width:560px; max-height:88vh; overflow:auto; background:#fff; color:#111827;
+              border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.45); }
+  html.dark #natalCard{ background:#111827; color:#f3f4f6; }
+  #natalHead{ background:#14532d; color:#fff; padding:1rem 1.1rem; display:flex; gap:.75rem; align-items:flex-start;
+              position:sticky; top:0; }
+  #natalHead .who{ flex:1; min-width:0; }
+  #natalHead h2{ margin:0; font-size:1.15rem; font-weight:800; overflow-wrap:anywhere; }
+  #natalHead small{ opacity:.85; font-size:.78rem; }
+  #natalFechar{ background:rgba(255,255,255,.18); color:#fff; border:none; border-radius:8px; padding:.35rem .6rem;
+                font-weight:700; cursor:pointer; }
+  .natalSt{ display:inline-block; margin-top:.35rem; font-size:.72rem; font-weight:800; padding:.15rem .5rem;
+            border-radius:999px; background:#fef3c7; color:#92400e; }
+  .natalSt.RESERVADO{ background:#dcfce7; color:#166534; }
+  .natalSt.ENTREGUE{ background:#e5e7eb; color:#374151; }
+  .natalSt.CANCELADO{ background:#fee2e2; color:#991b1b; }
+  .natalSec{ padding:.85rem 1.1rem; border-top:1px solid #e5e7eb; }
+  html.dark .natalSec{ border-color:#374151; }
+  .natalSec h3{ margin:0 0 .35rem; font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:#6b7280; }
+  .natalSec p{ margin:0; font-size:.95rem; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .natalSec .vazio{ color:#9ca3af; font-style:italic; }
+  .natalGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; }
+  .natalGrid div{ background:#f9fafb; border-radius:10px; padding:.5rem .6rem; }
+  html.dark .natalGrid div{ background:#1f2937; }
+  .natalGrid small{ display:block; font-size:.7rem; color:#6b7280; }
+  .natalGrid b{ font-size:.95rem; }
+  .natalAcoes{ display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.6rem; }
+  .natalBtn{ display:inline-flex; align-items:center; gap:.35rem; border-radius:10px; padding:.55rem .85rem;
+             font-weight:700; font-size:.88rem; text-decoration:none; border:1px solid transparent; min-height:44px; }
+  .natalBtn.wa{ background:#16a34a; color:#fff; }
+  .natalBtn.sec{ background:#fff; color:#374151; border-color:#d1d5db; }
+  html.dark .natalBtn.sec{ background:#1f2937; color:#e5e7eb; border-color:#374151; }
+  .natalBtn.pri{ background:#b91c1c; color:#fff; }
+  .natalRodape{ padding:.85rem 1.1rem 1.1rem; border-top:1px solid #e5e7eb; display:flex; gap:.5rem; flex-wrap:wrap;
+                justify-content:space-between; align-items:center; }
+  html.dark .natalRodape{ border-color:#374151; }
+  .natalRodape small{ color:#6b7280; font-size:.75rem; }
+  @media (max-width:480px){ .natalGrid{ grid-template-columns:1fr 1fr; } }
+</style>
+
+{% if natal_resumo %}
+<div class="natalResumo">
+  <div><b>{{ natal_resumo.total }}</b><span>encomendas</span></div>
+  <div class="{% if natal_resumo.novas %}alerta{% endif %}"><b>{{ natal_resumo.novas }}</b><span>novas — entrar em contato</span></div>
+  <div><b>{{ natal_resumo.reservadas }}</b><span>reservadas</span></div>
+  <div><b>{{ natal_resumo.valor }}</b><span>em pedidos</span></div>
+  <div><b>{{ natal_resumo.pago }}</b><span>já recebido</span></div>
+</div>
+{% endif %}
+
+{{ block.super }}
+
+<div id="natalOv" role="dialog" aria-modal="true" aria-labelledby="natalNome">
+  <div id="natalCard">
+    <div id="natalHead">
+      <div class="who">
+        <h2 id="natalNome">—</h2>
+        <small id="natalOrigem"></small><br>
+        <span class="natalSt" id="natalStatus"></span>
+      </div>
+      <button type="button" id="natalFechar" onclick="natalFechar()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="natalSec">
+      <h3>Contato</h3>
+      <p id="natalFone"></p>
+      <div class="natalAcoes">
+        <a class="natalBtn wa" id="natalWa" href="#" target="_blank" rel="noopener">🟢 Abrir no WhatsApp</a>
+        <a class="natalBtn sec" id="natalConversa" href="#" target="_blank" rel="noopener">💬 Ver conversa</a>
+      </div>
+    </div>
+    <div class="natalSec">
+      <h3>Entrega</h3>
+      <p><b id="natalRecebe"></b> · <span id="natalQuando"></span></p>
+      <p id="natalEndereco"></p>
+    </div>
+    <div class="natalSec">
+      <h3>Pedido</h3>
+      <p id="natalPedido"></p>
+    </div>
+    <div class="natalSec">
+      <h3>Pagamento</h3>
+      <div class="natalGrid">
+        <div><small>Total</small><b id="natalTotal"></b></div>
+        <div><small>Já pago</small><b id="natalPago"></b></div>
+        <div><small>Falta</small><b id="natalFalta"></b></div>
+      </div>
+    </div>
+    <div class="natalSec" id="natalObsSec">
+      <h3>Observações</h3>
+      <p id="natalObs"></p>
+    </div>
+    <div class="natalRodape">
+      <small id="natalCriado"></small>
+      <a class="natalBtn pri" id="natalEditar" href="#">✏️ Editar encomenda</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  function por(id, valor, vazio){
+    const el = $(id);
+    el.textContent = valor || vazio || '';
+    el.classList.toggle('vazio', !valor && !!vazio);
+  }
+  window.natalAbrir = function(botao){
+    let d = {};
+    try { d = JSON.parse(botao.dataset.ficha || '{}'); } catch(e) { return; }
+    por('natalNome', d.nome);
+    por('natalOrigem', 'Veio de: ' + (d.origem || '') + ' · registrada em ' + (d.criado || ''));
+    const st = $('natalStatus'); st.textContent = d.status || ''; st.className = 'natalSt ' + (d.status_cod || '');
+    por('natalFone', d.fone);
+    $('natalWa').href = d.wa || '#';
+    $('natalConversa').href = d.conversa || '#';
+    por('natalRecebe', d.recebe);
+    por('natalQuando', d.entrega);
+    por('natalEndereco', d.endereco, d.recebe === 'Entrega' ? 'Endereço não informado' : '');
+    por('natalPedido', d.pedido, 'Ainda não anotado — toque em Editar para escrever o que foi pedido.');
+    por('natalTotal', d.total, '—');
+    por('natalPago', d.pago, '—');
+    por('natalFalta', d.falta, '—');
+    por('natalObs', d.observacoes);
+    $('natalObsSec').style.display = d.observacoes ? '' : 'none';
+    por('natalCriado', '');
+    $('natalEditar').href = d.editar || '#';
+    $('natalOv').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    $('natalFechar').focus();
+  };
+  window.natalFechar = function(){
+    $('natalOv').classList.remove('open');
+    document.body.style.overflow = '';
+  };
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && $('natalOv').classList.contains('open')) natalFechar();
+  });
+  $('natalOv').addEventListener('click', e => { if (e.target.id === 'natalOv') natalFechar(); });
+})();
+</script>
+{% endblock %}

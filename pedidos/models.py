@@ -119,6 +119,22 @@ class ConfiguracaoLoja(models.Model):
                   "a uma porta fechada. Deixe marcado quando só o delivery parou — falta "
                   "de entregador, por exemplo — e a cozinha segue trabalhando.",
     )
+    # Ceia de Natal no menu do bot. Some sozinha depois do prazo: ninguém precisa
+    # lembrar de desligar no dia 23.
+    ceia_natal_ativa = models.BooleanField(
+        "Mostrar a Ceia de Natal no bot", default=True,
+        help_text="ℹ️ Aparece no menu do cliente como \"🎄 Ceia de Natal\". Quem toca recebe a "
+                  "foto, deixa nome e endereço, e o pedido cai em Encomendas de Natal.",
+    )
+    ceia_natal_ate = models.DateField(
+        "Encomendas da Ceia até", null=True, blank=True,
+        help_text="ℹ️ Último dia em que a opção aparece. Depois disso ela some sozinha.",
+    )
+    foto_ceia = models.ForeignKey(
+        "cardapio.FotoCardapio", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", verbose_name="Foto da Ceia",
+        help_text="ℹ️ A arte enviada a quem escolhe a Ceia de Natal.",
+    )
     link_ifood = models.URLField(
         "Link do iFood", max_length=300, blank=True,
         help_text="ℹ️ Cole o link da loja no iFood. Com o delivery fechado, quem mandar "
@@ -243,6 +259,13 @@ class ConfiguracaoLoja(models.Model):
     def get(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    @property
+    def ceia_aberta(self) -> bool:
+        """A opção da Ceia está no ar hoje? (ligada e dentro do prazo)."""
+        if not self.ceia_natal_ativa:
+            return False
+        return self.ceia_natal_ate is None or timezone.localdate() <= self.ceia_natal_ate
 
     @property
     def esta_aberta(self) -> bool:
@@ -384,6 +407,8 @@ class SessaoBot(models.Model):
         LOJISTA_PROTEINA = "LOJISTA_PROTEINA", "Lojista: escolhendo proteína"
         LOJISTA_SALADA = "LOJISTA_SALADA", "Lojista: escolhendo salada"
         SANDUICHE_SALADA = "SANDUICHE_SALADA", "Sanduíche: com salada?"
+        CEIA_NOME = "CEIA_NOME", "Ceia de Natal: nome"
+        CEIA_ENDERECO = "CEIA_ENDERECO", "Ceia de Natal: endereço"
         ESCOLHENDO_TIPO_ENTREGA = "ESCOLHENDO_TIPO_ENTREGA", "Escolhendo Entrega/Retirada"
 
     telefone = models.CharField("Telefone", max_length=20, primary_key=True)
@@ -441,6 +466,81 @@ class Encomenda(models.Model):
     def link_whatsapp(self) -> str:
         from .avisos import link_whatsapp
         return link_whatsapp(self.cliente.telefone, self.cliente.nome_whatsapp)
+
+
+class EncomendaNatal(models.Model):
+    """Ceia de Natal: substitui o caderno onde o restaurante anotava número, prazo e pedido.
+
+    Nasce de dois jeitos: pelo bot (o cliente toca em "Ceia de Natal" e deixa nome e
+    endereço) ou pelo painel (pedido feito no balcão ou por telefone). Não vira Pedido
+    porque preço, itens e sinal são combinados na conversa, caso a caso.
+    """
+
+    class Status(models.TextChoices):
+        NOVO = "NOVO", "Novo — entrar em contato"
+        EM_CONTATO = "EM_CONTATO", "Em contato"
+        RESERVADO = "RESERVADO", "Reservado"
+        ENTREGUE = "ENTREGUE", "Entregue"
+        CANCELADO = "CANCELADO", "Cancelado"
+
+    class Origem(models.TextChoices):
+        BOT = "BOT", "WhatsApp (bot)"
+        PAINEL = "PAINEL", "Anotado no painel"
+
+    class Recebe(models.TextChoices):
+        ENTREGA = "ENTREGA", "Entrega"
+        RETIRADA = "RETIRADA", "Retirada na loja"
+
+    nome = models.CharField("Nome", max_length=120)
+    telefone = models.CharField("WhatsApp / telefone", max_length=20, db_index=True,
+                                help_text="ℹ️ Com DDD. Ex.: 21 98765-4321")
+    endereco = models.TextField("Endereço", blank=True)
+    recebe = models.CharField("Como recebe", max_length=10, choices=Recebe.choices,
+                              default=Recebe.ENTREGA)
+    pedido = models.TextField("Pedido", blank=True,
+                              help_text="ℹ️ O que foi encomendado, com quantidades. Ex.: 1 Chester, "
+                                        "2kg de salpicão, 1 farofa")
+    data_entrega = models.DateField("Dia da entrega", null=True, blank=True)
+    horario = models.CharField("Horário", max_length=40, blank=True,
+                               help_text="ℹ️ Ex.: 18h, entre 17h e 19h")
+    valor_total = models.DecimalField("Valor total", max_digits=9, decimal_places=2,
+                                      null=True, blank=True)
+    valor_pago = models.DecimalField("Já pago (sinal)", max_digits=9, decimal_places=2,
+                                     default=Decimal("0.00"))
+    status = models.CharField("Situação", max_length=12, choices=Status.choices,
+                              default=Status.NOVO, db_index=True)
+    observacoes = models.TextField("Observações", blank=True)
+    origem = models.CharField("Veio de", max_length=8, choices=Origem.choices,
+                              default=Origem.PAINEL, editable=False)
+    criado_em = models.DateTimeField("Registrada em", auto_now_add=True, db_index=True)
+    atualizado_em = models.DateTimeField("Atualizada em", auto_now=True)
+
+    class Meta:
+        verbose_name = "Encomenda de Natal"
+        verbose_name_plural = "Encomendas de Natal"
+        ordering = ["data_entrega", "-criado_em"]
+
+    def __str__(self):
+        return f"Ceia de {self.nome}"
+
+    def save(self, *args, **kwargs):
+        # Anotado à mão vem "21 98765-4321"; o link do WhatsApp precisa do 55 na frente.
+        d = "".join(c for c in self.telefone or "" if c.isdigit())
+        if len(d) in (10, 11):
+            d = "55" + d
+        self.telefone = d or self.telefone
+        super().save(*args, **kwargs)
+
+    @property
+    def falta_pagar(self):
+        if self.valor_total is None:
+            return None
+        return max(self.valor_total - (self.valor_pago or 0), Decimal("0.00"))
+
+    @property
+    def link_whatsapp(self) -> str:
+        from .avisos import link_whatsapp
+        return link_whatsapp(self.telefone, self.nome)
 
 
 class LogMensagem(models.Model):
@@ -720,6 +820,10 @@ class ChaveMensagem(models.TextChoices):
     BTN_MENU_ENCOMENDA = "BTN_MENU_ENCOMENDA", "Menu: Encomenda outro dia"
     BTN_MENU_SANDUICHES = "BTN_MENU_SANDUICHES", "Menu: Sanduíches"
     BTN_MENU_SOPAS = "BTN_MENU_SOPAS", "Menu: Sopas"
+    BTN_MENU_NATAL = "BTN_MENU_NATAL", "Menu: Ceia de Natal"
+    CEIA_PEDIR_NOME = "CEIA_PEDIR_NOME", "Ceia de Natal: pedir nome"
+    CEIA_PEDIR_ENDERECO = "CEIA_PEDIR_ENDERECO", "Ceia de Natal: pedir endereço"
+    CEIA_REGISTRADA = "CEIA_REGISTRADA", "Ceia de Natal: interesse registrado"
     BTN_TIPO_PROTEINA = "BTN_TIPO_PROTEINA", "Botão: Grande porção de Proteína"
     BTN_TIPO_GUARNICAO = "BTN_TIPO_GUARNICAO", "Botão: Grande porção de Guarnição"
     BTN_ADD_OUTRA_GRANDE = "BTN_ADD_OUTRA_GRANDE", "Botão: Outra grande porção"
@@ -748,7 +852,7 @@ MENSAGENS_PADRAO = {
     "PEDIR_BAIRRO": "Para começar, informe seu bairro:",
     "FORA_AREA": "Poxa, infelizmente ainda não entregamos nesse CEP. 😕 Obrigado pelo contato!",
     "PEDIR_RUA": "Ótimo, atendemos {bairro}! Agora envie a *rua, número e complemento*.",
-    "PEDIR_CEP": "Para começarmos, informe seu *CEP* (só os números, ex.: 22790000):",
+    "PEDIR_CEP": "Para a entrega, informe seu *CEP* (só os números, ex.: 22790000):",
     # So dispara quando o bot NAO CONSEGUIU LER o numero. Dizer "fora da area" aqui
     # mandava embora quem estava dentro e so digitou com espaco.
     "CEP_INVALIDO": "Não consegui entender esse CEP. 🤔 Digite os 8 números, por exemplo: 22793276",
@@ -793,6 +897,20 @@ MENSAGENS_PADRAO = {
     "BTN_MENU_ENCOMENDA": "Encomenda outro dia",
     "BTN_MENU_SANDUICHES": "Sanduíches",
     "BTN_MENU_SOPAS": "Sopas",
+    "BTN_MENU_NATAL": "🎄 Ceia de Natal",
+    "CEIA_PEDIR_NOME": (
+        "🎄 Que bom que você quer a *Ceia de Natal* do Big Kilo!\n\n"
+        "Para registrar seu interesse, me diga seu *nome completo*:"
+    ),
+    "CEIA_PEDIR_ENDERECO": (
+        "Obrigado, {nome}! Agora me passe o *endereço de entrega* "
+        "(rua, número, complemento e bairro):"
+    ),
+    "CEIA_REGISTRADA": (
+        "🎄 Registramos seu interesse, {nome}!\n\n"
+        "Em breve entraremos em contato para envio da tabela de preços e condições "
+        "para a reserva.\n\nObrigado pelo contato! 😊"
+    ),
     "BTN_TIPO_PROTEINA": "Proteína",
     "BTN_TIPO_GUARNICAO": "Guarnição / Acompanhamento",
     "BTN_ADD_OUTRA_GRANDE": "Outra grande porção",
@@ -839,6 +957,10 @@ FLUXO_ETAPAS = [
     ("BTN_MENU_ENCOMENDA", "Botão no menu principal: Encomenda outro dia."),
     ("BTN_MENU_SANDUICHES", "Botão no menu principal: Sanduíches."),
     ("BTN_MENU_SOPAS", "Botão no menu principal: Sopas."),
+    ("BTN_MENU_NATAL", "Botão no menu principal: Ceia de Natal (some depois do prazo)."),
+    ("CEIA_PEDIR_NOME", "Ao tocar em Ceia de Natal, junto com a foto — pede o nome."),
+    ("CEIA_PEDIR_ENDERECO", "Ceia de Natal — depois do nome, pede o endereço."),
+    ("CEIA_REGISTRADA", "Ceia de Natal — interesse registrado em Encomendas de Natal."),
     ("BTN_TIPO_PROTEINA", "Botão: Escolher grande porção de proteína."),
     ("BTN_TIPO_GUARNICAO", "Botão: Escolher grande porção de guarnição."),
     ("BTN_ADD_OUTRA_GRANDE", "Botão adicionar: Outra grande porção."),
@@ -877,10 +999,12 @@ FLUXO_GRUPOS = [
     ("cardapio", "Montagem do prato", ["MONTAR_REFEICAO", "ESCOLHER_PROTEINA", "ESCOLHER_ACOMPANHAMENTOS"]),
     ("carrinho", "Carrinho e fechamento", ["RESUMO_CARRINHO", "PERGUNTAR_ADICIONAR", "PEDIR_MAIS", "PEDIR_ENDERECO_COMPLETO"]),
     ("encomenda", "Encomenda futura", ["ENCOMENDA_CONTATO", "PEDIR_DATA_ENCOMENDA", "ENCOMENDA_AGENDADA"]),
+    ("natal", "Ceia de Natal", ["CEIA_PEDIR_NOME", "CEIA_PEDIR_ENDERECO", "CEIA_REGISTRADA"]),
     ("pagamento", "Pagamento", ["AGUARDANDO_PAGAMENTO", "PAGAMENTO_CONFIRMADO"]),
     ("botoes_menu", "Títulos dos Menus e Botões Principais", [
         "BTN_MENU_REFEICAO", "BTN_MENU_REFEICAO_ENC", "BTN_MENU_GRANDES", "BTN_MENU_GRANDES_ENC",
-        "BTN_MENU_ENCOMENDA", "BTN_MENU_SANDUICHES", "BTN_MENU_SOPAS", "BTN_TIPO_PROTEINA", "BTN_TIPO_GUARNICAO"
+        "BTN_MENU_ENCOMENDA", "BTN_MENU_SANDUICHES", "BTN_MENU_SOPAS", "BTN_MENU_NATAL",
+        "BTN_TIPO_PROTEINA", "BTN_TIPO_GUARNICAO"
     ]),
     ("botoes_add", "Títulos de Carrinho e Adicionais", [
         "BTN_CARRINHO_ADICIONAR", "BTN_CARRINHO_FECHAR", "BTN_ADD_OUTRA_GRANDE", "DESC_ADD_OUTRA_GRANDE",

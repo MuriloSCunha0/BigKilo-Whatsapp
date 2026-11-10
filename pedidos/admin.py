@@ -18,6 +18,7 @@ from .models import (
     AreaEntrega,
     Cliente,
     Encomenda,
+    EncomendaNatal,
     ConfiguracaoLoja,
     FLUXO_ETAPAS,
     VARIAVEIS_DESC,
@@ -117,6 +118,12 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
                              "o shopping continuar sendo atendido a pé. Quem estiver no canal "
                              "fechado recebe só o aviso abaixo, com o link do iFood se houver. "
                              "Dá para abrir e fechar também pelo Modo Cozinha."),
+        }),
+        (_("Ceia de Natal"), {
+            "fields": ("ceia_natal_ativa", "ceia_natal_ate", "foto_ceia"),
+            "description": _("A opção \"🎄 Ceia de Natal\" aparece no menu do cliente até a data "
+                             "abaixo. Quem toca recebe a foto, deixa nome e endereço, e o pedido "
+                             "cai em Encomendas de Natal. A foto vem de Cardápio → Fotos do cardápio."),
         }),
     )
 
@@ -601,3 +608,104 @@ class PerfilFluxoAdmin(ModelAdmin):
             'href="/simulador/?perfil={}">🧪 Testar no Simulador</a>',
             obj.id, obj.id,
         )
+
+
+def _moeda_br(v):
+    if v is None:
+        return ""
+    return "R$ " + f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+@admin.register(EncomendaNatal)
+class EncomendaNatalAdmin(LocalizedAdminMixin, ModelAdmin):
+    """O caderno da Ceia de Natal: quem pediu, o quê, para quando e quanto falta pagar."""
+
+    list_display = ("ficha", "whatsapp", "entrega", "resumo_pedido", "status", "pagamento", "veio_de")
+    list_display_links = None
+    list_editable = ("status",)
+    list_filter = ("status", "origem", "recebe", "data_entrega")
+    search_fields = ("nome", "telefone", "pedido", "endereco", "observacoes")
+    change_list_template = "admin/pedidos/encomendanatal/change_list.html"
+    readonly_fields = ("origem", "criado_em", "atualizado_em")
+    fieldsets = (
+        (_("Cliente"), {"fields": ("nome", "telefone", "recebe", "endereco")}),
+        (_("Pedido"), {"fields": ("pedido", ("data_entrega", "horario"))}),
+        (_("Pagamento"), {"fields": (("valor_total", "valor_pago"),)}),
+        (_("Acompanhamento"), {"fields": ("status", "observacoes", ("origem", "criado_em", "atualizado_em"))}),
+    )
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.origem = EncomendaNatal.Origem.PAINEL
+        super().save_model(request, obj, form, change)
+
+    def _dados(self, obj) -> dict:
+        """Tudo o que o modal mostra, já formatado."""
+        from bot.views import _fone_bonito
+
+        entrega = obj.data_entrega.strftime("%d/%m/%Y") if obj.data_entrega else "a combinar"
+        if obj.horario:
+            entrega += f" · {obj.horario}"
+        return {
+            "nome": obj.nome, "fone": _fone_bonito(obj.telefone), "tel": obj.telefone,
+            "wa": obj.link_whatsapp, "conversa": f"/atendimento/?tel={obj.telefone}",
+            "editar": f"/admin/pedidos/encomendanatal/{obj.pk}/change/",
+            "status": obj.get_status_display(), "status_cod": obj.status,
+            "recebe": obj.get_recebe_display(), "endereco": obj.endereco,
+            "pedido": obj.pedido, "observacoes": obj.observacoes, "entrega": entrega,
+            "total": _moeda_br(obj.valor_total), "pago": _moeda_br(obj.valor_pago),
+            "falta": _moeda_br(obj.falta_pagar),
+            "origem": obj.get_origem_display(),
+            "criado": timezone.localtime(obj.criado_em).strftime("%d/%m/%Y %H:%M"),
+        }
+
+    @admin.display(description="Cliente", ordering="nome")
+    def ficha(self, obj):
+        return format_html(
+            '<button type="button" class="font-semibold text-primary-600 hover:underline text-left" '
+            'data-ficha="{}" onclick="natalAbrir(this)">{}</button>',
+            json.dumps(self._dados(obj)), obj.nome)
+
+    @admin.display(description="WhatsApp", ordering="telefone")
+    def whatsapp(self, obj):
+        from bot.views import _fone_bonito
+        return format_html('<a href="{}" target="_blank" rel="noopener" '
+                           'class="text-green-700 font-semibold">🟢 {}</a>',
+                           obj.link_whatsapp, _fone_bonito(obj.telefone))
+
+    @admin.display(description="Entrega", ordering="data_entrega")
+    def entrega(self, obj):
+        if not obj.data_entrega:
+            return "a combinar"
+        return obj.data_entrega.strftime("%d/%m") + (f" · {obj.horario}" if obj.horario else "")
+
+    @admin.display(description="Pedido")
+    def resumo_pedido(self, obj):
+        texto = " ".join((obj.pedido or "").split())
+        return (texto[:60] + "…") if len(texto) > 60 else (texto or "—")
+
+    @admin.display(description="Pagamento")
+    def pagamento(self, obj):
+        if obj.valor_total is None:
+            return "—"
+        falta = obj.falta_pagar
+        if not falta:
+            return format_html('<span class="text-green-700 font-semibold">✅ Pago {}</span>',
+                               _moeda_br(obj.valor_total))
+        return f"Falta {_moeda_br(falta)} de {_moeda_br(obj.valor_total)}"
+
+    @admin.display(description="Veio de", ordering="origem")
+    def veio_de(self, obj):
+        return "🤖 Bot" if obj.origem == EncomendaNatal.Origem.BOT else "✍️ Painel"
+
+    def changelist_view(self, request, extra_context=None):
+        ativas = EncomendaNatal.objects.exclude(status=EncomendaNatal.Status.CANCELADO)
+        soma = ativas.aggregate(total=Sum("valor_total"), pago=Sum("valor_pago"))
+        extra_context = {**(extra_context or {}), "natal_resumo": {
+            "total": ativas.count(),
+            "novas": ativas.filter(status=EncomendaNatal.Status.NOVO).count(),
+            "reservadas": ativas.filter(status=EncomendaNatal.Status.RESERVADO).count(),
+            "valor": _moeda_br(soma["total"] or 0),
+            "pago": _moeda_br(soma["pago"] or 0),
+        }}
+        return super().changelist_view(request, extra_context)

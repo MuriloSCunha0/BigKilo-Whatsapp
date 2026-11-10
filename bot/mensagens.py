@@ -14,6 +14,12 @@ def T(corpo: str) -> dict:
     return {"tipo": "texto", "corpo": corpo}
 
 
+def imagem(foto, legenda: str = "") -> dict:
+    """Foto do cardápio (cardapio.FotoCardapio). O arquivo só é lido na hora de enviar."""
+    return {"tipo": "imagem", "foto_id": foto.id, "titulo": foto.titulo,
+            "legenda": (legenda or foto.legenda or "")[:1000]}
+
+
 def lista(corpo: str, botao: str, linhas: list[dict]) -> dict:
     rows = []
     for row in (linhas or [])[:10]:
@@ -234,6 +240,9 @@ def texto_plano(msg) -> str:
         return f"{msg.get('corpo', '')}\n[Flow: {msg.get('cta', 'Abrir')}]"
     if tipo == "pix_order":
         return f"{msg.get('corpo', '')}\n[Pix nativo: pedido #{msg.get('pedido_id')}]"
+    if tipo == "imagem":
+        legenda = msg.get("legenda") or ""
+        return f"📷 [foto: {msg.get('titulo') or 'cardápio'}]" + (f" {legenda}" if legenda else "")
     if tipo == "botoes":
         ops = " | ".join(o.get("titulo", "") for o in (msg.get("opcoes") or []))
         return f"{msg.get('corpo', '')}\n[botões: {ops}]"
@@ -292,6 +301,8 @@ def texto_de_reserva(msg: dict) -> tuple[str, dict]:
     devolve o mapa número → id, para o "1" digitado valer a primeira opção.
     """
     tipo = (msg or {}).get("tipo")
+    if tipo == "imagem":
+        return (msg.get("legenda") or ""), {}
     if tipo == "multi_select":
         msg = multi_para_lista(msg)
         tipo = "lista"

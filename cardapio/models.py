@@ -1,5 +1,5 @@
 from decimal import ROUND_HALF_UP, Decimal
-from datetime import time
+from datetime import time, timedelta
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -529,3 +529,58 @@ class Promocao(Produto):
         verbose_name = "Promoção"
         verbose_name_plural = "Promoções"
         ordering = ["ordem_promo"]
+
+
+class FotoCardapio(models.Model):
+    """Foto que o bot manda no WhatsApp (cardápio da semana, Ceia de Natal...).
+
+    O arquivo fica no banco e não no disco: o disco do Railway é apagado a cada deploy,
+    e uma foto que some sem aviso deixaria o cliente recebendo mensagem quebrada.
+    Na gravação a imagem vira JPEG de até 1600px (o WhatsApp recusa acima de 5 MB).
+    """
+
+    titulo = models.CharField("Nome da foto", max_length=80,
+                              help_text="Só para você achar a foto. Ex.: Especialidades da semana")
+    legenda = models.CharField("Legenda no WhatsApp", max_length=300, blank=True,
+                               help_text="Texto que vai junto da foto (opcional).")
+    conteudo = models.BinaryField("Imagem", editable=False)
+    tipo = models.CharField(max_length=40, default="image/jpeg", editable=False)
+    ativo = models.BooleanField("Aparece no Atendimento", default=True)
+    ordem = models.PositiveIntegerField("Ordem", default=0)
+    criado_em = models.DateTimeField("Enviada em", auto_now_add=True)
+    # O WhatsApp guarda a foto enviada por 30 dias: reaproveitar o id evita subir o
+    # mesmo arquivo a cada cliente.
+    meta_media_id = models.CharField(max_length=80, blank=True, editable=False)
+    meta_media_em = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["ordem", "-criado_em"]
+        verbose_name = "Foto do cardápio"
+        verbose_name_plural = "Fotos do cardápio"
+
+    def __str__(self):
+        return self.titulo
+
+    @staticmethod
+    def preparar(arquivo) -> tuple[bytes, str]:
+        """Converte o que foi enviado (PNG, JPG, HEIC do iPhone não) em JPEG leve."""
+        import io
+
+        from PIL import Image, ImageOps
+
+        img = Image.open(arquivo)
+        img = ImageOps.exif_transpose(img)
+        if img.mode not in ("RGB", "L"):
+            fundo = Image.new("RGB", img.size, (255, 255, 255))
+            fundo.paste(img, mask=img.convert("RGBA").split()[-1])
+            img = fundo
+        img.thumbnail((1600, 1600))
+        saida = io.BytesIO()
+        img.convert("RGB").save(saida, "JPEG", quality=85, optimize=True)
+        return saida.getvalue(), "image/jpeg"
+
+    def media_valida(self) -> str:
+        if self.meta_media_id and self.meta_media_em and \
+                timezone.now() - self.meta_media_em < timedelta(days=25):
+            return self.meta_media_id
+        return ""

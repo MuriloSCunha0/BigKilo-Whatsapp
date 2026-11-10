@@ -301,6 +301,7 @@ UNFOLD = {
                     {"title": "Modo Cozinha", "icon": "skillet", "link": "/cozinha/"},
                     {"title": "Pedidos", "icon": "receipt_long", "link": "/admin/pedidos/pedido/"},
                     {"title": "Encomendas", "icon": "event_note", "link": "/admin/pedidos/encomenda/"},
+                    {"title": "Encomendas de Natal", "icon": "redeem", "link": "/admin/pedidos/encomendanatal/"},
                     {"title": "Atendimento (conversas)", "icon": "forum", "link": "/atendimento/"},
                 ],
             },
@@ -312,6 +313,7 @@ UNFOLD = {
                     {"title": "Cardápios", "icon": "menu_book", "link": "/admin/cardapio/cardapio/"},
                     {"title": "Promoções", "icon": "local_offer", "link": "/admin/cardapio/promocao/"},
                     {"title": "Categorias", "icon": "category", "link": "/admin/cardapio/categoria/"},
+                    {"title": "Fotos do cardápio", "icon": "photo_library", "link": "/admin/cardapio/fotocardapio/"},
                 ],
             },
             {

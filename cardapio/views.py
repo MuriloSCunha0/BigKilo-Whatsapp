@@ -434,3 +434,19 @@ def promocao_salvar(request):
     produto.promo_fim = _parse_data(dados.get("data_fim"))
     produto.save(update_fields=["desconto_percentual", "promo_inicio", "promo_fim"])
     return JsonResponse({"ok": True})
+
+
+
+@staff_member_required
+def foto_cardapio(request, foto_id: int):
+    """Mostra a foto guardada no banco (miniaturas do painel e do Atendimento)."""
+    from django.http import Http404, HttpResponse
+
+    from .models import FotoCardapio
+
+    foto = FotoCardapio.objects.filter(id=foto_id).first()
+    if not foto:
+        raise Http404()
+    resp = HttpResponse(bytes(foto.conteudo), content_type=foto.tipo)
+    resp["Cache-Control"] = "private, max-age=3600"
+    return resp

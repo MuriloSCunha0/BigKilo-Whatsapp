@@ -491,6 +491,64 @@ def atendimento_enviar(request):
     return JsonResponse({"ok": True, "quando": timezone.localtime().strftime("%d/%m %H:%M")})
 
 
+@staff_member_required
+def atendimento_fotos(request):
+    """Fotos do cardápio que o atendente pode mandar com um toque."""
+    from cardapio.models import FotoCardapio
+
+    fotos = FotoCardapio.objects.filter(ativo=True).only("id", "titulo", "legenda")
+    return JsonResponse({"ok": True, "fotos": [
+        {"id": f.id, "titulo": f.titulo, "legenda": f.legenda, "url": f"/cardapio/foto/{f.id}/"}
+        for f in fotos]})
+
+
+@staff_member_required
+@require_POST
+def atendimento_enviar_foto(request):
+    """Manda uma foto pelo número do bot: uma da galeria ou uma escolhida na hora.
+
+    A escolhida na hora pode ficar guardada na galeria para a próxima vez.
+    """
+    from cardapio.models import FotoCardapio
+    from pedidos.models import LogMensagem, SessaoBot
+    from .whatsapp import enviar_foto_sync, enviar_imagem_sync
+
+    tel = (request.POST.get("telefone") or "").strip()
+    legenda = (request.POST.get("legenda") or "").strip()[:1000]
+    if not tel:
+        return JsonResponse({"ok": False, "erro": "Abra uma conversa antes de enviar a foto."})
+    arquivo = request.FILES.get("arquivo")
+    foto = None
+    if arquivo:
+        try:
+            conteudo, tipo = FotoCardapio.preparar(arquivo)
+        except Exception:
+            return JsonResponse({"ok": False, "erro": "Não consegui abrir essa imagem. Use JPG ou PNG."})
+        titulo = (arquivo.name or "Foto").rsplit(".", 1)[0][:80]
+        if request.POST.get("guardar") == "1":
+            foto = FotoCardapio.objects.create(titulo=titulo, conteudo=conteudo, tipo=tipo)
+    else:
+        foto = FotoCardapio.objects.filter(id=request.POST.get("foto_id") or 0).first()
+        if not foto:
+            return JsonResponse({"ok": False, "erro": "Foto não encontrada."})
+        titulo = foto.titulo
+    sess, _ = SessaoBot.objects.get_or_create(telefone=tel)
+    if sess.estado_atual != SessaoBot.Estado.ATENDIMENTO_HUMANO:
+        sess.estado_atual = SessaoBot.Estado.ATENDIMENTO_HUMANO
+        sess.save()
+    try:
+        if foto:
+            enviar_foto_sync(tel, {"tipo": "imagem", "foto_id": foto.id, "legenda": legenda})
+        else:
+            enviar_imagem_sync(tel, conteudo, tipo, legenda)
+    except Exception as exc:
+        logger.exception("Falha ao enviar foto do atendente")
+        return JsonResponse({"ok": False, "erro": f"O WhatsApp não aceitou a foto: {exc}"})
+    LogMensagem.objects.create(telefone=tel, direcao=LogMensagem.Direcao.SAIDA,
+                               texto=f"📷 [foto: {titulo}]" + (f" {legenda}" if legenda else ""))
+    return JsonResponse({"ok": True})
+
+
 # ===================== Impressão automática (download do programa) ============
 _PRINT_EXE = Path(settings.BASE_DIR) / "download" / "BigKiloImpressora.exe"
 

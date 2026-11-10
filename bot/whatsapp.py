@@ -288,6 +288,9 @@ async def enviar_pix_order(telefone: str, msg: dict) -> dict:
     return resp.json()
 
 async def enviar_mensagem(telefone: str, msg: dict) -> dict:
+    if (msg or {}).get("tipo") == "imagem":
+        from asgiref.sync import sync_to_async
+        return await sync_to_async(enviar_foto_sync)(telefone, msg)
     # Evolution/texto puro: converte listas/botões em menu numerado e envia como texto.
     if _provider() == "evolution":
         return await enviar_texto(telefone, texto_numerado(msg))
@@ -379,6 +382,8 @@ def enviar_botoes_sync(telefone: str, corpo: str, opcoes: list[dict]) -> dict:
 
 
 def enviar_mensagem_sync(telefone: str, msg: dict) -> dict:
+    if (msg or {}).get("tipo") == "imagem":
+        return enviar_foto_sync(telefone, msg)
     if _provider() == "evolution":
         return enviar_texto_sync(telefone, texto_numerado(msg))
     tipo = (msg or {}).get("tipo", "texto")
@@ -404,3 +409,90 @@ def enviar_mensagem_sync(telefone: str, msg: dict) -> dict:
             telefone, msg["corpo"], msg["flow_id"], msg["cta"], msg["payload"], msg.get("token", "")
         )
     return enviar_texto_sync(telefone, texto_plano(msg))
+
+
+# ===================== Fotos (cardápio, Ceia de Natal) =====================
+def _url_midia() -> str:
+    return (f"https://graph.facebook.com/{settings.META_API_VERSION}"
+            f"/{settings.META_PHONE_NUMBER_ID}/media")
+
+
+def _subir_midia_sync(conteudo: bytes, tipo: str) -> str:
+    """Sobe a foto para a Meta e devolve o id (vale 30 dias)."""
+    try:
+        with httpx.Client(timeout=60) as http:
+            resp = http.post(
+                _url_midia(),
+                headers={"Authorization": f"Bearer {settings.META_ACCESS_TOKEN}"},
+                data={"messaging_product": "whatsapp", "type": tipo},
+                files={"file": ("cardapio.jpg", conteudo, tipo)},
+            )
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao subir foto: {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f"Falha de rede ao subir foto: {exc}")
+    return resp.json()["id"]
+
+
+def _postar_imagem_meta(telefone: str, media_id: str, legenda: str):
+    imagem = {"id": media_id}
+    if legenda:
+        imagem["caption"] = legenda[:1000]
+    payload = {"messaging_product": "whatsapp", "to": _so_digitos(telefone),
+               "type": "image", "image": imagem}
+    try:
+        with httpx.Client(timeout=30) as http:
+            resp = http.post(_url(), json=payload, headers=_headers())
+        if resp.status_code >= 300:
+            raise WhatsAppError(f"Falha ao enviar foto: {resp.status_code} {resp.text}")
+    except httpx.RequestError as exc:
+        raise WhatsAppError(f"Falha de rede ao enviar foto: {exc}")
+    return resp.json()
+
+
+def enviar_imagem_sync(telefone: str, conteudo: bytes, tipo: str = "image/jpeg",
+                       legenda: str = "", media_id: str = "") -> str:
+    """Envia uma foto. Devolve o id de mídia usado na Meta ("" fora dela), para reaproveitar."""
+    if _provider() == "evolution":
+        import base64
+        payload = {"number": _so_digitos(telefone), "mediatype": "image", "mimetype": tipo,
+                   "caption": legenda or "", "fileName": "cardapio.jpg",
+                   "media": base64.b64encode(conteudo).decode()}
+        url = f"{settings.EVOLUTION_API_URL}/message/sendMedia/{settings.EVOLUTION_INSTANCE}"
+        try:
+            with httpx.Client(timeout=60) as http:
+                resp = http.post(url, json=payload, headers=_evolution_headers())
+            if resp.status_code >= 300:
+                raise WhatsAppError(f"Falha ao enviar foto (Evolution): {resp.status_code} {resp.text}")
+        except httpx.RequestError as exc:
+            raise WhatsAppError(f"Falha de rede (Evolution): {exc}")
+        return ""
+    if settings.MODO_SIMULACAO or not (settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID):
+        logger.info("[SIMULA WhatsApp] -> %s: [foto %d bytes] %s", telefone, len(conteudo), legenda)
+        return ""
+    if media_id:
+        try:
+            _postar_imagem_meta(telefone, media_id, legenda)
+            return media_id
+        except WhatsAppError:
+            logger.warning("Id de mídia %s recusado; subindo a foto de novo", media_id)
+    novo = _subir_midia_sync(conteudo, tipo)
+    _postar_imagem_meta(telefone, novo, legenda)
+    return novo
+
+
+def enviar_foto_sync(telefone: str, msg: dict) -> dict:
+    """Envia uma FotoCardapio (mensagem {"tipo": "imagem", "foto_id": ...})."""
+    from django.utils import timezone
+
+    from cardapio.models import FotoCardapio
+
+    foto = FotoCardapio.objects.filter(id=msg.get("foto_id")).first()
+    if not foto:
+        logger.warning("Foto %s não existe mais; mensagem ignorada", msg.get("foto_id"))
+        return {"ignorado": True}
+    usado = enviar_imagem_sync(telefone, bytes(foto.conteudo), foto.tipo,
+                               msg.get("legenda") or "", foto.media_valida())
+    if usado and usado != foto.meta_media_id:
+        FotoCardapio.objects.filter(id=foto.id).update(meta_media_id=usado, meta_media_em=timezone.now())
+    return {"ok": True}

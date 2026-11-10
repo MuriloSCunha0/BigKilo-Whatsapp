@@ -15,12 +15,14 @@ from asgiref.sync import sync_to_async
 
 from bot.flows import montar_tela_acompanhamentos, parse_resposta_acompanhamentos
 from bot.lembretes import ID_LEMBRETE_DESISTIR, ID_LEMBRETE_FINALIZAR
-from bot.mensagens import (ID_MAIS, ID_VOLTAR, LINHA_VOLTAR, T, botoes, lista, lista_paginada,
+from bot.mensagens import (ID_MAIS, ID_VOLTAR, LINHA_VOLTAR, T, botoes, imagem, lista, lista_paginada,
                            normalizar_mensagens, texto_plano)
 
 ID_RECOMECAR = "recomecar_pedido"
 ID_ATENDENTE = "pedir_atendente"
 ID_OUTRO_CEP = "outro_cep"
+ID_NATAL = "natal"
+ID_VER_MENU = "ver_menu"
 
 from cardapio.models import Categoria, Produto
 from pedidos.models import (
@@ -348,15 +350,24 @@ def _tela_menu(sessao, perfil=None) -> list:
                 {"id": "5", "titulo": mensagem("BTN_MENU_SOPAS", cliente, perfil)},
             ]
         else:
+            # Ordem pedida pelo restaurante: a Ceia entre as grandes porções e os
+            # sanduíches, enquanto estiver no prazo.
+            natal = []
+            if cfg.ceia_aberta:
+                natal = [{"id": ID_NATAL, "titulo": mensagem("BTN_MENU_NATAL", cliente, perfil),
+                          **({"descricao": f"Encomendas até {cfg.ceia_natal_ate:%d/%m}"}
+                             if cfg.ceia_natal_ate else {})}]
             linhas = [
                 {"id": "1", "titulo": mensagem("BTN_MENU_REFEICAO", cliente, perfil)},
                 {"id": "2", "titulo": mensagem("BTN_MENU_GRANDES", cliente, perfil)},
-                {"id": "3", "titulo": mensagem("BTN_MENU_ENCOMENDA", cliente, perfil)},
+                *natal,
                 {"id": "4", "titulo": mensagem("BTN_MENU_SANDUICHES", cliente, perfil)},
                 {"id": "5", "titulo": mensagem("BTN_MENU_SOPAS", cliente, perfil)},
+                {"id": "3", "titulo": mensagem("BTN_MENU_ENCOMENDA", cliente, perfil)},
             ]
             if not cfg.esta_aberta:
-                linhas = [
+                # Fechado não sai comida hoje, mas reservar a Ceia e encomendar, sim.
+                linhas = natal + [
                     {"id": "3", "titulo": mensagem("BTN_MENU_ENCOMENDA", cliente, perfil)},
                 ]
         
@@ -1255,7 +1266,7 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         sessao.carrinho_json.update({k: v for k, v in guardar.items() if v})
         lojista_ok = _e_lojista(sessao) and (sessao.carrinho_json.get("lojista") or {}).get("loja")
         tela = (_menu_do_canal(sessao, perfil)
-                if lojista_ok or _cep_validado(sessao.carrinho_json)
+                if lojista_ok or _e_cliente(sessao) or _cep_validado(sessao.carrinho_json)
                 else _saudacao(sessao, perfil))
         out["mensagens"] = _com_aviso(["🔄 Pedido reiniciado. Carrinho vazio."], tela)
         sessao.save()
@@ -1312,7 +1323,7 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     # que já está no carrinho. Vem antes do despacho por estado para valer em todas
     # as telas, inclusive as que ainda vão ser criadas.
     if texto.strip() == ID_VOLTAR:
-        for chave in ("montagem", "fixo", "quentinha", "_menu", "_paginas"):
+        for chave in ("montagem", "fixo", "quentinha", "_menu", "_paginas", "_depois_cep", "ceia"):
             sessao.carrinho_json.pop(chave, None)
         sessao.carrinho_json.setdefault("itens", [])
         avisos = ["↩️ Escolha desfeita."]
@@ -1320,13 +1331,23 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             avisos[0] += " O que já estava no carrinho continua lá."
         # Sem CEP e sem loja ainda, o "menu" é a tela de abertura.
         lojista_ok = _e_lojista(sessao) and (sessao.carrinho_json.get("lojista") or {}).get("loja")
-        if lojista_ok or _cep_validado(sessao.carrinho_json):
+        if lojista_ok or _e_cliente(sessao) or _cep_validado(sessao.carrinho_json):
             tela = _menu_do_canal(sessao, perfil)
         else:
             sessao.carrinho_json.pop("canal", None)
             sessao.carrinho_json.pop("lojista", None)
             tela = _saudacao(sessao, perfil)
         out["mensagens"] = _com_aviso(avisos, tela)
+        sessao.save()
+        return out
+
+    if texto.strip() == ID_VER_MENU:
+        for chave in ("montagem", "fixo", "quentinha", "_menu", "_paginas", "_depois_cep", "ceia"):
+            sessao.carrinho_json.pop(chave, None)
+        lojista_ok = _e_lojista(sessao) and (sessao.carrinho_json.get("lojista") or {}).get("loja")
+        out["mensagens"] = (_menu_do_canal(sessao, perfil)
+                            if lojista_ok or _e_cliente(sessao) or _cep_validado(sessao.carrinho_json)
+                            else _saudacao(sessao, perfil))
         sessao.save()
         return out
 
@@ -1337,14 +1358,15 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     if low in SAUDACOES and estado != SessaoBot.Estado.AGUARDANDO_PAGAMENTO:
         if lojista_pronto:
             out["mensagens"] = _tela_menu_lojista(sessao, perfil)
-        elif cep_ok:
+        elif cep_ok or _e_cliente(sessao):
             out["mensagens"] = _tela_menu(sessao)
         else:
             out["mensagens"] = _saudacao(sessao, perfil)
         sessao.save()
         return out
 
-    if estado == SessaoBot.Estado.MENU_PRINCIPAL and not cep_ok and not lojista_pronto:
+    if (estado == SessaoBot.Estado.MENU_PRINCIPAL and not cep_ok and not lojista_pronto
+            and not _e_cliente(sessao)):
         out["mensagens"] = _saudacao(sessao, perfil)
         sessao.save()
         return out
@@ -1368,8 +1390,12 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             sessao.carrinho_json["tipo_entrega"] = Pedido.TipoEntrega.ENTREGA
             out["mensagens"] = _tela_pontos_lojista(sessao, perfil)
         elif low == "cliente":
+            # O cardápio vem antes de entrega/retirada e CEP: quem só quer reservar a
+            # Ceia de Natal não precisa informar CEP, e quem vê o cardápio primeiro
+            # decide antes de responder perguntas.
             sessao.carrinho_json["canal"] = Pedido.Canal.CLIENTE
-            out["mensagens"] = _tela_tipo_entrega(sessao, perfil)
+            avisos = [] if cfg.esta_aberta else [_aviso_fechado(cfg)]
+            out["mensagens"] = _com_aviso(avisos, _entrar_menu(sessao, perfil))
         else:
             # Na abertura a mensagem mais comum é uma pergunta ("qual o cardápio de
             # hoje?"). Responder "opção inválida" era a primeira impressão de quem chegava.
@@ -1501,6 +1527,43 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         sessao.save()
         return out
 
+    if estado == SessaoBot.Estado.CEIA_NOME:
+        nome_ceia = " ".join((texto or "").split())
+        letras = sum(c.isalpha() for c in nome_ceia)
+        if letras < 2 or _E_TOQUE_ID.match(nome_ceia):
+            out["mensagens"] = [botoes("Me diga seu *nome*, por favor 🙂 (ex.: Maria Silva)",
+                                       [{"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu"}])]
+        else:
+            sessao.carrinho_json["ceia"] = {"nome": nome_ceia[:120]}
+            sessao.estado_atual = SessaoBot.Estado.CEIA_ENDERECO
+            out["mensagens"] = [botoes(
+                mensagem("CEIA_PEDIR_ENDERECO", _cliente(sessao), perfil=perfil,
+                         nome=nome_ceia.split()[0]),
+                [{"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu"}])]
+        sessao.save()
+        return out
+
+    if estado == SessaoBot.Estado.CEIA_ENDERECO:
+        endereco = (texto or "").strip()
+        nome_ceia = (sessao.carrinho_json.get("ceia") or {}).get("nome") or ""
+        if not nome_ceia:
+            out["mensagens"] = _iniciar_ceia(sessao, perfil)
+        elif len(endereco) < 6 or _E_TOQUE_ID.match(endereco):
+            out["mensagens"] = [botoes(
+                "Preciso do *endereço completo* para a entrega 🙂 (rua, número e bairro)",
+                [{"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu"}])]
+        else:
+            _registrar_ceia(sessao.telefone, nome_ceia, endereco[:500])
+            sessao.carrinho_json.pop("ceia", None)
+            sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+            _set_menu(sessao, {})
+            out["mensagens"] = [botoes(
+                mensagem("CEIA_REGISTRADA", _cliente(sessao), perfil=perfil,
+                         nome=nome_ceia.split()[0]),
+                [{"id": ID_VER_MENU, "titulo": "🍽️ Ver cardápio"}])]
+        sessao.save()
+        return out
+
     if estado == SessaoBot.Estado.TIPO_ENTREGA_INICIAL:
         if low == "1" or any(p in low for p in ("entrega", "casa", "delivery", "entregar")):
             sessao.carrinho_json["tipo_entrega"] = "ENTREGA"
@@ -1511,13 +1574,11 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             return out
         elif low == "2" or any(p in low for p in ("retirar", "retirada", "buscar", "pegar", "loja")):
             sessao.carrinho_json["tipo_entrega"] = "RETIRADA"
-            # Pulamos o CEP e vamos pro menu
+            # Pulamos o CEP e seguimos para o que a pessoa escolheu no cardápio
             avisos = ["📍 Retirada na loja confirmada!"]
             if not cfg.esta_aberta:
                 avisos.append(_aviso_fechado(cfg))
-            out["mensagens"] = avisos + _entrar_menu(sessao, perfil)
-            sessao.save()
-            return out
+            return _seguir_escolha(telefone, nome, perfil_id, sessao, avisos, perfil, out)
         else:
             # Repete ESTA pergunta. Antes voltava para "cliente ou lojista", e quem
             # respondia "Em casa" era jogado para o começo sem entender por quê.
@@ -1532,7 +1593,8 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             # da loja decide. O cliente ainda pode digitar o CEP normalmente.
             out["mensagens"] = [botoes(
                 mensagem("CEP_INVALIDO", _cliente(sessao), perfil=perfil),
-                [{"id": ID_ATENDENTE, "titulo": "💬 Falar com a loja"}])]
+                [{"id": ID_ATENDENTE, "titulo": "💬 Falar com a loja"},
+                 {"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu"}])]
             sessao.save()
             return out
         cep = _normalizar_cep(digitos)
@@ -1545,7 +1607,8 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             out["mensagens"] = [botoes(
                 mensagem("FORA_AREA", _cliente(sessao), perfil=perfil),
                 [{"id": ID_ATENDENTE, "titulo": "💬 Falar com a loja"},
-                 {"id": ID_OUTRO_CEP, "titulo": "🔄 Outro CEP"}],
+                 {"id": ID_OUTRO_CEP, "titulo": "🔄 Outro CEP"},
+                 {"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu"}],
             )]
             sessao.save()
             return out
@@ -1560,11 +1623,8 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         avisos = ["📍 CEP confirmado!"]
         if not cfg.esta_aberta:
             avisos.append(_aviso_fechado(cfg))
-        # Avisos entram no topo do menu: mensagem avulsa custa uma mensagem de serviço.
-        tela = _entrar_menu(sessao, perfil)
-        out["mensagens"] = _com_aviso(avisos, tela)
-        sessao.save()
-        return out
+        # Avisos entram no topo da próxima tela: mensagem avulsa custa uma mensagem de serviço.
+        return _seguir_escolha(telefone, nome, perfil_id, sessao, avisos, perfil, out)
 
     if estado == SessaoBot.Estado.MENU_PRINCIPAL:
         encomenda = bool(sessao.carrinho_json.get("encomenda", {}).get("data"))
@@ -1590,12 +1650,23 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             out["mensagens"] = [aviso]
             sessao.save()
             return out
+        if low == ID_NATAL:
+            out["mensagens"] = _iniciar_ceia(sessao, perfil)
+            sessao.save()
+            return out
         # Pedido para HOJE fica barrado quando a loja está fechada (encomenda passa).
         imediato = low in {"1", "2", "fechar", "finalizar"} or low in MENU_CATEGORIAS
         if imediato and loja_fechada and not encomenda:
             out["mensagens"] = [
                 _aviso_fechado(cfg)
             ] + _tela_menu(sessao)
+            sessao.save()
+            return out
+        if imediato and not cep_ok and not encomenda:
+            # O cardápio veio antes do CEP. Agora que a pessoa escolheu algo para hoje,
+            # pergunta como ela recebe — e volta direto para o que ela escolheu.
+            sessao.carrinho_json["_depois_cep"] = low
+            out["mensagens"] = _tela_tipo_entrega(sessao, perfil)
             sessao.save()
             return out
         if low in {"fechar", "finalizar"} or texto.strip() == "fechar":
@@ -1935,6 +2006,65 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     return out
 
 
+# Id de botão/lista tocado ("pt:2", "pedir_atendente", "7") não é nome nem endereço.
+import re as _re
+_E_TOQUE_ID = _re.compile(r"^(\d{1,2}|[a-z_]+(:[\w,]+)?|multi:[\d,]+)$")
+
+
+def _seguir_escolha(telefone, nome, perfil_id, sessao, avisos, perfil, out) -> dict:
+    """Depois de entrega/retirada e CEP, volta para o que a pessoa tocou no cardápio.
+
+    Reaproveita o próprio fluxo (como se ela tivesse tocado de novo na opção), para
+    não existir um segundo caminho de "montar refeição" que poderia divergir.
+    """
+    pendente = sessao.carrinho_json.pop("_depois_cep", None)
+    if not pendente:
+        out["mensagens"] = _com_aviso(avisos, _entrar_menu(sessao, perfil))
+        sessao.save()
+        return out
+    sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
+    sessao.save()
+    seguinte = _core_fluxo(telefone, pendente, nome, perfil_id)
+    seguinte["mensagens"] = _com_aviso(avisos, seguinte["mensagens"])
+    return seguinte
+
+
+def _iniciar_ceia(sessao, perfil=None) -> list:
+    """Ceia de Natal: manda a arte e pede o nome. Não precisa de CEP nem de loja aberta."""
+    from cardapio.models import FotoCardapio
+
+    cfg = ConfiguracaoLoja.get()
+    if not cfg.ceia_aberta:
+        return _com_aviso(["🎄 As encomendas da Ceia de Natal já foram encerradas."],
+                          _tela_menu(sessao, perfil))
+    sessao.estado_atual = SessaoBot.Estado.CEIA_NOME
+    _set_menu(sessao, {})
+    sessao.carrinho_json["ceia"] = {}
+    msgs = []
+    foto = (FotoCardapio.objects.filter(id=cfg.foto_ceia_id).only("id", "titulo", "legenda").first()
+            if cfg.foto_ceia_id else None)
+    if foto:
+        msgs.append(imagem(foto))
+    msgs.append(botoes(mensagem("CEIA_PEDIR_NOME", _cliente(sessao), perfil=perfil),
+                       [{"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu"}]))
+    return msgs
+
+
+def _registrar_ceia(telefone: str, nome: str, endereco: str):
+    """Grava em Encomendas de Natal. Tocar duas vezes atualiza, não duplica."""
+    from pedidos.models import EncomendaNatal
+
+    tel = "".join(c for c in telefone if c.isdigit())
+    enc = EncomendaNatal.objects.filter(
+        telefone=tel, status=EncomendaNatal.Status.NOVO, origem=EncomendaNatal.Origem.BOT).first()
+    if enc:
+        enc.nome, enc.endereco = nome, endereco
+        enc.save(update_fields=["nome", "endereco", "atualizado_em"])
+    else:
+        EncomendaNatal.objects.create(telefone=tel, nome=nome, endereco=endereco,
+                                      origem=EncomendaNatal.Origem.BOT)
+
+
 def _saudacao(sessao, perfil=None) -> list[str]:
     """Primeira tela: cliente ou lojista.
 
@@ -1949,7 +2079,8 @@ def _saudacao(sessao, perfil=None) -> list[str]:
     # Sem ponto cadastrado não há caminho de lojista a oferecer: abre direto no
     # fluxo do cliente, como era antes.
     if not PontoLojista.objects.filter(ativo=True).exists():
-        return _tela_tipo_entrega(sessao, perfil, cabecalho=texto_boas_vindas)
+        sessao.carrinho_json["canal"] = Pedido.Canal.CLIENTE
+        return _com_aviso([texto_boas_vindas], _entrar_menu(sessao, perfil))
 
     sessao.estado_atual = SessaoBot.Estado.ESCOLHENDO_PUBLICO
     _set_menu(sessao, {"cliente": "cliente", "lojista": "lojista"})
@@ -1968,6 +2099,7 @@ def _tela_tipo_entrega(sessao, perfil=None, cabecalho="") -> list[str]:
     linhas = [
         {"id": "1", "titulo": "🛵 Entrega em domicílio", "descricao": "Calcularemos a taxa pelo CEP"},
         {"id": "2", "titulo": "🏬 Vou retirar na loja", "descricao": "Sem taxa de frete"},
+        dict(LINHA_VOLTAR),
     ]
     corpo = "Como você deseja receber o seu pedido?"
     if cabecalho:
@@ -1979,6 +2111,11 @@ def _tela_tipo_entrega(sessao, perfil=None, cabecalho="") -> list[str]:
 # ===================== Caminho do lojista =====================
 def _e_lojista(sessao) -> bool:
     return (sessao.carrinho_json.get("canal") or "") == Pedido.Canal.LOJISTA
+
+
+def _e_cliente(sessao) -> bool:
+    """Já disse "Sou cliente": o menu dele existe mesmo antes do CEP."""
+    return (sessao.carrinho_json.get("canal") or "") == Pedido.Canal.CLIENTE
 
 
 def _aviso_fechado(cfg) -> str:
