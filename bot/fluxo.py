@@ -1122,10 +1122,44 @@ def _texto_msg(m) -> str:
     return ""
 
 
-def _chamar_loja(telefone: str):
-    """Tira o bot da frente: a conversa entra no Atendimento como esperando resposta."""
-    SessaoBot.objects.filter(telefone=telefone).update(
-        estado_atual=SessaoBot.Estado.ATENDIMENTO_HUMANO, atualizado_em=timezone.now())
+def link_falar_com_loja(mensagem_pronta: str) -> str:
+    """wa.me do atendimento da loja, já com a mensagem escrita para o cliente só enviar."""
+    from urllib.parse import quote
+
+    cfg = ConfiguracaoLoja.get()
+    numero = "".join(c for c in (cfg.whatsapp_atendimento or "") if c.isdigit())
+    return f"https://wa.me/{numero}?text={quote(mensagem_pronta[:900])}"
+
+
+def _texto_falar_com_loja(sessao) -> str:
+    """Resposta ao "Falar com a loja": link com o contexto da conversa já escrito.
+
+    Quem atende recebe no WhatsApp que já usa, sabendo do que se trata — sem o
+    cliente ter de explicar de novo o que já montou aqui.
+    """
+    cfg = ConfiguracaoLoja.get()
+    loja = cfg.nome_loja or "restaurante"
+    c = sessao.carrinho_json or {}
+    itens = c.get("itens") or []
+    cep = c.get("cep_recusado")
+    pergunta = c.get("_ultima_pergunta") or ""
+    if cep:
+        pronta = (f"Oi! Vim do WhatsApp do {loja}. Meu CEP ({cep}) não foi aceito para entrega. "
+                  "Moro em: ")
+    elif itens:
+        linhas = [_linha_item_carrinho(i).replace("\n  └", " —") for i in itens]
+        total = sum(Decimal(str(i["subtotal"])) for i in itens)
+        pronta = (f"Oi! Vim do WhatsApp do {loja}. Tenho uma dúvida sobre meu pedido:\n"
+                  + "\n".join(linhas) + f"\nTotal: {_moeda(total)}\n\nMinha dúvida: {pergunta}")
+    elif pergunta:
+        pronta = f"Oi! Vim do WhatsApp do {loja}. {pergunta}"
+    else:
+        pronta = f"Oi! Vim do WhatsApp do {loja} e queria falar com vocês."
+    fim = ("Se preferir, continue seu pedido por aqui mesmo — ele fica guardado. 🙂" if itens
+           else "Se preferir, continue por aqui mesmo. 🙂")
+    return ("Para falar com a nossa equipe, toque no link abaixo 👇 Ele abre o nosso "
+            "WhatsApp de atendimento com a sua mensagem já escrita, é só enviar:\n\n"
+            f"{link_falar_com_loja(pronta)}\n\n{fim}")
 
 
 def registrar_falha_envio(telefone: str, aviso: str):
@@ -1163,12 +1197,16 @@ def _rede_de_seguranca(telefone: str, texto: str, out: dict):
     if seguidas == antes:
         return
     c["_nao_entendi"] = seguidas
+    if nao_entendeu and not _E_TOQUE_ID.match((texto or "").strip()):
+        # Guarda o que a pessoa escreveu: se ela tocar "Falar com a loja", vai junto
+        # no texto pronto e ela não precisa repetir a pergunta.
+        c["_ultima_pergunta"] = (texto or "").strip()[:300]
     alvo = _normalizar(texto)
     pergunta = "?" in (texto or "") or alvo.startswith(_INICIO_PERGUNTA)
     ja_oferece = any(ID_ATENDENTE in str(m) for m in msgs)
     if nao_entendeu and not ja_oferece and (seguidas >= 2 or pergunta):
         msgs.append(botoes(
-            "Se preferir, alguém da loja responde você por aqui. 🙂",
+            "Se preferir, fale com alguém da nossa equipe. 🙂",
             [{"id": ID_ATENDENTE, "titulo": "💬 Falar com a loja"}]))
     sessao.carrinho_json = c
     sessao.save(update_fields=["carrinho_json"])
@@ -1285,24 +1323,12 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     estado = sessao.estado_atual
     cep_ok = _cep_validado(sessao.carrinho_json)
 
-    # Cliente pede alguém da loja: o bot sai da frente e a conversa aparece no
-    # Atendimento marcada como EM ATENDIMENTO. Se ninguém responder, a sessão volta
-    # sozinha para o bot no dia seguinte (a expiração roda antes do silêncio).
+    # Cliente pede alguém da loja: recebe o link do WhatsApp de atendimento com o
+    # pedido já escrito. Antes a conversa ia para o painel e o bot se calava; ninguém
+    # olhava o painel a tempo e a cliente de 12/11 perdeu um pedido de R$ 102,80.
+    # O bot continua ativo aqui: se a loja demorar, ela finaliza sozinha.
     if texto.strip() == ID_ATENDENTE:
-        cfg_a = ConfiguracaoLoja.get()
-        sessao.estado_atual = SessaoBot.Estado.ATENDIMENTO_HUMANO
-        sessao.carrinho_json.pop("_aviso_sem_resposta", None)
-        if cfg_a.esta_aberta:
-            # Se ninguém responder em alguns minutos, bot/lembretes.py avisa o cliente
-            # e oferece seguir sozinho — em vez de ele esperar com o carrinho parado.
-            sessao.carrinho_json["_chamou_loja_em"] = timezone.now().isoformat()
-        quando = ("em instantes" if cfg_a.esta_aberta
-                  else f"assim que a loja abrir, às {cfg_a.hora_abertura:%H:%M}")
-        cep = sessao.carrinho_json.get("cep_recusado")
-        out["mensagens"] = [T(
-            f"Pronto! 😊 Chamei alguém da loja para falar com você por aqui — {quando}."
-            + ("\n\nSe puder, já me diga o nome do condomínio ou um ponto de referência."
-               if cep else ""))]
+        out["mensagens"] = [T(_texto_falar_com_loja(sessao))]
         sessao.save()
         return out
 
@@ -2381,12 +2407,14 @@ async def processar_mensagem(telefone: str, texto: str, nome: str = "", perfil_i
             # Qualquer falha aqui (Asaas, rede, ORM) nao pode engolir a confirmacao do
             # pedido: o cliente precisa ao menos saber que o pedido entrou.
             nivel = "Asaas falhou" if isinstance(exc, AsaasError) else "Falha ao montar o Pix"
-            # A mensagem prometia um atendente que nunca era chamado. Agora a conversa
-            # vai para o Atendimento e aparece em "esperando resposta" no Modo Cozinha.
-            await sync_to_async(_chamar_loja)(telefone)
+            # A mensagem prometia um atendente que nunca era chamado. Agora o cliente
+            # recebe o link do atendimento, já dizendo qual pedido ficou sem Pix.
+            link = await sync_to_async(link_falar_com_loja)(
+                f"Oi! Fiz o pedido #{pedido_id} pelo WhatsApp e o Pix não foi gerado. "
+                "Como faço para pagar?")
             mensagens.append(
                 f"Seu pedido #{pedido_id} está guardado, mas não consegui gerar o Pix agora. 😕\n\n"
-                "Já chamei alguém da loja para te mandar o Pix por aqui.")
+                f"Toque no link para nossa equipe te mandar o Pix:\n{link}")
             import logging
             logging.getLogger(__name__).exception("%s no pedido #%s: %s", nivel, pedido_id, exc)
     if registrar:

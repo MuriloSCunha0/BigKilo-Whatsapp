@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 ESPERA_MIN = 15   # parado há pelo menos isto...
 JANELA_MIN = 60   # ...e no máximo isto (depois disso o lembrete soa estranho)
-ESPERA_ATENDENTE_MIN = 10  # "Falar com a loja" sem resposta da equipe
 
 ID_LEMBRETE_FINALIZAR = "lembrete_finalizar"
 ID_LEMBRETE_DESISTIR = "lembrete_desistir"
@@ -70,56 +69,6 @@ def _varrer() -> int:
         c.update(marca)
         # Marca ANTES de enviar e só se a sessão não mudou desde a leitura: se o
         # cliente respondeu neste meio-tempo, ele já voltou e o lembrete não vai.
-        if not SessaoBot.objects.filter(pk=s.pk, atualizado_em=s.atualizado_em).update(carrinho_json=c):
-            continue
-        _enviar(s.telefone, msg)
-        enviados += 1
-    return enviados + _sem_resposta(agora)
-
-
-def _sem_resposta(agora) -> int:
-    """Quem tocou "Falar com a loja" e ninguém respondeu em ESPERA_ATENDENTE_MIN.
-
-    Em 12/11 uma cliente com R$ 102,80 no carrinho pediu ajuda, ninguém respondeu e
-    ela foi embora. Agora o bot pede desculpas, diz que a mensagem ficou registrada e
-    oferece seguir sozinho. Uma vez só por pedido de ajuda.
-    """
-    from datetime import datetime
-
-    from bot.mensagens import botoes
-    from pedidos.models import LogMensagem, SessaoBot
-
-    enviados = 0
-    for s in SessaoBot.objects.filter(estado_atual=SessaoBot.Estado.ATENDIMENTO_HUMANO,
-                                      atualizado_em__gte=agora - timedelta(hours=2)):
-        c = dict(s.carrinho_json or {})
-        quando = c.get("_chamou_loja_em")
-        if not quando or c.get("_aviso_sem_resposta"):
-            continue
-        try:
-            chamou = datetime.fromisoformat(quando)
-        except ValueError:
-            continue
-        if agora - chamou < timedelta(minutes=ESPERA_ATENDENTE_MIN):
-            continue
-        # Mensagem que saiu depois do pedido de ajuda e não é automática do bot = a
-        # equipe respondeu (texto, foto ou "Abrir atendimento").
-        respostas = (LogMensagem.objects
-                     .filter(telefone=s.telefone, direcao=LogMensagem.Direcao.SAIDA, criado_em__gt=chamou)
-                     .exclude(texto__startswith="Pronto! 😊 Chamei")
-                     .exclude(texto__startswith="⏰").exclude(texto__startswith="⚠️"))
-        if respostas.exists():
-            continue
-        itens = c.get("itens") or []
-        opcoes = ([{"id": ID_LEMBRETE_FINALIZAR, "titulo": "✅ Finalizar pedido"}] if itens else [])
-        opcoes.append({"id": "ver_menu", "titulo": "🍽️ Ver cardápio"})
-        msg = botoes(
-            f"Oi{_nome(s.telefone)}! Desculpe a demora 🙏 Nossa equipe ainda não conseguiu "
-            "te responder, mas sua mensagem ficou registrada e vamos responder por aqui.\n\n"
-            + ("Se quiser, você já pode finalizar seu pedido:" if itens
-               else "Enquanto isso, o cardápio continua à sua disposição:"),
-            opcoes)
-        c["_aviso_sem_resposta"] = True
         if not SessaoBot.objects.filter(pk=s.pk, atualizado_em=s.atualizado_em).update(carrinho_json=c):
             continue
         _enviar(s.telefone, msg)

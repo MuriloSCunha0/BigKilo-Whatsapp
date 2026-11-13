@@ -159,7 +159,7 @@ async def _lembrar_parados():
 _RESPOSTA_DE_ERRO = {
     "tipo": "botoes",
     "corpo": "Ops, tive um probleminha aqui. 😕 Pode mandar de novo? "
-             "Se preferir, alguém da loja te atende por aqui.",
+             "Se preferir, fale com alguém da nossa equipe.",
     "opcoes": [{"id": "pedir_atendente", "titulo": "💬 Falar com a loja"},
                {"id": "recomecar_pedido", "titulo": "🔄 Recomeçar"}],
 }

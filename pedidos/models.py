@@ -119,6 +119,13 @@ class ConfiguracaoLoja(models.Model):
                   "a uma porta fechada. Deixe marcado quando só o delivery parou — falta "
                   "de entregador, por exemplo — e a cozinha segue trabalhando.",
     )
+    # "Falar com a loja" no bot abre este WhatsApp com o pedido já escrito. Responder
+    # pelo número do bot dependia de alguém olhar o painel — e ninguém via a tempo.
+    whatsapp_atendimento = models.CharField(
+        "WhatsApp de atendimento", max_length=20, default="5521993032175",
+        help_text="ℹ️ Número que o cliente chama ao tocar \"Falar com a loja\" no bot. Com DDI e "
+                  "DDD, só números. Ex.: 5521993032175",
+    )
     # Ceia de Natal no menu do bot. Some sozinha depois do prazo: ninguém precisa
     # lembrar de desligar no dia 23.
     ceia_natal_ativa = models.BooleanField(

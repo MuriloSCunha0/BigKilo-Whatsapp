@@ -61,7 +61,7 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
     form = ConfiguracaoLojaForm
     readonly_fields = ("link_mensagens", "link_cozinha")
     fieldsets = (
-        (_("Identidade"), {"fields": ("nome_loja", "slogan")}),
+        (_("Identidade"), {"fields": ("nome_loja", "slogan", "whatsapp_atendimento")}),
         (_("Modo Cozinha"), {
             "fields": ("link_cozinha",),
             "description": _("Link para a cozinha marcar o que acabou sem precisar de senha. "
