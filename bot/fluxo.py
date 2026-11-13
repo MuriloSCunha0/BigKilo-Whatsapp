@@ -23,6 +23,10 @@ ID_ATENDENTE = "pedir_atendente"
 ID_OUTRO_CEP = "outro_cep"
 ID_NATAL = "natal"
 ID_VER_MENU = "ver_menu"
+# Botões que valem em qualquer tela. Tocados durante o atendimento humano, devolvem
+# a conversa ao bot (texto livre continua indo só para o atendente).
+_BOTOES_QUE_RETOMAM = {"lembrete_finalizar", "lembrete_desistir", ID_RECOMECAR, "voltar_menu",
+                       ID_VER_MENU}
 
 from cardapio.models import Categoria, Produto
 from pedidos.models import (
@@ -1238,7 +1242,12 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
             out["mensagens"] = ["Atendimento humano encerrado. Pedido reiniciado."] + _saudacao(sessao, perfil)
             sessao.save()
             return out
-        return out
+        if texto.strip() not in _BOTOES_QUE_RETOMAM:
+            return out
+        # Tocar num botão do próprio bot é pedir o bot de volta. Em 12/11 uma cliente
+        # tocou "Falar com a loja", ninguém respondeu, ela tocou "Finalizar pedido"
+        # (R$ 102,80) e o bot ficou calado. Texto livre continua indo só para o atendente.
+        sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
 
     itens_carrinho = sessao.carrinho_json.get("itens") or []
     if low in {"cancelar", "reiniciar", "recomeçar", "recomecar"} and itens_carrinho:
@@ -1282,6 +1291,11 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
     if texto.strip() == ID_ATENDENTE:
         cfg_a = ConfiguracaoLoja.get()
         sessao.estado_atual = SessaoBot.Estado.ATENDIMENTO_HUMANO
+        sessao.carrinho_json.pop("_aviso_sem_resposta", None)
+        if cfg_a.esta_aberta:
+            # Se ninguém responder em alguns minutos, bot/lembretes.py avisa o cliente
+            # e oferece seguir sozinho — em vez de ele esperar com o carrinho parado.
+            sessao.carrinho_json["_chamou_loja_em"] = timezone.now().isoformat()
         quando = ("em instantes" if cfg_a.esta_aberta
                   else f"assim que a loja abrir, às {cfg_a.hora_abertura:%H:%M}")
         cep = sessao.carrinho_json.get("cep_recusado")
