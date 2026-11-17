@@ -39,7 +39,7 @@ def _confirmar_pagamento(cobranca_id: str):
             .first()
         )
         if not pedido:
-            return None
+            return _confirmar_sinal_natal(cobranca_id)
         # O status nao serve como sinal de pagamento: com "imprimir ao fechar" o
         # pedido ja nasce em PREPARANDO, e a confirmacao nunca disparava.
         if pedido.pago_em is None:
@@ -58,6 +58,33 @@ def _confirmar_pagamento(cobranca_id: str):
             LogMensagem.objects.create(telefone=telefone, direcao=LogMensagem.Direcao.SAIDA, texto=texto)
             return (pedido.pk, telefone, texto)
         return None
+
+
+def _confirmar_sinal_natal(cobranca_id: str):
+    """Sinal da encomenda de Natal e Ano Novo pago: reserva e avisa o cliente.
+
+    Não mexe na sessão do bot nem na impressão: a encomenda não é um pedido do dia.
+    """
+    from pedidos.models import EncomendaNatal
+
+    enc = (EncomendaNatal.objects.select_for_update()
+           .filter(sinal_cobranca_id=cobranca_id).first())
+    if not enc or enc.sinal_pago_em:
+        return None
+    enc.sinal_pago_em = timezone.now()
+    enc.valor_pago = (enc.valor_pago or 0) + enc.sinal_valor
+    enc.forma_sinal = "PIX"
+    if enc.status in (EncomendaNatal.Status.NOVO, EncomendaNatal.Status.AGUARDANDO_SINAL):
+        enc.status = EncomendaNatal.Status.RESERVADO
+    enc.save(update_fields=["sinal_pago_em", "valor_pago", "forma_sinal", "status", "atualizado_em"])
+    primeiro = (enc.nome or "").split()[0] if (enc.nome or "").strip() else ""
+    quando = enc.data_entrega.strftime("%d/%m") if enc.data_entrega else "a data combinada"
+    valor = f"R$ {enc.sinal_valor:.2f}".replace(".", ",")
+    texto = (f"Oi{' ' + primeiro if primeiro else ''}! 🎄 Recebemos o sinal de {valor}. "
+             f"Sua encomenda nº {enc.pk} está *reservada* para retirada em {quando}"
+             + (f" às {enc.horario}" if enc.horario else "") + ". Obrigado! 😊")
+    LogMensagem.objects.create(telefone=enc.telefone, direcao=LogMensagem.Direcao.SAIDA, texto=texto)
+    return (f"natal-{enc.pk}", enc.telefone, texto)
 
 
 @csrf_exempt

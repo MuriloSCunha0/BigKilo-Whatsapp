@@ -301,7 +301,7 @@ UNFOLD = {
                     {"title": "Modo Cozinha", "icon": "skillet", "link": "/cozinha/"},
                     {"title": "Pedidos", "icon": "receipt_long", "link": "/admin/pedidos/pedido/"},
                     {"title": "Encomendas", "icon": "event_note", "link": "/admin/pedidos/encomenda/"},
-                    {"title": "Encomendas de Natal", "icon": "redeem", "link": "/admin/pedidos/encomendanatal/"},
+                    {"title": "Natal e Ano Novo", "icon": "redeem", "link": "/admin/pedidos/encomendanatal/"},
                     {"title": "Atendimento (conversas)", "icon": "forum", "link": "/atendimento/"},
                 ],
             },

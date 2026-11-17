@@ -154,3 +154,60 @@ async def criar_cobranca_pix(pedido) -> dict:
         "pix_copia_cola": copia_cola,
         "qr_base64": dados.get("encodedImage", ""),
     }
+
+
+async def criar_cobranca_sinal(encomenda) -> dict:
+    """Pix do sinal de uma encomenda de Natal e Ano Novo (só o sinal, nunca o total).
+
+    Mesmo caminho do Pix dos pedidos: Asaas de verdade (o webhook confirma e a
+    encomenda vira "Reservado" sozinha) ou, sem Asaas, o copia e cola local da chave
+    da loja — aí a equipe confirma o sinal no painel.
+    """
+    from pedidos.models import Cliente, ConfiguracaoLoja
+
+    valor = float(encomenda.sinal_valor)
+    if valor <= 0:
+        raise AsaasError("Encomenda sem valor de sinal.")
+    usar_manual = (
+        settings.PIX_PROVIDER == "manual"
+        or settings.MODO_SIMULACAO
+        or not settings.ASAAS_API_KEY
+    )
+    if usar_manual:
+        cfg = await sync_to_async(ConfiguracaoLoja.get)()
+        chave = (cfg.chave_pix or "").strip()
+        if not chave:
+            raise AsaasError("Sem Asaas e sem chave Pix configurada.")
+        from .pix_estatico import gerar_pix_copia_cola
+
+        copia_cola = gerar_pix_copia_cola(chave, encomenda.sinal_valor, nome=cfg.nome_loja or "Big Kilo",
+                                          cidade=settings.PIX_MERCHANT_CITY, txid=f"NATAL{encomenda.pk}")
+        encomenda.sinal_cobranca_id = f"manual_natal_{encomenda.pk}"
+        encomenda.sinal_pix = copia_cola
+        await sync_to_async(encomenda.save)(update_fields=["sinal_cobranca_id", "sinal_pix"])
+        return {"cobranca_id": encomenda.sinal_cobranca_id, "pix_copia_cola": copia_cola, "manual": True}
+
+    cliente, _ = await sync_to_async(Cliente.objects.get_or_create)(
+        telefone=encomenda.telefone, defaults={"nome_whatsapp": encomenda.nome})
+    async with httpx.AsyncClient(timeout=20) as http:
+        customer_id = await _obter_ou_criar_cliente(http, cliente)
+        resp = await http.post(f"{settings.ASAAS_BASE_URL}/payments", json={
+            "customer": customer_id,
+            "billingType": "PIX",
+            "value": valor,
+            "dueDate": timezone.localdate().isoformat(),
+            "description": f"Sinal da encomenda de Natal e Ano Novo #{encomenda.pk} - Big Kilo",
+            "externalReference": f"natal-{encomenda.pk}",
+        }, headers=_headers())
+        if resp.status_code >= 300:
+            raise AsaasError(f"Falha ao criar cobrança do sinal: {resp.status_code} {resp.text}")
+        cobranca_id = resp.json()["id"]
+        encomenda.sinal_cobranca_id = cobranca_id
+        await sync_to_async(encomenda.save)(update_fields=["sinal_cobranca_id"])
+        qr = await http.get(f"{settings.ASAAS_BASE_URL}/payments/{cobranca_id}/pixQrCode", headers=_headers())
+        if qr.status_code >= 300:
+            raise AsaasError(f"Falha ao obter QR Code do sinal: {qr.status_code} {qr.text}")
+        copia_cola = qr.json().get("payload", "")
+    encomenda.sinal_pix = copia_cola
+    await sync_to_async(encomenda.save)(update_fields=["sinal_pix"])
+    return {"cobranca_id": cobranca_id, "pix_copia_cola": copia_cola}

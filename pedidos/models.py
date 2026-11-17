@@ -129,7 +129,7 @@ class ConfiguracaoLoja(models.Model):
     # Ceia de Natal no menu do bot. Some sozinha depois do prazo: ninguém precisa
     # lembrar de desligar no dia 23.
     ceia_natal_ativa = models.BooleanField(
-        "Mostrar a Ceia de Natal no bot", default=True,
+        "Mostrar Natal e Ano Novo no bot", default=True,
         help_text="ℹ️ Aparece no menu do cliente como \"🎄 Ceia de Natal\". Quem toca recebe a "
                   "foto, deixa nome e endereço, e o pedido cai em Encomendas de Natal.",
     )
@@ -141,6 +141,19 @@ class ConfiguracaoLoja(models.Model):
         "cardapio.FotoCardapio", null=True, blank=True, on_delete=models.SET_NULL,
         related_name="+", verbose_name="Foto da Ceia",
         help_text="ℹ️ A arte enviada a quem escolhe a Ceia de Natal.",
+    )
+    ceia_datas_retirada = models.CharField(
+        "Datas de retirada", max_length=200, default="23/12, 24/12, 30/12, 31/12",
+        help_text="ℹ️ As datas que o cliente vê para retirar a encomenda, separadas por vírgula. "
+                  "Ele também pode digitar outra data.",
+    )
+    ceia_horarios = models.CharField(
+        "Horários de retirada", max_length=120, default="11h, 12h, 14h, 16h",
+        help_text="ℹ️ Separados por vírgula.",
+    )
+    ceia_sinal = models.DecimalField(
+        "Sinal da encomenda", max_digits=8, decimal_places=2, default=Decimal("50.00"),
+        help_text="ℹ️ Valor pago por Pix no bot ou na loja para garantir cada encomenda.",
     )
     link_ifood = models.URLField(
         "Link do iFood", max_length=300, blank=True,
@@ -416,6 +429,7 @@ class SessaoBot(models.Model):
         SANDUICHE_SALADA = "SANDUICHE_SALADA", "Sanduíche: com salada?"
         CEIA_NOME = "CEIA_NOME", "Ceia de Natal: nome"
         CEIA_ENDERECO = "CEIA_ENDERECO", "Ceia de Natal: endereço"
+        CEIA = "CEIA", "Encomenda de Natal e Ano Novo"
         ESCOLHENDO_TIPO_ENTREGA = "ESCOLHENDO_TIPO_ENTREGA", "Escolhendo Entrega/Retirada"
 
     telefone = models.CharField("Telefone", max_length=20, primary_key=True)
@@ -485,6 +499,7 @@ class EncomendaNatal(models.Model):
 
     class Status(models.TextChoices):
         NOVO = "NOVO", "Novo — entrar em contato"
+        AGUARDANDO_SINAL = "AGUARDANDO_SINAL", "Aguardando sinal"
         EM_CONTATO = "EM_CONTATO", "Em contato"
         RESERVADO = "RESERVADO", "Reservado"
         ENTREGUE = "ENTREGUE", "Entregue"
@@ -514,8 +529,16 @@ class EncomendaNatal(models.Model):
                                       null=True, blank=True)
     valor_pago = models.DecimalField("Já pago (sinal)", max_digits=9, decimal_places=2,
                                      default=Decimal("0.00"))
-    status = models.CharField("Situação", max_length=12, choices=Status.choices,
+    status = models.CharField("Situação", max_length=20, choices=Status.choices,
                               default=Status.NOVO, db_index=True)
+    itens = models.JSONField("Itens (bot)", default=list, blank=True, editable=False)
+    sinal_valor = models.DecimalField("Sinal", max_digits=8, decimal_places=2,
+                                      default=Decimal("50.00"))
+    forma_sinal = models.CharField("Sinal pago por", max_length=8, blank=True,
+                                   choices=[("PIX", "Pix pelo WhatsApp"), ("LOJA", "Na loja")])
+    sinal_pago_em = models.DateTimeField("Sinal pago em", null=True, blank=True)
+    sinal_cobranca_id = models.CharField(max_length=80, blank=True, editable=False, db_index=True)
+    sinal_pix = models.TextField(blank=True, editable=False)
     observacoes = models.TextField("Observações", blank=True)
     origem = models.CharField("Veio de", max_length=8, choices=Origem.choices,
                               default=Origem.PAINEL, editable=False)
@@ -523,8 +546,8 @@ class EncomendaNatal(models.Model):
     atualizado_em = models.DateTimeField("Atualizada em", auto_now=True)
 
     class Meta:
-        verbose_name = "Encomenda de Natal"
-        verbose_name_plural = "Encomendas de Natal"
+        verbose_name = "Encomenda de Natal e Ano Novo"
+        verbose_name_plural = "Encomendas de Natal e Ano Novo"
         ordering = ["data_entrega", "-criado_em"]
 
     def __str__(self):
@@ -904,7 +927,7 @@ MENSAGENS_PADRAO = {
     "BTN_MENU_ENCOMENDA": "Encomenda outro dia",
     "BTN_MENU_SANDUICHES": "Sanduíches",
     "BTN_MENU_SOPAS": "Sopas",
-    "BTN_MENU_NATAL": "🎄 Ceia de Natal",
+    "BTN_MENU_NATAL": "🎄 Natal e Ano Novo",
     "CEIA_PEDIR_NOME": (
         "🎄 Que bom que você quer a *Ceia de Natal* do Big Kilo!\n\n"
         "Para registrar seu interesse, me diga seu *nome completo*:"

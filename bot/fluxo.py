@@ -1567,40 +1567,15 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         sessao.save()
         return out
 
-    if estado == SessaoBot.Estado.CEIA_NOME:
-        nome_ceia = " ".join((texto or "").split())
-        letras = sum(c.isalpha() for c in nome_ceia)
-        if letras < 2 or _E_TOQUE_ID.match(nome_ceia):
-            out["mensagens"] = [botoes("Me diga seu *nome*, por favor 🙂 (ex.: Maria Silva)",
-                                       [{"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu"}])]
-        else:
-            sessao.carrinho_json["ceia"] = {"nome": nome_ceia[:120]}
-            sessao.estado_atual = SessaoBot.Estado.CEIA_ENDERECO
-            out["mensagens"] = [botoes(
-                mensagem("CEIA_PEDIR_ENDERECO", _cliente(sessao), perfil=perfil,
-                         nome=nome_ceia.split()[0]),
-                [{"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu"}])]
+    if estado == SessaoBot.Estado.CEIA:
+        from bot import ceia
+        out["mensagens"] = ceia.tratar(sessao, texto, out)
         sessao.save()
         return out
 
-    if estado == SessaoBot.Estado.CEIA_ENDERECO:
-        endereco = (texto or "").strip()
-        nome_ceia = (sessao.carrinho_json.get("ceia") or {}).get("nome") or ""
-        if not nome_ceia:
-            out["mensagens"] = _iniciar_ceia(sessao, perfil)
-        elif len(endereco) < 6 or _E_TOQUE_ID.match(endereco):
-            out["mensagens"] = [botoes(
-                "Preciso do *endereço completo* para a entrega 🙂 (rua, número e bairro)",
-                [{"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu"}])]
-        else:
-            _registrar_ceia(sessao.telefone, nome_ceia, endereco[:500])
-            sessao.carrinho_json.pop("ceia", None)
-            sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
-            _set_menu(sessao, {})
-            out["mensagens"] = [botoes(
-                mensagem("CEIA_REGISTRADA", _cliente(sessao), perfil=perfil,
-                         nome=nome_ceia.split()[0]),
-                [{"id": ID_VER_MENU, "titulo": "🍽️ Ver cardápio"}])]
+    if estado in (SessaoBot.Estado.CEIA_NOME, SessaoBot.Estado.CEIA_ENDERECO):
+        # Conversa começada no formato antigo (só nome e endereço): segue no novo.
+        out["mensagens"] = _iniciar_ceia(sessao, perfil)
         sessao.save()
         return out
 
@@ -2070,39 +2045,18 @@ def _seguir_escolha(telefone, nome, perfil_id, sessao, avisos, perfil, out) -> d
 
 
 def _iniciar_ceia(sessao, perfil=None) -> list:
-    """Ceia de Natal: manda a arte e pede o nome. Não precisa de CEP nem de loja aberta."""
+    """Natal e Ano Novo: manda o cardápio da Ceia e abre a encomenda (bot/ceia.py)."""
+    from bot import ceia
     from cardapio.models import FotoCardapio
 
     cfg = ConfiguracaoLoja.get()
     if not cfg.ceia_aberta:
-        return _com_aviso(["🎄 As encomendas da Ceia de Natal já foram encerradas."],
+        return _com_aviso(["🎄 As encomendas de Natal e Ano Novo já foram encerradas."],
                           _tela_menu(sessao, perfil))
-    sessao.estado_atual = SessaoBot.Estado.CEIA_NOME
-    _set_menu(sessao, {})
-    sessao.carrinho_json["ceia"] = {}
-    msgs = []
     foto = (FotoCardapio.objects.filter(id=cfg.foto_ceia_id).only("id", "titulo", "legenda").first()
             if cfg.foto_ceia_id else None)
-    if foto:
-        msgs.append(imagem(foto))
-    msgs.append(botoes(mensagem("CEIA_PEDIR_NOME", _cliente(sessao), perfil=perfil),
-                       [{"id": ID_VOLTAR, "titulo": "↩️ Voltar ao menu"}]))
-    return msgs
+    return ceia.iniciar(sessao, foto)
 
-
-def _registrar_ceia(telefone: str, nome: str, endereco: str):
-    """Grava em Encomendas de Natal. Tocar duas vezes atualiza, não duplica."""
-    from pedidos.models import EncomendaNatal
-
-    tel = "".join(c for c in telefone if c.isdigit())
-    enc = EncomendaNatal.objects.filter(
-        telefone=tel, status=EncomendaNatal.Status.NOVO, origem=EncomendaNatal.Origem.BOT).first()
-    if enc:
-        enc.nome, enc.endereco = nome, endereco
-        enc.save(update_fields=["nome", "endereco", "atualizado_em"])
-    else:
-        EncomendaNatal.objects.create(telefone=tel, nome=nome, endereco=endereco,
-                                      origem=EncomendaNatal.Origem.BOT)
 
 
 def _saudacao(sessao, perfil=None) -> list[str]:
@@ -2417,6 +2371,31 @@ async def processar_mensagem(telefone: str, texto: str, nome: str = "", perfil_i
                 f"Toque no link para nossa equipe te mandar o Pix:\n{link}")
             import logging
             logging.getLogger(__name__).exception("%s no pedido #%s: %s", nivel, pedido_id, exc)
+    sinal_id = resultado.get("ceia_sinal_id")
+    if sinal_id:
+        mensagens.extend(await _mensagens_pix_sinal(sinal_id))
     if registrar:
         await sync_to_async(_registrar_conversa)(telefone, texto, mensagens)
     return normalizar_mensagens(mensagens)
+
+
+async def _mensagens_pix_sinal(encomenda_id: int) -> list:
+    """Pix do sinal da encomenda de Natal. Se falhar, a encomenda já está gravada:
+    o cliente recebe o link do atendimento para pagar de outro jeito."""
+    from pagamentos.asaas import criar_cobranca_sinal
+    from pedidos.models import EncomendaNatal
+
+    enc = await sync_to_async(EncomendaNatal.objects.get)(pk=encomenda_id)
+    try:
+        dados = await criar_cobranca_sinal(enc)
+        return [T("💠 *Pix do sinal* — copie o código da próxima mensagem e cole no app do seu "
+                  "banco, em *Pix Copia e Cola*:"),
+                T(dados["pix_copia_cola"])]
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).exception("Pix do sinal da encomenda #%s: %s", encomenda_id, exc)
+        link = await sync_to_async(link_falar_com_loja)(
+            f"Oi! Fiz a encomenda de Natal nº {encomenda_id} pelo WhatsApp e o Pix do sinal "
+            "não foi gerado. Como faço para pagar?")
+        return [T("Não consegui gerar o Pix do sinal agora. 😕 Sua encomenda está guardada.\n\n"
+                  f"Toque no link para nossa equipe te ajudar com o pagamento:\n{link}")]

@@ -119,11 +119,13 @@ class ConfiguracaoLojaAdmin(LocalizedAdminMixin, ModelAdmin):
                              "fechado recebe só o aviso abaixo, com o link do iFood se houver. "
                              "Dá para abrir e fechar também pelo Modo Cozinha."),
         }),
-        (_("Ceia de Natal"), {
-            "fields": ("ceia_natal_ativa", "ceia_natal_ate", "foto_ceia"),
-            "description": _("A opção \"🎄 Ceia de Natal\" aparece no menu do cliente até a data "
-                             "abaixo. Quem toca recebe a foto, deixa nome e endereço, e o pedido "
-                             "cai em Encomendas de Natal. A foto vem de Cardápio → Fotos do cardápio."),
+        (_("Natal e Ano Novo"), {
+            "fields": ("ceia_natal_ativa", "ceia_natal_ate", "foto_ceia",
+                       "ceia_datas_retirada", "ceia_horarios", "ceia_sinal"),
+            "description": _("A opção \"🎄 Natal e Ano Novo\" aparece no menu do cliente até a data "
+                             "abaixo. Quem toca recebe a arte, monta a encomenda item a item, escolhe "
+                             "data e horário de retirada e paga só o sinal (Pix ou na loja). Tudo cai "
+                             "em Encomendas de Natal e Ano Novo. A arte vem de Cardápio → Fotos do cardápio."),
         }),
     )
 
@@ -621,6 +623,7 @@ class EncomendaNatalAdmin(LocalizedAdminMixin, ModelAdmin):
     """O caderno da Ceia de Natal: quem pediu, o quê, para quando e quanto falta pagar."""
 
     list_display = ("ficha", "whatsapp", "entrega", "resumo_pedido", "status", "pagamento", "veio_de")
+    actions = ["sinal_pago_na_loja"]
     list_display_links = None
     list_editable = ("status",)
     list_filter = ("status", "origem", "recebe", "data_entrega")
@@ -630,7 +633,11 @@ class EncomendaNatalAdmin(LocalizedAdminMixin, ModelAdmin):
     fieldsets = (
         (_("Cliente"), {"fields": ("nome", "telefone", "recebe", "endereco")}),
         (_("Pedido"), {"fields": ("pedido", ("data_entrega", "horario"))}),
-        (_("Pagamento"), {"fields": (("valor_total", "valor_pago"),)}),
+        (_("Pagamento"), {
+            "fields": (("sinal_valor", "forma_sinal", "sinal_pago_em"), ("valor_total", "valor_pago")),
+            "description": _("O sinal pago no Pix pelo WhatsApp é marcado sozinho. O valor total "
+                             "só se sabe depois de pesar os itens prontos."),
+        }),
         (_("Acompanhamento"), {"fields": ("status", "observacoes", ("origem", "criado_em", "atualizado_em"))}),
     )
 
@@ -655,6 +662,7 @@ class EncomendaNatalAdmin(LocalizedAdminMixin, ModelAdmin):
             "pedido": obj.pedido, "observacoes": obj.observacoes, "entrega": entrega,
             "total": _moeda_br(obj.valor_total), "pago": _moeda_br(obj.valor_pago),
             "falta": _moeda_br(obj.falta_pagar),
+            "sinal": self._sinal_txt(obj),
             "origem": obj.get_origem_display(),
             "criado": timezone.localtime(obj.criado_em).strftime("%d/%m/%Y %H:%M"),
         }
@@ -684,10 +692,40 @@ class EncomendaNatalAdmin(LocalizedAdminMixin, ModelAdmin):
         texto = " ".join((obj.pedido or "").split())
         return (texto[:60] + "…") if len(texto) > 60 else (texto or "—")
 
+    @staticmethod
+    def _sinal_txt(obj) -> str:
+        valor = _moeda_br(obj.sinal_valor)
+        if obj.sinal_pago_em:
+            quando = timezone.localtime(obj.sinal_pago_em).strftime("%d/%m")
+            onde = "no Pix" if obj.forma_sinal == "PIX" else "na loja"
+            return f"✅ Sinal de {valor} pago {onde} em {quando}"
+        if obj.forma_sinal == "PIX":
+            return f"⏳ Sinal de {valor} — Pix enviado, aguardando pagamento"
+        if obj.forma_sinal == "LOJA":
+            return f"⏳ Sinal de {valor} — vai pagar na loja"
+        return f"Sinal de {valor} ainda não combinado"
+
+    @admin.action(description="✅ Sinal pago na loja")
+    def sinal_pago_na_loja(self, request, queryset):
+        n = 0
+        for enc in queryset.filter(sinal_pago_em__isnull=True):
+            enc.sinal_pago_em = timezone.now()
+            enc.forma_sinal = "LOJA"
+            enc.valor_pago = (enc.valor_pago or 0) + enc.sinal_valor
+            if enc.status in (EncomendaNatal.Status.NOVO, EncomendaNatal.Status.AGUARDANDO_SINAL):
+                enc.status = EncomendaNatal.Status.RESERVADO
+            enc.save()
+            n += 1
+        self.message_user(request, f"{n} encomenda(s) marcada(s) como reservada(s) com sinal pago na loja.")
+
     @admin.display(description="Pagamento")
     def pagamento(self, obj):
         if obj.valor_total is None:
-            return "—"
+            if obj.sinal_pago_em:
+                return format_html('<span class="text-green-700 font-semibold">✅ Sinal {}</span>',
+                                   _moeda_br(obj.sinal_valor))
+            return "⏳ Sinal no Pix" if obj.forma_sinal == "PIX" else (
+                "⏳ Sinal na loja" if obj.forma_sinal == "LOJA" else "—")
         falta = obj.falta_pagar
         if not falta:
             return format_html('<span class="text-green-700 font-semibold">✅ Pago {}</span>',
@@ -704,6 +742,7 @@ class EncomendaNatalAdmin(LocalizedAdminMixin, ModelAdmin):
         extra_context = {**(extra_context or {}), "natal_resumo": {
             "total": ativas.count(),
             "novas": ativas.filter(status=EncomendaNatal.Status.NOVO).count(),
+            "sinal": ativas.filter(status=EncomendaNatal.Status.AGUARDANDO_SINAL).count(),
             "reservadas": ativas.filter(status=EncomendaNatal.Status.RESERVADO).count(),
             "valor": _moeda_br(soma["total"] or 0),
             "pago": _moeda_br(soma["pago"] or 0),
