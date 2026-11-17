@@ -623,13 +623,13 @@ class EncomendaNatalAdmin(LocalizedAdminMixin, ModelAdmin):
     """O caderno da Ceia de Natal: quem pediu, o quê, para quando e quanto falta pagar."""
 
     list_display = ("ficha", "whatsapp", "entrega", "resumo_pedido", "status", "pagamento", "veio_de")
-    actions = ["sinal_pago_na_loja"]
+    actions = ["sinal_pago_na_loja", "imprimir_comanda"]
     list_display_links = None
     list_editable = ("status",)
     list_filter = ("status", "origem", "recebe", "data_entrega")
     search_fields = ("nome", "telefone", "pedido", "endereco", "observacoes")
     change_list_template = "admin/pedidos/encomendanatal/change_list.html"
-    readonly_fields = ("origem", "criado_em", "atualizado_em")
+    readonly_fields = ("origem", "criado_em", "atualizado_em", "impressa_em")
     fieldsets = (
         (_("Cliente"), {"fields": ("nome", "telefone", "recebe", "endereco")}),
         (_("Pedido"), {"fields": ("pedido", ("data_entrega", "horario"))}),
@@ -638,7 +638,8 @@ class EncomendaNatalAdmin(LocalizedAdminMixin, ModelAdmin):
             "description": _("O sinal pago no Pix pelo WhatsApp é marcado sozinho. O valor total "
                              "só se sabe depois de pesar os itens prontos."),
         }),
-        (_("Acompanhamento"), {"fields": ("status", "observacoes", ("origem", "criado_em", "atualizado_em"))}),
+        (_("Acompanhamento"), {"fields": ("status", "observacoes", ("origem", "criado_em", "atualizado_em"),
+                                          ("na_fila_impressao", "impressa_em"))}),
     )
 
     def save_model(self, request, obj, form, change):
@@ -704,6 +705,12 @@ class EncomendaNatalAdmin(LocalizedAdminMixin, ModelAdmin):
         if obj.forma_sinal == "LOJA":
             return f"⏳ Sinal de {valor} — vai pagar na loja"
         return f"Sinal de {valor} ainda não combinado"
+
+    @admin.action(description="🖨️ Imprimir comanda")
+    def imprimir_comanda(self, request, queryset):
+        n = queryset.update(na_fila_impressao=True)
+        self.message_user(request, f"{n} comanda(s) na fila da impressora. Saem assim que o "
+                                   "programa da impressora estiver ligado no PC da loja.")
 
     @admin.action(description="✅ Sinal pago na loja")
     def sinal_pago_na_loja(self, request, queryset):

@@ -76,7 +76,11 @@ def _confirmar_sinal_natal(cobranca_id: str):
     enc.forma_sinal = "PIX"
     if enc.status in (EncomendaNatal.Status.NOVO, EncomendaNatal.Status.AGUARDANDO_SINAL):
         enc.status = EncomendaNatal.Status.RESERVADO
-    enc.save(update_fields=["sinal_pago_em", "valor_pago", "forma_sinal", "status", "atualizado_em"])
+    campos = ["sinal_pago_em", "valor_pago", "forma_sinal", "status", "atualizado_em"]
+    if not enc.impressa_em:
+        enc.na_fila_impressao = True     # a comanda sai na impressora da loja
+        campos.append("na_fila_impressao")
+    enc.save(update_fields=campos)
     primeiro = (enc.nome or "").split()[0] if (enc.nome or "").strip() else ""
     quando = enc.data_entrega.strftime("%d/%m") if enc.data_entrega else "a data combinada"
     valor = f"R$ {enc.sinal_valor:.2f}".replace(".", ",")

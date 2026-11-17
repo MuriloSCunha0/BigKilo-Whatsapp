@@ -1264,12 +1264,23 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         or (pausa_lojista and canal_sessao == Pedido.Canal.LOJISTA)
         or (pausa_cliente and canal_sessao == Pedido.Canal.CLIENTE)
     )
+    # Encomenda de Natal e Ano Novo não depende do delivery: é retirada em outro dia,
+    # então segue aberta com o delivery fechado ou de madrugada (a comanda entra na
+    # fila da impressora e sai quando o PC da loja ligar).
+    if barrado and cfg_pausa.ceia_aberta:
+        if texto.strip() == ID_NATAL:
+            sessao.carrinho_json.setdefault("canal", Pedido.Canal.CLIENTE)
+            out["mensagens"] = _iniciar_ceia(sessao, perfil)
+            sessao.save()
+            return out
+        if sessao.estado_atual == SessaoBot.Estado.CEIA and texto.strip() not in (ID_VOLTAR, ID_VER_MENU):
+            barrado = False
     if barrado:
         if sessao.carrinho_json.get("itens") or sessao.carrinho_json.get("montagem"):
             sessao.carrinho_json = _carrinho_vazio()
             sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL
             sessao.save()
-        out["mensagens"] = [T(cfg_pausa.texto_pausa())]
+        out["mensagens"] = [_aviso_pausa(cfg_pausa)]
         return out
 
     if sessao.estado_atual == SessaoBot.Estado.ATENDIMENTO_HUMANO:
@@ -1421,10 +1432,10 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
         # para dizer a ela que o lado dela está fechado.
         if low == "lojista" and pausa_lojista:
             sessao.carrinho_json["canal"] = Pedido.Canal.LOJISTA
-            out["mensagens"] = [T(cfg.texto_pausa())]
+            out["mensagens"] = [_aviso_pausa(cfg)]
         elif low == "cliente" and pausa_cliente:
             sessao.carrinho_json["canal"] = Pedido.Canal.CLIENTE
-            out["mensagens"] = [T(cfg.texto_pausa())]
+            out["mensagens"] = [_aviso_pausa(cfg)]
         elif low == "lojista":
             sessao.carrinho_json["canal"] = Pedido.Canal.LOJISTA
             sessao.carrinho_json["tipo_entrega"] = Pedido.TipoEntrega.ENTREGA
@@ -2110,6 +2121,15 @@ def _e_lojista(sessao) -> bool:
 def _e_cliente(sessao) -> bool:
     """Já disse "Sou cliente": o menu dele existe mesmo antes do CEP."""
     return (sessao.carrinho_json.get("canal") or "") == Pedido.Canal.CLIENTE
+
+
+def _aviso_pausa(cfg) -> dict:
+    """Aviso de delivery fechado. Com a Ceia no ar, vem com o botão da encomenda,
+    que não depende do delivery (é retirada na loja em outro dia)."""
+    if not cfg.ceia_aberta:
+        return T(cfg.texto_pausa())
+    return botoes(cfg.texto_pausa().rstrip() + "\n\n🎄 As encomendas de *Natal e Ano Novo* "
+                  "continuam abertas:", [{"id": ID_NATAL, "titulo": "🎄 Natal e Ano Novo"}])
 
 
 def _aviso_fechado(cfg) -> str:

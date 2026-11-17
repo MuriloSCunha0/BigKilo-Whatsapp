@@ -499,6 +499,9 @@ def _confirmar(sessao, cfg, forma: str, out: dict) -> list:
         itens=c["itens"], data_entrega=d, horario=c["hora"],
         status=EncomendaNatal.Status.AGUARDANDO_SINAL, origem=EncomendaNatal.Origem.BOT,
         forma_sinal=forma, sinal_valor=cfg.ceia_sinal,
+        # Pagar na loja já é compromisso: imprime agora. No Pix, imprime quando o sinal
+        # cair (mesma regra dos pedidos: Pix sem confirmação não vai para a impressora).
+        na_fila_impressao=(forma == "LOJA"),
     )
     sessao.carrinho_json.pop("ceia", None)
     sessao.estado_atual = SessaoBot.Estado.MENU_PRINCIPAL

@@ -539,6 +539,10 @@ class EncomendaNatal(models.Model):
     sinal_pago_em = models.DateTimeField("Sinal pago em", null=True, blank=True)
     sinal_cobranca_id = models.CharField(max_length=80, blank=True, editable=False, db_index=True)
     sinal_pix = models.TextField(blank=True, editable=False)
+    # Mesma fila do programa da impressora que imprime os pedidos: o que entra de
+    # madrugada sai quando o PC da loja liga.
+    na_fila_impressao = models.BooleanField("Na fila da impressora", default=False, db_index=True)
+    impressa_em = models.DateTimeField("Comanda impressa em", null=True, blank=True)
     observacoes = models.TextField("Observações", blank=True)
     origem = models.CharField("Veio de", max_length=8, choices=Origem.choices,
                               default=Origem.PAINEL, editable=False)

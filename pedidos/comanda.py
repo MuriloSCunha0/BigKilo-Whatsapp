@@ -128,3 +128,80 @@ def comanda_para_impressao(pedido: Pedido, vias: int = VIAS_COMANDA) -> str:
     """A comanda repetida N vezes, com corte de papel entre uma via e outra."""
     texto = gerar_comanda_texto(pedido)
     return CORTE.join([texto] * max(1, vias))
+
+
+# --------------------------------------------------------------------------
+# Encomenda de Natal e Ano Novo: mesma impressora, mesma fila e mesmas duas vias.
+# Não tem total (os itens são pesados depois de prontos): o que importa na loja é
+# quem é, o que separar e QUANDO a pessoa vem buscar.
+_DIAS = ["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"]
+
+
+def _fone(telefone: str) -> str:
+    d = "".join(c for c in telefone or "" if c.isdigit())
+    if d.startswith("55") and len(d) in (12, 13):
+        d = d[2:]
+    return f"({d[:2]}) {d[2:-4]}-{d[-4:]}" if len(d) in (10, 11) else (telefone or "-")
+
+
+def gerar_comanda_encomenda(enc) -> str:
+    cfg = ConfiguracaoLoja.get()
+    linhas = [LINHA, _centro(cfg.nome_loja.upper()), _centro(cfg.slogan), LINHA,
+              _centro("*** ENCOMENDA NATAL E ANO NOVO ***"), LINHA]
+    feita = timezone.localtime(enc.criado_em).strftime("%d/%m %H:%M")
+    linhas.append(f"ENCOMENDA #{enc.pk}".ljust(LARGURA - len(feita)) + feita)
+    linhas.append(f"Cliente: {enc.nome}")
+    linhas.append(f"Tel: {_fone(enc.telefone)}")
+    linhas.append(SUBLINHA)
+
+    if enc.recebe == enc.Recebe.ENTREGA:
+        linhas.append("ENTREGA:")
+        if enc.endereco:
+            linhas.append(enc.endereco)
+    else:
+        linhas.append("RETIRADA NA LOJA:")
+    if enc.data_entrega:
+        dia = f"{_DIAS[enc.data_entrega.weekday()]} {enc.data_entrega:%d/%m/%Y}"
+        linhas.append(_centro(f">>> {dia}" + (f" AS {enc.horario.upper()}" if enc.horario else "") + " <<<"))
+    else:
+        linhas.append("Data: a combinar")
+    linhas.append(SUBLINHA)
+
+    linhas.append("ITENS:")
+    if enc.itens:
+        for it in enc.itens:
+            cada = f" (~{it['cada']} cada)" if it.get("cada") else ""
+            linhas.append(f"- {it.get('rotulo', '')} {it.get('nome', '')}{cada}")
+    else:
+        for linha in (enc.pedido or "-").splitlines():
+            linhas.append(linha.replace("•", "-").replace("—", "-"))
+    if enc.observacoes:
+        linhas.append(SUBLINHA)
+        linhas.append("OBS: " + enc.observacoes)
+    linhas.append(SUBLINHA)
+
+    sinal = _moeda(enc.sinal_valor)
+    if enc.sinal_pago_em:
+        onde = "PIX" if enc.forma_sinal == "PIX" else "NA LOJA"
+        situacao = f"SINAL {sinal} PAGO ({onde})"
+    elif enc.forma_sinal == "LOJA":
+        prazo = f" ATE {cfg.ceia_natal_ate:%d/%m}" if cfg.ceia_natal_ate else ""
+        situacao = f"SINAL {sinal} A PAGAR NA LOJA{prazo}"
+    elif enc.forma_sinal == "PIX":
+        situacao = f"SINAL {sinal} - PIX AGUARDANDO"
+    else:
+        situacao = f"SINAL {sinal} - A COMBINAR"
+    linhas.append(situacao)
+    if enc.valor_total:
+        linhas.append(("TOTAL:").ljust(20) + _moeda(enc.valor_total).rjust(LARGURA - 20))
+    else:
+        linhas.append("VALOR FINAL: PELO PESO, DEPOIS DE PRONTO")
+    linhas.append(LINHA)
+    linhas.append("")
+    linhas.append("")
+    # A impressora usa cp850: travessão e marcador viram "?". Troca por hífen.
+    return "\n".join(linhas).replace("—", "-").replace("•", "-")
+
+
+def comanda_encomenda_para_impressao(enc, vias: int = VIAS_COMANDA) -> str:
+    return CORTE.join([gerar_comanda_encomenda(enc)] * max(1, vias))

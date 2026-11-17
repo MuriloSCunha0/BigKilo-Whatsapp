@@ -307,6 +307,12 @@ def impressao_pendentes(request):
         .order_by("criado_em")[:20]
     )
     data = [{"id": p.id, "comanda": comanda_para_impressao(p)} for p in pedidos]
+    # Encomendas de Natal e Ano Novo entram na mesma fila. O programa da impressora
+    # só devolve o id que recebeu, então "natal-12" funciona sem reinstalar nada.
+    from .comanda import comanda_encomenda_para_impressao
+    from .models import EncomendaNatal
+    for enc in EncomendaNatal.objects.filter(na_fila_impressao=True).order_by("criado_em")[:20]:
+        data.append({"id": f"natal-{enc.pk}", "comanda": comanda_encomenda_para_impressao(enc)})
     return JsonResponse({"pedidos": data})
 
 
@@ -318,6 +324,14 @@ def impressao_marcar(request):
         return JsonResponse({"erro": "token inválido ou ausente"}, status=401)
     body = json.loads(request.body or b"{}")
     pedido_id = body.get("pedido_id")
+    if str(pedido_id).startswith("natal-"):
+        from .models import EncomendaNatal
+        pk = str(pedido_id)[6:]
+        if not pk.isdigit():
+            return JsonResponse({"ok": False})
+        n = EncomendaNatal.objects.filter(pk=int(pk), na_fila_impressao=True).update(
+            na_fila_impressao=False, impressa_em=timezone.now())
+        return JsonResponse({"ok": bool(n)})
     # Marca só como impressa e MANTÉM em "Preparando" (a cozinha continua vendo o
     # pedido ativo). O lojista conclui quando entregar/pagar.
     n = Pedido.objects.filter(
