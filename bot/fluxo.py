@@ -1247,6 +1247,14 @@ def _core_fluxo(telefone: str, texto: str, nome: str, perfil_id=None) -> dict:
 
     out = {"mensagens": [], "checkout_pedido_id": None}
 
+    # Trocar o sinal da encomenda de Natal (Pix ⇄ loja). O botão traz o número da
+    # encomenda e não depende da tela em que a pessoa está, nem do delivery aberto.
+    from bot import ceia as _ceia
+    if _ceia.e_troca_sinal(texto):
+        out["mensagens"] = _ceia.trocar_sinal(sessao, texto, out)
+        sessao.save()
+        return out
+
     # Pausa: responde só o aviso e não deixa o pedido andar. Vem antes de tudo,
     # inclusive do atendimento humano, para ninguém ficar com pedido pela metade.
     #
@@ -2402,15 +2410,23 @@ async def processar_mensagem(telefone: str, texto: str, nome: str = "", perfil_i
 async def _mensagens_pix_sinal(encomenda_id: int) -> list:
     """Pix do sinal da encomenda de Natal. Se falhar, a encomenda já está gravada:
     o cliente recebe o link do atendimento para pagar de outro jeito."""
+    from bot.ceia import botoes_trocar_sinal
     from pagamentos.asaas import criar_cobranca_sinal
     from pedidos.models import EncomendaNatal
 
     enc = await sync_to_async(EncomendaNatal.objects.get)(pk=encomenda_id)
     try:
-        dados = await criar_cobranca_sinal(enc)
+        if enc.sinal_pix and enc.sinal_cobranca_id:
+            # Voltou da loja para o Pix: a cobrança de antes continua valendo.
+            # Gerar outra deixaria duas cobranças abertas para o mesmo sinal.
+            copia_cola = enc.sinal_pix
+        else:
+            copia_cola = (await criar_cobranca_sinal(enc))["pix_copia_cola"]
         return [T("💠 *Pix do sinal* — copie o código da próxima mensagem e cole no app do seu "
                   "banco, em *Pix Copia e Cola*:"),
-                T(dados["pix_copia_cola"])]
+                T(copia_cola),
+                botoes("Prefere pagar o sinal direto na loja? É só tocar abaixo.",
+                       botoes_trocar_sinal(enc))]
     except Exception as exc:
         import logging
         logging.getLogger(__name__).exception("Pix do sinal da encomenda #%s: %s", encomenda_id, exc)
@@ -2418,4 +2434,5 @@ async def _mensagens_pix_sinal(encomenda_id: int) -> list:
             f"Oi! Fiz a encomenda de Natal nº {encomenda_id} pelo WhatsApp e o Pix do sinal "
             "não foi gerado. Como faço para pagar?")
         return [T("Não consegui gerar o Pix do sinal agora. 😕 Sua encomenda está guardada.\n\n"
-                  f"Toque no link para nossa equipe te ajudar com o pagamento:\n{link}")]
+                  f"Toque no link para nossa equipe te ajudar com o pagamento:\n{link}"),
+                botoes("Ou, se preferir, pague o sinal direto na loja:", botoes_trocar_sinal(enc))]

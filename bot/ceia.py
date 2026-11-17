@@ -517,4 +517,62 @@ def _confirmar(sessao, cfg, forma: str, out: dict) -> list:
         f"🎄 Encomenda nº {enc.pk} registrada!\n\n🏬 Retirada: *{quando}*\n\n"
         f"Para garantir, pague o sinal de *{_moeda(cfg.ceia_sinal)}* direto na loja{prazo}.\n\n"
         "Obrigado pela preferência! 😊",
-        [{"id": "ver_menu", "titulo": "🍽️ Ver cardápio"}])]
+        botoes_trocar_sinal(enc))]
+
+
+# ===================== troca da forma do sinal =====================
+# Depois de confirmada, a encomenda sai da conversa (o estado volta ao menu), então
+# os botões levam o número dela no id e valem de qualquer tela, até com o delivery
+# fechado: "ceia_sinal_loja:12" / "ceia_sinal_pix:12".
+SINAL_LOJA = "ceia_sinal_loja:"
+SINAL_PIX = "ceia_sinal_pix:"
+_RE_TROCA = re.compile(r"^(ceia_sinal_loja|ceia_sinal_pix):(\d+)$")
+
+
+def e_troca_sinal(texto: str) -> bool:
+    return bool(_RE_TROCA.match((texto or "").strip()))
+
+
+def botoes_trocar_sinal(enc) -> list:
+    """Botões que vão no fim da mensagem do sinal: o outro jeito de pagar + cardápio."""
+    if enc.forma_sinal == "PIX":
+        outro = {"id": f"{SINAL_LOJA}{enc.pk}", "titulo": "🏬 Pagar na loja"}
+    else:
+        outro = {"id": f"{SINAL_PIX}{enc.pk}", "titulo": "💠 Pagar sinal no Pix"}
+    return [outro, {"id": "ver_menu", "titulo": "🍽️ Ver cardápio"}]
+
+
+def trocar_sinal(sessao, texto: str, out: dict) -> list:
+    """O cliente mudou de ideia sobre como pagar o sinal (Pix ⇄ loja)."""
+    from pedidos.models import ConfiguracaoLoja, EncomendaNatal
+
+    m = _RE_TROCA.match((texto or "").strip())
+    para_pix = m.group(1) == "ceia_sinal_pix"
+    enc = EncomendaNatal.objects.filter(pk=int(m.group(2)), telefone=sessao.telefone).first()
+    menu = [{"id": "ver_menu", "titulo": "🍽️ Ver cardápio"}]
+    if not enc or enc.status in (EncomendaNatal.Status.CANCELADO, EncomendaNatal.Status.ENTREGUE):
+        return [botoes("Essa encomenda não está mais aberta para mudar o pagamento. "
+                       "Se precisar, fale com a loja 🙂", menu)]
+    if enc.sinal_pago_em:
+        return [botoes(f"O sinal da encomenda nº {enc.pk} já está pago ✅ Não precisa pagar de novo.", menu)]
+
+    cfg = ConfiguracaoLoja.get()
+    valor = _moeda(enc.sinal_valor)
+    if para_pix:
+        enc.forma_sinal = "PIX"
+        enc.save(update_fields=["forma_sinal", "atualizado_em"])
+        out["ceia_sinal_id"] = enc.pk   # processar_mensagem manda o Pix
+        return [T(f"Certo! Encomenda nº {enc.pk}: o sinal de *{valor}* fica no Pix 👇")]
+
+    enc.forma_sinal = "LOJA"
+    campos = ["forma_sinal", "atualizado_em"]
+    if not enc.impressa_em and not enc.na_fila_impressao:
+        # Pagar na loja já é compromisso: a comanda vai para a impressora agora,
+        # igual a quem escolhe a loja de primeira.
+        enc.na_fila_impressao = True
+        campos.append("na_fila_impressao")
+    enc.save(update_fields=campos)
+    prazo = f" até {cfg.ceia_natal_ate:%d/%m}" if cfg.ceia_natal_ate else ""
+    return [botoes(
+        f"Combinado! 🏬 O sinal de *{valor}* da encomenda nº {enc.pk} fica para pagar "
+        f"direto na loja{prazo}.\n\n_Pode desconsiderar o Pix que enviei._", botoes_trocar_sinal(enc))]
