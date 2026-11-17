@@ -310,6 +310,33 @@ def tela_hora(sessao, cfg) -> list:
     return [lista(f"Retirada em *{_data_txt(d)}*.\n\n🕐 Qual *horário*?", "Escolher horário", linhas)]
 
 
+def _nome_anterior(sessao) -> str:
+    """Nome que a pessoa já digitou numa encomenda anterior (o do perfil do WhatsApp
+    não serve: muita gente usa apelido ou frase ali)."""
+    from pedidos.models import EncomendaNatal
+
+    enc = (EncomendaNatal.objects.filter(telefone=sessao.telefone, origem=EncomendaNatal.Origem.BOT)
+           .exclude(nome="").order_by("-criado_em").first())
+    return enc.nome if enc else ""
+
+
+def tela_nome(sessao, aviso: str = "") -> list:
+    c = _c(sessao)
+    c["etapa"] = "nome"
+    anterior = _nome_anterior(sessao)
+    opcoes = []
+    mapa = {}
+    if anterior and len(anterior) <= 17:
+        opcoes.append({"id": "nome:anterior", "titulo": f"✅ {anterior}"})
+        mapa["nome:anterior"] = anterior
+    opcoes.append({"id": B_CORRIGIR, "titulo": "✏️ Corrigir itens"})
+    _menu(sessao, mapa)
+    corpo = (f"{aviso}\n\n" if aviso else "") + "👤 Para registrar a encomenda, me diga o seu *nome completo*:"
+    if mapa:
+        corpo += "\n_Se for o mesmo da última vez, é só tocar no botão._"
+    return [botoes(corpo, opcoes)]
+
+
 def tela_resumo(sessao, cfg) -> list:
     c = _c(sessao)
     c["etapa"] = "resumo"
@@ -318,6 +345,7 @@ def tela_resumo(sessao, cfg) -> list:
     prazo = f" até {cfg.ceia_natal_ate:%d/%m}" if cfg.ceia_natal_ate else ""
     corpo = (
         "🎄 *Resumo da sua encomenda*\n\n"
+        + (f"👤 {c['nome']}\n\n" if c.get("nome") else "")
         + "\n".join(linha_item(it) for it in c["itens"])
         + f"\n\n🏬 Retirada na loja: *{_data_txt(d)} às {c['hora']}*\n\n"
         "💡 O valor de cada item é calculado pelo peso, depois de pronto.\n\n"
@@ -351,6 +379,8 @@ def tela_atual(sessao, cfg) -> list:
         return tela_data_outra(sessao)
     if etapa == "hora" and c.get("data"):
         return tela_hora(sessao, cfg)
+    if etapa == "nome":
+        return tela_nome(sessao)
     if etapa == "resumo" and c.get("data") and c.get("hora"):
         return tela_resumo(sessao, cfg)
     return tela_categorias(sessao)
@@ -436,6 +466,14 @@ def tratar(sessao, texto: str, out: dict) -> list:
         if not hora:
             return [ERRO] + tela_hora(sessao, cfg)
         c["hora"] = hora
+        return tela_nome(sessao)
+
+    if etapa == "nome":
+        nome = _toque(sessao, alvo) or " ".join(alvo.split())
+        letras = sum(ch.isalpha() for ch in nome)
+        if letras < 2 or re.match(r"^(\d+|[a-z_]+(:[\w,]+)?)$", nome):
+            return tela_nome(sessao, aviso="Me diga o seu *nome*, por favor 🙂 (ex.: Maria Silva)")
+        c["nome"] = nome[:120]
         return tela_resumo(sessao, cfg)
 
     if etapa == "resumo":
@@ -452,7 +490,7 @@ def _confirmar(sessao, cfg, forma: str, out: dict) -> list:
 
     c = _c(sessao)
     cliente = Cliente.objects.filter(telefone=sessao.telefone).first()
-    nome = (cliente.nome_whatsapp if cliente else "") or "Cliente do WhatsApp"
+    nome = c.get("nome") or (cliente.nome_whatsapp if cliente else "") or "Cliente do WhatsApp"
     d = date.fromisoformat(c["data"])
     enc = EncomendaNatal.objects.create(
         nome=nome[:120], telefone=sessao.telefone,
